@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { AdminBar } from "@/components/AdminBar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Santiago en Datos",
-  description: "Plataforma de datos y noticias de Santiago.",
+  description: "Documentación y noticias sobre Santiago.",
 };
 
 export default function RootLayout({
@@ -24,10 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
-      >
-        <main className="container mx-auto px-4 py-8 md:py-12">{children}</main>
+      <body className={inter.className}>
+        <AuthProvider>
+          <main className="min-h-screen p-8 md:p-24">{children}</main>
+          <AdminBar />
+        </AuthProvider>
       </body>
     </html>
   );

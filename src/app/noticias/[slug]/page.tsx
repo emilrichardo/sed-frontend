@@ -1,6 +1,5 @@
 import { getNewsItem } from "@/lib/api";
-import { BlockRenderer } from "@/components/BlockRenderer";
-import { RichTextParser } from "@/components/RichTextParser";
+import { NewsEditable } from "@/components/NewsEditable";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -42,29 +41,7 @@ export default async function NewsPage({ params }: PageProps) {
         Volver al inicio
       </Link>
 
-      <header className="mb-10 border-b border-border pb-8">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 leading-tight">
-          {newsItem.titulo}
-        </h1>
-        {newsItem.createdAt && (
-          <time className="text-muted-foreground font-mono text-sm">
-            Publicado el{" "}
-            {new Date(newsItem.createdAt).toLocaleDateString("es-CL", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </time>
-        )}
-      </header>
-
-      <div className="prose prose-neutral max-w-none">
-        {newsItem.contenido?.root?.children ? (
-          <RichTextParser content={newsItem.contenido.root.children} />
-        ) : (
-          <BlockRenderer blocks={newsItem.layout || []} />
-        )}
-      </div>
+      <NewsEditable initialData={newsItem} />
 
       {/* Debug view for raw data if needed, commented out for prod */}
       {/*
