@@ -169,9 +169,16 @@ export async function getBulletins(
   let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}`;
 
   if (where) {
-    // Basic implementation of where clause for now
     Object.entries(where).forEach(([key, value]) => {
-      url += `&where[${key}][equals]=${value}`;
+      if (value !== undefined && value !== null && value !== "") {
+        if (key === "fecha_desde") {
+          url += `&where[fecha_publicacion][greater_than_equal]=${value}`;
+        } else if (key === "fecha_hasta") {
+          url += `&where[fecha_publicacion][less_than_equal]=${value}`;
+        } else if (key !== "search") {
+          url += `&where[${key}][equals]=${value}`;
+        }
+      }
     });
   }
 
@@ -219,7 +226,16 @@ export async function getEntries(
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
-        url += `&where[${key}][equals]=${value}`;
+        if (key === "search") {
+          url += `&where[or][0][identificador_acto][contains]=${value}`;
+          url += `&where[or][1][referencia][contains]=${value}`;
+        } else if (key === "fecha_desde") {
+          url += `&where[id_boletin.fecha_publicacion][greater_than_equal]=${value}`;
+        } else if (key === "fecha_hasta") {
+          url += `&where[id_boletin.fecha_publicacion][less_than_equal]=${value}`;
+        } else {
+          url += `&where[${key}][equals]=${value}`;
+        }
       }
     });
   }

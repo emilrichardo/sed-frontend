@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Seccion, TipoActo, Organismo, getTaxonomy } from "@/lib/api";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Search } from "lucide-react";
 
 interface BulletinFiltersProps {
   onFilterChange: (filters: any) => void;
@@ -20,6 +20,7 @@ export default function BulletinFilters({
   const [selectedOrganismo, setSelectedOrganismo] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     async function loadTaxonomies() {
@@ -46,6 +47,7 @@ export default function BulletinFilters({
       jurisdiccion: selectedOrganismo,
       fecha_desde: dateFrom,
       fecha_hasta: dateTo,
+      search: searchTerm,
     });
   };
 
@@ -55,6 +57,7 @@ export default function BulletinFilters({
     setSelectedOrganismo("");
     setDateFrom("");
     setDateTo("");
+    setSearchTerm("");
     onFilterChange({});
   };
 
@@ -74,7 +77,24 @@ export default function BulletinFilters({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="space-y-1.5 lg:col-span-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Buscar
+          </label>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Nº de acto, referencia..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 p-2 border rounded-md bg-background text-sm"
+              onKeyDown={(e) => e.key === "Enter" && handleApplyFilters()}
+            />
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">
             Sección

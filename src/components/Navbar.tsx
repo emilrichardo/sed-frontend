@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Database } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Menu, X, Database, LogIn, LogOut, User, Edit3 } from "lucide-react";
 
 const navLinks = [
   { name: "Inicio", href: "/" },
@@ -14,6 +15,7 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { user, logout, isEditing, toggleEditMode } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -32,23 +34,73 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
+            <div className="flex items-center gap-6 border-r border-border pr-6 mr-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    pathname === link.href
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+
+            {user ? (
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={toggleEditMode}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    isEditing
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  {isEditing ? "Modo Edición: ON" : "Modo Edición: OFF"}
+                </button>
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span className="max-w-[150px] truncate">{user.email}</span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
               <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  pathname === link.href
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                }`}
+                href="/login"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
-                {link.name}
+                <LogIn className="h-4 w-4" />
+                Iniciar Sesión
               </Link>
-            ))}
+            )}
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-4">
+            {user && (
+              <button
+                onClick={toggleEditMode}
+                className={`p-2 rounded-md transition-colors ${
+                  isEditing
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+                title="Toggle Edit Mode"
+              >
+                <Edit3 className="h-5 w-5" />
+              </button>
+            )}
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-muted-foreground hover:text-primary transition-colors"
@@ -67,21 +119,53 @@ export function Navbar() {
       {/* Mobile Navigation */}
       {isOpen && (
         <div className="md:hidden border-t border-border bg-background animate-in slide-in-from-top-2 duration-200">
-          <div className="container mx-auto px-4 py-4 space-y-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
-                className={`block px-4 py-2 text-base font-medium rounded-md transition-colors ${
-                  pathname === link.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-primary"
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
+          <div className="container mx-auto px-4 py-4 space-y-4">
+            <div className="space-y-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`block px-4 py-2 text-base font-medium rounded-md transition-colors ${
+                    pathname === link.href
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-primary"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+
+            <div className="pt-4 border-t border-border">
+              {user ? (
+                <div className="space-y-4 px-4">
+                  <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                    <User className="h-5 w-5" />
+                    <span>{user.email}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 py-2 text-base font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    Cerrar Sesión
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2 text-base font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-md transition-colors"
+                >
+                  <LogIn className="h-5 w-5" />
+                  Iniciar Sesión
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}
