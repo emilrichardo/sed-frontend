@@ -16,15 +16,6 @@ export default async function Home() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <header className="mb-12 border-b border-border pb-6">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">
-          Santiago en Datos
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Documentación y noticias.
-        </p>
-      </header>
-
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -73,8 +64,19 @@ export default async function Home() {
       </section>
 
       <section>
-        <CreateNewsButton />
-        <h2 className="text-2xl font-semibold mb-6">Últimas Noticias</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold">Últimas Noticias</h2>
+          <div className="flex items-center gap-4">
+            <CreateNewsButton />
+            <Link
+              href="/noticias"
+              className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+            >
+              Ver todas
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {news.docs.map((item) => {
             // Extract a brief description from the content if available

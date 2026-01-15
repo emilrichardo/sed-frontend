@@ -82,9 +82,27 @@ export interface DetalleEspecifico {
   detalles: any[];
 }
 
-export async function getNews(): Promise<PayloadResponse<NewsItem>> {
+export async function getNews(
+  params: {
+    page?: number;
+    limit?: number;
+    sort?: string;
+    where?: any;
+  } = {}
+): Promise<PayloadResponse<NewsItem>> {
+  const { page = 1, limit = 10, sort = "-createdAt", where } = params;
+  let url = `${API_URL}/noticias?page=${page}&limit=${limit}&sort=${sort}&draft=false`;
+
+  if (where) {
+    Object.entries(where).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        url += `&where[${key}][equals]=${value}`;
+      }
+    });
+  }
+
   try {
-    const res = await fetch(`${API_URL}/noticias?depth=1&draft=false`, {
+    const res = await fetch(url, {
       next: { revalidate: 60 },
     });
 
