@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Filter,
 } from "lucide-react";
+import { UploadBulletinButton } from "./UploadBulletinButton";
 
 interface BulletinArchiveProps {
   filters?: any;
@@ -74,29 +75,32 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
             />
           </div>
 
-          <div className="flex border rounded-md overflow-hidden">
-            <button
-              onClick={() => setViewMode("table")}
-              className={`p-2 ${
-                viewMode === "table"
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-background"
-              }`}
-              title="Vista Tabla"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2 ${
-                viewMode === "list"
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-background"
-              }`}
-              title="Vista Lista"
-            >
-              <ListIcon className="h-4 w-4" />
-            </button>
+          <div className="flex items-center gap-4">
+            <UploadBulletinButton />
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-2 ${
+                  viewMode === "table"
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-background"
+                }`}
+                title="Vista Tabla"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 ${
+                  viewMode === "list"
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-background"
+                }`}
+                title="Vista Lista"
+              >
+                <ListIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -4,7 +4,16 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Menu, X, Database, LogIn, LogOut, User, Edit3 } from "lucide-react";
+import {
+  Menu,
+  X,
+  Database,
+  LogIn,
+  LogOut,
+  User,
+  Edit3,
+  ExternalLink,
+} from "lucide-react";
 
 const navLinks = [
   { name: "Inicio", href: "/" },
@@ -34,7 +43,7 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <div className="flex items-center gap-6 border-r border-border pr-6 mr-2">
+            <div className="flex items-center gap-6   mr-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -61,12 +70,13 @@ export function Navbar() {
                   }`}
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  {isEditing ? "Modo Edición: ON" : "Modo Edición: OFF"}
+                  {isEditing ? "Edit: ON" : "Edit: OFF"}
                 </button>
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <User className="h-4 w-4" />
                   <span className="max-w-[150px] truncate">{user.email}</span>
                 </div>
+
                 <button
                   onClick={logout}
                   className="p-2 text-muted-foreground hover:text-destructive transition-colors"
@@ -81,7 +91,6 @@ export function Navbar() {
                 className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
               >
                 <LogIn className="h-4 w-4" />
-                Iniciar Sesión
               </Link>
             )}
           </div>
@@ -144,6 +153,7 @@ export function Navbar() {
                     <User className="h-5 w-5" />
                     <span>{user.email}</span>
                   </div>
+
                   <button
                     onClick={() => {
                       logout();

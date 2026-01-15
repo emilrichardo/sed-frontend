@@ -1,6 +1,7 @@
 import { getNews, getBulletins } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { CreateNewsButton } from "@/components/CreateNewsButton";
+import { UploadBulletinButton } from "@/components/UploadBulletinButton";
 import Link from "next/link";
 import { FileText, ArrowRight } from "lucide-react";
 
@@ -22,13 +23,16 @@ export default async function Home() {
             <FileText className="h-6 w-6" />
             Último Boletín Oficial
           </h2>
-          <Link
-            href="/boletines"
-            className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
-          >
-            Ver todos
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <UploadBulletinButton />
+            <Link
+              href="/boletines"
+              className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+            >
+              Ver todos
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
 
         {latestBulletin ? (
