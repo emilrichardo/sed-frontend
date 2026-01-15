@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import {} from "next/navigation";
 
 const API_URL = "http://localhost:3000/api";
 
@@ -29,6 +29,57 @@ export interface PayloadResponse<T> {
   hasNextPage: boolean;
   prevPage: number | null;
   nextPage: number | null;
+}
+
+// --- Official Bulletin Interfaces ---
+
+export interface Seccion {
+  id: string;
+  nombre: string;
+}
+
+export interface TipoActo {
+  id: string;
+  nombre: string;
+}
+
+export interface Organismo {
+  id: string;
+  nombre: string;
+}
+
+export interface Boletin {
+  id: string;
+  numero: number;
+  fecha_publicacion: string;
+  slug: string;
+  año_edicion: string;
+  cantidad_paginas: number;
+  recaudacion_diaria?: number;
+  staff_autoridades?: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EntradaInterna {
+  id: string;
+  id_boletin: string | Boletin;
+  identificador_acto: string;
+  seccion: string | Seccion;
+  tipo_acto: string | TipoActo;
+  jurisdiccion: string | Organismo;
+  referencia: string;
+  texto_completo: any;
+  es_homologacion?: boolean;
+  id_acto_referenciado?: string;
+  nivel_opacidad?: "Transparente" | "Parcial" | "Opaco";
+  parent_id?: string | EntradaInterna;
+}
+
+export interface DetalleEspecifico {
+  id: string;
+  id_entrada: string | EntradaInterna;
+  detalles: any[];
 }
 
 export async function getNews(): Promise<PayloadResponse<NewsItem>> {
@@ -84,4 +135,107 @@ export async function getNewsItem(slug: string): Promise<NewsItem | null> {
     console.error(`Error fetching news item ${slug}:`, error);
     return null;
   }
+}
+
+// --- Official Bulletin API Functions ---
+
+export async function getBulletins(
+  params: {
+    page?: number;
+    limit?: number;
+    sort?: string;
+    where?: any;
+  } = {}
+): Promise<PayloadResponse<Boletin>> {
+  const { page = 1, limit = 10, sort = "-fecha_publicacion", where } = params;
+  let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}`;
+
+  if (where) {
+    // Basic implementation of where clause for now
+    Object.entries(where).forEach(([key, value]) => {
+      url += `&where[${key}][equals]=${value}`;
+    });
+  }
+
+  const res = await fetch(url, { next: { revalidate: 60 } });
+  if (!res.ok) throw new Error("Failed to fetch bulletins");
+  return res.json();
+}
+
+export async function getBulletin(idOrSlug: string): Promise<Boletin> {
+  // Check if it's a slug (YYYY-MM-DD) or a numeric ID
+  const isSlug = idOrSlug.includes("-");
+  const query = isSlug ? `?where[slug][equals]=${idOrSlug}` : `/${idOrSlug}`;
+
+  const res = await fetch(`${API_URL}/boletines${query}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    next: { revalidate: 3600 },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch bulletin");
+
+  const data = await res.json();
+  return isSlug ? data.docs[0] : data;
+}
+
+export async function getEntries(
+  params: {
+    page?: number;
+    limit?: number;
+    sort?: string;
+    where?: any;
+    depth?: number;
+  } = {}
+): Promise<PayloadResponse<EntradaInterna>> {
+  const {
+    page = 1,
+    limit = 20,
+    sort = "-id_boletin.fecha_publicacion",
+    where,
+    depth = 1,
+  } = params;
+  let url = `${API_URL}/entradas-internas?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}`;
+
+  if (where) {
+    Object.entries(where).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        url += `&where[${key}][equals]=${value}`;
+      }
+    });
+  }
+
+  const res = await fetch(url, { next: { revalidate: 60 } });
+  if (!res.ok) throw new Error("Failed to fetch entries");
+  return res.json();
+}
+
+export async function getEntry(id: string): Promise<EntradaInterna> {
+  const res = await fetch(`${API_URL}/entradas-internas/${id}?depth=2`, {
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) throw new Error("Failed to fetch entry");
+  return res.json();
+}
+
+export async function getEntryDetails(
+  entryId: string
+): Promise<DetalleEspecifico[]> {
+  const res = await fetch(
+    `${API_URL}/detalles-especificos?where[id_entrada][equals]=${entryId}&depth=2`,
+    { next: { revalidate: 60 } }
+  );
+  if (!res.ok) throw new Error("Failed to fetch entry details");
+  const data = await res.json();
+  return data.docs;
+}
+
+export async function getTaxonomy<T>(collection: string): Promise<T[]> {
+  const res = await fetch(`${API_URL}/${collection}?limit=100`, {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch ${collection}`);
+  const data = await res.json();
+  return data.docs;
 }

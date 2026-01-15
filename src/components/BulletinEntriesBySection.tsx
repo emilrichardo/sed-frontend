@@ -1,0 +1,119 @@
+"use client";
+
+import React, { useState } from "react";
+import { EntradaInterna } from "@/lib/api";
+import EntryExpandedContent from "./EntryExpandedContent";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+export default function BulletinEntriesBySection({
+  entries,
+}: {
+  entries: EntradaInterna[];
+}) {
+  // Group entries by section
+  const groupedEntries = entries.reduce((acc, entry) => {
+    const sectionName =
+      typeof entry.seccion === "object"
+        ? entry.seccion.nombre
+        : "Otras Secciones";
+    if (!acc[sectionName]) acc[sectionName] = [];
+    acc[sectionName].push(entry);
+    return acc;
+  }, {} as Record<string, EntradaInterna[]>);
+
+  const sections = Object.keys(groupedEntries);
+  const [activeSection, setActiveSection] = useState<string>(sections[0] || "");
+  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedEntryId(expandedEntryId === id ? null : id);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Section Tabs */}
+      <div className="flex flex-wrap gap-2 border-b pb-4">
+        {sections.map((section) => (
+          <button
+            key={section}
+            onClick={() => {
+              setActiveSection(section);
+              setExpandedEntryId(null);
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeSection === section
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            {section}
+            <span className="ml-2 opacity-60 text-xs">
+              ({groupedEntries[section].length})
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Entries for Active Section */}
+      <div className="grid gap-4">
+        {activeSection &&
+          groupedEntries[activeSection]?.map((entry) => (
+            <div
+              key={entry.id}
+              className={`p-4 border rounded-lg transition-all ${
+                expandedEntryId === entry.id
+                  ? "border-primary ring-1 ring-primary/20 bg-card shadow-md"
+                  : "border-border bg-card hover:border-primary/50"
+              }`}
+            >
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div
+                  className="space-y-2 flex-1 cursor-pointer"
+                  onClick={() => toggleExpand(entry.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {entry.tipo_acto && typeof entry.tipo_acto === "object"
+                        ? entry.tipo_acto.nombre
+                        : "Acto"}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
+                    {entry.identificador_acto}
+                  </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {entry.referencia}
+                  </p>
+                  <div className="text-xs text-muted-foreground">
+                    Jurisdicción:{" "}
+                    {entry.jurisdiccion &&
+                    typeof entry.jurisdiccion === "object"
+                      ? entry.jurisdiccion.nombre
+                      : "N/A"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleExpand(entry.id)}
+                  className="flex items-center gap-1 text-sm font-medium text-primary hover:underline self-start"
+                >
+                  {expandedEntryId === entry.id ? (
+                    <>
+                      Contraer <ChevronUp className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Expandir <ChevronDown className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {expandedEntryId === entry.id && (
+                <EntryExpandedContent entry={entry} />
+              )}
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
