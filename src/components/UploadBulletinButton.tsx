@@ -32,6 +32,9 @@ export function UploadBulletinButton() {
       referencia: string;
       texto_completo: string;
       paginas: number[];
+      es_homologacion: boolean;
+      resolucion_homologada?: string;
+      lugar_fecha?: string;
     }>;
   } | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
@@ -104,6 +107,9 @@ export function UploadBulletinButton() {
       referencia: string;
       texto_completo: string;
       paginas: number[];
+      es_homologacion: boolean;
+      resolucion_homologada?: string;
+      lugar_fecha?: string;
     }> = [];
 
     // Define sections and their regex (handling spaces between letters)
@@ -202,12 +208,18 @@ export function UploadBulletinButton() {
 
         if (block.match(/^DECRETO/i)) {
           tipo = "Decreto";
-          const idMatch = block.match(/DECRETO-?\s*(\d{4}-\d+)/i);
-          id = idMatch ? `DECRETO-${idMatch[1]}` : "DECRETO-S/N";
+          // Capture full GDE format: DECRETO-2025-2716-E-GDESDE-GSDE
+          const idMatch = block.match(
+            /DECRETO-?\s*(\d{4}-\d+(?:-[A-Z0-9]+(?:-[A-Z0-9#\s]+)*)?)/i
+          );
+          id = idMatch ? `DECRETO-${idMatch[1].trim()}` : "DECRETO-S/N";
         } else if (block.match(/^RESOLUCI[ÓO]N/i)) {
           tipo = "Resolución";
-          const idMatch = block.match(/RESOLUCI[ÓO]N-?\s*(\d{4}-\d+)/i);
-          id = idMatch ? `RESOL-${idMatch[1]}` : "RESOL-S/N";
+          // Capture full GDE format for resolutions
+          const idMatch = block.match(
+            /RESOLUCI[ÓO]N-?\s*(\d{4}-\d+(?:-[A-Z0-9]+(?:-[A-Z0-9#\s]+)*)?)/i
+          );
+          id = idMatch ? `RESOL-${idMatch[1].trim()}` : "RESOL-S/N";
         } else {
           // Improved ID extraction: avoid matching "NO" in "NOTIFICACION"
           // Look for N, Nº, No, or EXPTE followed by numbers/slashes
@@ -230,6 +242,9 @@ export function UploadBulletinButton() {
           else if (block.match(/^CONCURSOS?/i)) tipo = "Concurso";
         }
 
+        // Clean ID from city names and trailing noise
+        id = id.split(/SANTIAGO DEL ESTERO/i)[0].trim();
+
         // Improved reference detection
         let referencia = "";
         const refMatch = block.match(
@@ -248,17 +263,79 @@ export function UploadBulletinButton() {
           referencia = lines.slice(0, 2).join(" ").trim();
         }
 
+        // Helper to fix spaced-out letters (PDF artifact: "G D E S D E" -> "GDESDE")
+        const fixSpacedLetters = (str: string) => {
+          // Join single characters (A-Z, 0-9, #, -) separated by single spaces
+          return str.replace(/([A-Z0-9#-])\s(?=[A-Z0-9#-](?:\s|$))/gi, "$1");
+        };
+
         // Clean up common headers and noise from reference
-        referencia = referencia
+        referencia = fixSpacedLetters(referencia)
           .replace(/S\s*E\s*C\s*C\s*I\s*[ÓO]\s*N\s*[\w\s]+/gi, "")
           .replace(/Bolet[ií]n\s+Oficial\s+N\s*[\d\.]+/gi, "")
           .replace(/P[áa]gina\s+\d+/gi, "")
           .replace(/--- P[áa]gina \d+ ---/gi, "")
           .replace(
+            /,?\s*(?:LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES|S[AÁ]BADO|DOMINGO)\s+\d+\s+DE\s+[A-Z]+\s+DE\s+\d{4}/gi,
+            ""
+          )
+          .replace(/Referenci\s*a\s*:\s*/gi, "")
+          .replace(/^[\s,.-]+/, "")
+          .trim();
+
+        // Ensure expediente number is in reference if present (e.g., EX-2025-...)
+        // Tightened regex to avoid capturing trailing noise like "y la Resoluci"
+        const expMatch = block.match(
+          /(EX-\d{4}-\d+-(?:[A-Z0-9\s-]+)?(?:[A-Z0-9#]+)?)/i
+        );
+
+        if (expMatch) {
+          const rawExp = expMatch[1].trim();
+          // Clean the rawExp to stop at the first lowercase letter or unexpected word
+          const cleanedRawExp = rawExp.split(/\s+(?=[a-z])/)[0].trim();
+
+          referencia = fixSpacedLetters(cleanedRawExp)
+            .replace(/\s+/g, " ")
+            .replace(/-\s+-/g, "--")
+            .trim();
+        }
+
+        const dateMatch = block.match(
+          /(?:SANTIAGO DEL ESTERO,?\s*)?(?:LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES|S[AÁ]BADO|DOMINGO)\s+\d+\s+DE\s+[A-Z]+\s+DE\s+\d{4}/i
+        );
+        const lugarFecha = dateMatch ? dateMatch[0].trim() : undefined;
+
+        // Detect homologation and extract target resolution
+        // Restrict detection to the header area (before VISTO, CONSIDERANDO, etc.)
+        const headerArea = block.split(
+          /(?=VISTO:|CONSIDERANDO:|EL SEÑOR|ART[IÍ]CULO|POR ELLO|RESUELVE|DECRETA)/i
+        )[0];
+        const deSpacedHeader = fixSpacedLetters(headerArea);
+
+        const homologaMatch = deSpacedHeader.match(
+          /Homologa(?:cion|[ií]n)?\s+(?:RESOL-?)?(\d{4}-\d+(?:-[A-Z0-9]+(?:-[A-Z0-9#\s]+)*)?)/i
+        );
+        const esHomologacion =
+          !!homologaMatch || /Homologa(?:cion|[ií]n)?/i.test(deSpacedHeader);
+        const resolucionHomologada = homologaMatch
+          ? fixSpacedLetters(homologaMatch[1].trim())
+          : undefined;
+
+        // Final reference cleaning:
+        // 1. Remove city names
+        // 2. Remove homologation text if present
+        // 3. Remove the ID itself if it appears in the reference
+        // 4. Remove duplicated expedientes if they somehow got through
+        referencia = referencia
+          .replace(/SANTIAGO DEL ESTERO/gi, "")
+          .replace(/Homologa(?:cion|[ií]n)?.*$/gi, "")
+          .replace(
             new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
             ""
           )
           .replace(/\s+/g, " ")
+          .replace(/-\s+-/g, "--")
+          .replace(/^[\s,.-]+/, "")
           .trim();
 
         if (referencia.length > 300) {
@@ -301,6 +378,9 @@ export function UploadBulletinButton() {
           referencia: referencia || "Sin referencia",
           texto_completo: cleanedTexto,
           paginas: blockPages,
+          es_homologacion: esHomologacion,
+          resolucion_homologada: resolucionHomologada,
+          lugar_fecha: lugarFecha,
         });
       }
     }
@@ -684,10 +764,30 @@ export function UploadBulletinButton() {
                                                   <span className="font-mono text-[10px] text-muted-foreground">
                                                     {entry.identificador_acto}
                                                   </span>
+                                                  {entry.es_homologacion && (
+                                                    <div className="flex flex-col gap-0.5">
+                                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 w-fit">
+                                                        Homologación
+                                                      </span>
+                                                      {entry.resolucion_homologada && (
+                                                        <span className="text-[9px] text-green-600 font-mono font-bold">
+                                                          Res:{" "}
+                                                          {
+                                                            entry.resolucion_homologada
+                                                          }
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  )}
                                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                                     Pág.{" "}
                                                     {entry.paginas.join(", ")}
                                                   </span>
+                                                  {entry.lugar_fecha && (
+                                                    <span className="text-[10px] text-muted-foreground italic">
+                                                      {entry.lugar_fecha}
+                                                    </span>
+                                                  )}
                                                 </div>
                                                 <div className="text-muted-foreground">
                                                   {expandedEntry ===
@@ -706,8 +806,45 @@ export function UploadBulletinButton() {
                                             {expandedEntry ===
                                               entry.identificador_acto && (
                                               <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
-                                                <div className="p-3 bg-muted/30 rounded-lg border text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto select-text">
-                                                  {entry.texto_completo}
+                                                <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+                                                  <div className="grid grid-cols-2 gap-4 text-[11px]">
+                                                    <div>
+                                                      <span className="text-muted-foreground block mb-1">
+                                                        Sección
+                                                      </span>
+                                                      <span className="font-medium">
+                                                        {entry.seccion}
+                                                      </span>
+                                                    </div>
+                                                    <div>
+                                                      <span className="text-muted-foreground block mb-1">
+                                                        Páginas
+                                                      </span>
+                                                      <span className="font-medium">
+                                                        {entry.paginas.join(
+                                                          ", "
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                    {entry.lugar_fecha && (
+                                                      <div className="col-span-2">
+                                                        <span className="text-muted-foreground block mb-1">
+                                                          Lugar y Fecha
+                                                        </span>
+                                                        <span className="font-medium italic">
+                                                          {entry.lugar_fecha}
+                                                        </span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                    <h5 className="text-[10px] text-muted-foreground uppercase font-bold">
+                                                      Texto Completo
+                                                    </h5>
+                                                    <div className="p-3 bg-muted/30 rounded-lg border text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto select-text">
+                                                      {entry.texto_completo}
+                                                    </div>
+                                                  </div>
                                                 </div>
                                               </div>
                                             )}
@@ -775,7 +912,7 @@ export function UploadBulletinButton() {
                             </div>
                           ) : (
                             <div className="flex-1 min-h-0">
-                              <pre className="bg-muted/30 p-4 rounded-lg border font-mono text-[11px] h-full overflow-auto">
+                              <pre className="bg-muted/30 p-4 rounded-lg border font-mono text-[11px] h-full max-h-[400px] overflow-auto">
                                 {JSON.stringify(parsedData, null, 2)}
                               </pre>
                             </div>
