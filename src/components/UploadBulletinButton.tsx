@@ -3,10 +3,6 @@
 import React, { useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Upload, X, FileText, Loader2, AlertCircle } from "lucide-react";
-import * as pdfjsLib from "pdfjs-dist";
-
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export function UploadBulletinButton() {
   const { isEditing, user } = useAuth();
@@ -24,11 +20,15 @@ export function UploadBulletinButton() {
     entries: Array<{
       id: string;
       tipo: string;
+      seccion: string;
       referencia: string;
       texto: string;
     }>;
   } | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
+  const [activeSection, setActiveSection] = useState<string>(
+    "Sección Administrativa"
+  );
   const [viewMode, setViewMode] = useState<"structured" | "json">("structured");
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -87,45 +87,136 @@ export function UploadBulletinButton() {
     const entries: Array<{
       id: string;
       tipo: string;
+      seccion: string;
       referencia: string;
       texto: string;
     }> = [];
 
-    // Split text by common entry starters to isolate them
-    const entryBlocks = text.split(
-      /(?=DECRETO-\d{4}-\d+|RESOLUCION RESOL-\d{4}-\d+|EDICTO)/g
-    );
+    // Define sections and their regex (handling spaces between letters)
+    const sectionDefinitions = [
+      {
+        id: "Sección Administrativa",
+        regex:
+          /S\s*E\s*C\s*C\s*I\s*[ÓO]\s*N\s*A\s*D\s*M\s*I\s*N\s*I\s*S\s*T\s*R\s*A\s*T\s*I\s*V\s*A/i,
+      },
+      {
+        id: "Avisos Varios",
+        regex:
+          /S\s*E\s*C\s*C\s*I\s*O\s*N\s*A\s*V\s*I\s*S\s*O\s*S\s*V\s*A\s*R\s*I\s*O\s*S/i,
+      },
+      {
+        id: "Notificaciones Catastrales",
+        regex:
+          /N\s*O\s*T\s*I\s*F\s*I\s*C\s*A\s*C\s*I\s*O\s*N\s*E\s*S\s*C\s*A\s*T\s*A\s*S\s*T\s*R\s*A\s*L\s*E\s*S/i,
+      },
+      {
+        id: "Avisos de Hoy",
+        regex:
+          /S\s*E\s*C\s*C\s*I\s*O\s*N\s*A\s*V\s*I\s*S\s*O\s*S\s*D\s*E\s*H\s*O\s*Y/i,
+      },
+    ];
 
-    entryBlocks.forEach((block) => {
-      const decretoMatch = block.match(/DECRETO-(\d{4}-\d+-[A-Z0-9-]+)/i);
-      const resolucionMatch = block.match(
-        /RESOLUCION RESOL-(\d{4}-\d+-[A-Z0-9-]+)/i
+    // Find all section header positions with robust regex
+    const sectionPositions: Array<{ id: string; index: number }> = [];
+    sectionDefinitions.forEach((def) => {
+      const matches = text.matchAll(new RegExp(def.regex, "gi"));
+      for (const match of matches) {
+        if (match.index !== undefined) {
+          sectionPositions.push({ id: def.id, index: match.index });
+        }
+      }
+    });
+    sectionPositions.sort((a, b) => a.index - b.index);
+
+    // If no sections found, treat everything as Administrative
+    if (sectionPositions.length === 0) {
+      sectionPositions.push({ id: "Sección Administrativa", index: 0 });
+    }
+
+    // Split text into section blocks
+    for (let i = 0; i < sectionPositions.length; i++) {
+      const currentSection = sectionPositions[i];
+      const nextSectionIndex = sectionPositions[i + 1]?.index || text.length;
+      const sectionText = text.substring(
+        currentSection.index,
+        nextSectionIndex
       );
-      const edictoMatch = block.match(/^EDICTO/i);
 
-      if (decretoMatch || resolucionMatch || edictoMatch) {
-        const id = decretoMatch?.[1] || resolucionMatch?.[1] || "EDICTO";
-        const tipo = decretoMatch
+      // Define entry starters based on section type
+      let entryRegex: RegExp;
+      if (currentSection.id === "Sección Administrativa") {
+        entryRegex = /(?=DECRETO-\d{4}-\d+|RESOLUCION RESOL-\d{4}-\d+)/gi;
+      } else {
+        // More flexible detection for other sections
+        entryRegex =
+          /(?=EDICTO|LICITACI[ÓO]N|ASAMBLEA|CONVOCATORIA|AVISO|NOTIFICACI[ÓO]N|REMATES?|CONCURSOS?)/gi;
+      }
+
+      const entryBlocks = sectionText.split(entryRegex);
+
+      entryBlocks.forEach((block, index) => {
+        const trimmedBlock = block.trim();
+        if (trimmedBlock.length < 100) return; // Skip short fragments
+
+        // Skip the first block if it doesn't start with a known keyword
+        // (This is usually the text between the section header and the first real entry)
+        if (index === 0) {
+          const startsWithKeyword =
+            /^(DECRETO|RESOLUCION|EDICTO|LICITACI|ASAMBLEA|CONVOCATORIA|AVISO|NOTIFICACI|REMATES|CONCURSOS)/i.test(
+              trimmedBlock
+            );
+          if (!startsWithKeyword) return;
+        }
+
+        const decretoMatch = block.match(/DECRETO-(\d{4}-\d+-[A-Z0-9-]+)/i);
+        const resolucionMatch = block.match(
+          /RESOLUCION RESOL-(\d{4}-\d+-[A-Z0-9-]+)/i
+        );
+
+        // For non-admin, try to find a title/ID in the first line
+        let id = decretoMatch?.[1] || resolucionMatch?.[1];
+        let tipo = decretoMatch
           ? "Decreto"
           : resolucionMatch
           ? "Resolución"
-          : "Edicto";
+          : "Aviso";
 
-        // Improved reference detection: handle space before colon and be more flexible with terminators
+        if (!id) {
+          // Try to find something that looks like an ID (e.g., "Nº 123/2024" or "EXPTE. ...")
+          const idMatch = block.match(/(?:N[ºo\.]|EXPTE\.?)\s*([\w\/\.-]+)/i);
+          id =
+            idMatch?.[1] ||
+            "AVISO-" + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+          if (block.match(/^EDICTO/i)) tipo = "Edicto";
+          else if (block.match(/LICITACI[ÓO]N/i)) tipo = "Licitación";
+          else if (block.match(/ASAMBLEA|CONVOCATORIA/i)) tipo = "Asamblea";
+        }
+
+        // Improved reference detection
         let referencia = block
           .match(/Referencia\s*:\s*([\s\S]*?)(?=VISTO:|CONSIDERANDO:|$)/i)?.[1]
           ?.trim();
 
         if (!referencia || referencia === "") {
-          // Fallback: take the text between the ID and the first common terminator
-          const afterId = block.split(id)[1] || "";
-          const fallbackMatch = afterId.match(
-            /^[\s\S]*?(?=VISTO:|CONSIDERANDO:|$)/i
-          );
-          referencia = fallbackMatch?.[0]?.trim();
+          // Fallback: take the first 2-3 lines as reference
+          const lines = block.trim().split("\n");
+          referencia = lines.slice(0, 3).join(" ").trim();
 
-          // If still too long or empty, truncate
-          if (referencia && referencia.length > 300) {
+          // Clean up common headers and noise from reference
+          referencia = referencia
+            .replace(/S\s*E\s*C\s*C\s*I\s*[ÓO]\s*N\s*[\w\s]+/gi, "")
+            .replace(/Bolet[ií]n\s+Oficial\s+N\s*[\d\.]+/gi, "")
+            .replace(/P[áa]gina\s+\d+/gi, "")
+            .replace(/--- Página \d+ ---/gi, "")
+            .replace(
+              new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+              ""
+            )
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (referencia.length > 300) {
             referencia = referencia.substring(0, 250) + "...";
           }
         }
@@ -133,11 +224,12 @@ export function UploadBulletinButton() {
         entries.push({
           id,
           tipo,
+          seccion: currentSection.id,
           referencia: referencia || "Sin referencia",
-          texto: block.substring(0, 1000) + "...", // More text for preview
+          texto: block.substring(0, 1500) + "...",
         });
-      }
-    });
+      });
+    }
 
     return { metadata, entries };
   };
@@ -150,6 +242,9 @@ export function UploadBulletinButton() {
     setExtractedText("");
 
     try {
+      const pdfjsLib = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let fullText = "";
@@ -246,7 +341,7 @@ export function UploadBulletinButton() {
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex flex-col gap-6">
+                <div className="flex-1 flex flex-col gap-6 min-h-0">
                   <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border shrink-0">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-primary/10 rounded">
@@ -301,7 +396,7 @@ export function UploadBulletinButton() {
                             {extractedText.length.toLocaleString()} caracteres
                           </span>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed whitespace-pre-wrap select-text">
+                        <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed whitespace-pre-wrap select-text max-h-[65vh]">
                           {extractedText}
                         </div>
                       </div>
@@ -338,11 +433,11 @@ export function UploadBulletinButton() {
                           </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6">
+                        <div className="flex-1 flex flex-col min-h-0 p-6">
                           {viewMode === "structured" ? (
-                            <div className="space-y-8">
-                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                <div className="p-3 bg-muted/30 rounded-lg border">
+                            <div className="flex-1 flex flex-col gap-8 min-h-0">
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 shrink-0">
+                                <div className="p-3 bg-muted/30 rounded-lg border max-h-24 overflow-y-auto">
                                   <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
                                     Número
                                   </p>
@@ -351,7 +446,7 @@ export function UploadBulletinButton() {
                                       "No detectado"}
                                   </p>
                                 </div>
-                                <div className="p-3 bg-muted/30 rounded-lg border">
+                                <div className="p-3 bg-muted/30 rounded-lg border max-h-24 overflow-y-auto">
                                   <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
                                     Fecha
                                   </p>
@@ -360,7 +455,7 @@ export function UploadBulletinButton() {
                                       "No detectada"}
                                   </p>
                                 </div>
-                                <div className="p-3 bg-muted/30 rounded-lg border">
+                                <div className="p-3 bg-muted/30 rounded-lg border max-h-24 overflow-y-auto">
                                   <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
                                     Año Edición
                                   </p>
@@ -368,7 +463,7 @@ export function UploadBulletinButton() {
                                     {parsedData.metadata.año || "No detectado"}
                                   </p>
                                 </div>
-                                <div className="p-3 bg-muted/30 rounded-lg border">
+                                <div className="p-3 bg-muted/30 rounded-lg border max-h-24 overflow-y-auto">
                                   <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
                                     Páginas
                                   </p>
@@ -377,7 +472,7 @@ export function UploadBulletinButton() {
                                       "No detectado"}
                                   </p>
                                 </div>
-                                <div className="p-3 bg-muted/30 rounded-lg border">
+                                <div className="p-3 bg-muted/30 rounded-lg border max-h-24 overflow-y-auto">
                                   <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
                                     Recaudación
                                   </p>
@@ -389,51 +484,96 @@ export function UploadBulletinButton() {
                                 </div>
                               </div>
 
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                                    Entradas Detectadas (
-                                    {parsedData.entries.length})
-                                  </h4>
-                                </div>
-                                <div className="border rounded-lg overflow-hidden divide-y bg-card">
-                                  {parsedData.entries.length > 0 ? (
-                                    parsedData.entries.map((entry, idx) => (
-                                      <div
-                                        key={idx}
-                                        className="p-4 hover:bg-muted/30 transition-colors space-y-2"
-                                      >
-                                        <div className="flex items-center justify-between">
+                              <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                                <div className="flex flex-col gap-4 shrink-0">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                      Entradas Detectadas (
+                                      {parsedData.entries.length})
+                                    </h4>
+                                  </div>
+
+                                  {/* Section Tabs */}
+                                  <div className="flex flex-wrap gap-1 p-1 bg-muted/50 rounded-lg border">
+                                    {[
+                                      "Sección Administrativa",
+                                      "Avisos Varios",
+                                      "Notificaciones Catastrales",
+                                      "Avisos de Hoy",
+                                    ].map((s) => {
+                                      const count = parsedData.entries.filter(
+                                        (e) => e.seccion === s
+                                      ).length;
+                                      return (
+                                        <button
+                                          key={s}
+                                          onClick={() => setActiveSection(s)}
+                                          className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all flex items-center gap-2 ${
+                                            activeSection === s
+                                              ? "bg-background shadow-sm text-primary border"
+                                              : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                          }`}
+                                        >
+                                          {s}
                                           <span
-                                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                              entry.tipo === "Decreto"
-                                                ? "bg-blue-100 text-blue-700"
-                                                : entry.tipo === "Resolución"
-                                                ? "bg-purple-100 text-purple-700"
-                                                : "bg-orange-100 text-orange-700"
+                                            className={`px-1.5 py-0.5 rounded-full text-[9px] ${
+                                              activeSection === s
+                                                ? "bg-primary/10 text-primary"
+                                                : "bg-muted-foreground/10 text-muted-foreground"
                                             }`}
                                           >
-                                            {entry.tipo}
+                                            {count}
                                           </span>
-                                          <span className="font-mono text-[10px] text-muted-foreground">
-                                            {entry.id}
-                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto border rounded-lg divide-y bg-card min-h-0 max-h-[55vh]">
+                                  {parsedData.entries.filter(
+                                    (e) => e.seccion === activeSection
+                                  ).length > 0 ? (
+                                    parsedData.entries
+                                      .filter(
+                                        (e) => e.seccion === activeSection
+                                      )
+                                      .map((entry, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="p-4 hover:bg-muted/30 transition-colors space-y-2"
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <span
+                                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                entry.tipo === "Decreto"
+                                                  ? "bg-blue-100 text-blue-700"
+                                                  : entry.tipo === "Resolución"
+                                                  ? "bg-purple-100 text-purple-700"
+                                                  : "bg-orange-100 text-orange-700"
+                                              }`}
+                                            >
+                                              {entry.tipo}
+                                            </span>
+                                            <span className="font-mono text-[10px] text-muted-foreground">
+                                              {entry.id}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs font-medium leading-relaxed">
+                                            {entry.referencia}
+                                          </p>
                                         </div>
-                                        <p className="text-xs font-medium leading-relaxed">
-                                          {entry.referencia}
-                                        </p>
-                                      </div>
-                                    ))
+                                      ))
                                   ) : (
-                                    <div className="p-8 text-center text-muted-foreground italic text-sm">
-                                      No se detectaron entradas automáticas.
+                                    <div className="p-12 text-center text-muted-foreground italic text-sm">
+                                      No se detectaron entradas en esta sección.
                                     </div>
                                   )}
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <div className="h-full">
+                            <div className="flex-1 min-h-0">
                               <pre className="bg-muted/30 p-4 rounded-lg border font-mono text-[11px] h-full overflow-auto">
                                 {JSON.stringify(parsedData, null, 2)}
                               </pre>
