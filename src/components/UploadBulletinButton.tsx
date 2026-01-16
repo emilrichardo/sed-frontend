@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   FileText,
@@ -10,7 +10,10 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  Sparkles,
+  ArrowRightLeft,
 } from "lucide-react";
+import { BulletinEntryChat } from "./BulletinEntryChat";
 
 export function UploadBulletinButton() {
   const { isEditing, user } = useAuth();
@@ -35,6 +38,16 @@ export function UploadBulletinButton() {
       es_homologacion: boolean;
       resolucion_homologada?: string;
       lugar_fecha?: string;
+      ai_data?: {
+        tipo: string;
+        identificador_acto: string;
+        fecha_acto: string;
+        referencia: string;
+        es_homologacion: boolean;
+        resolucion_homologada: string;
+        seccion: string;
+        organismo: string;
+      };
     }>;
   } | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
@@ -42,13 +55,32 @@ export function UploadBulletinButton() {
     "Sección Administrativa"
   );
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"structured" | "json">("structured");
+  const [viewMode, setViewMode] = useState<
+    "structured" | "json" | "ai_comparison"
+  >("structured");
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
+  const [aiProgress, setAiProgress] = useState({ current: 0, total: 0 });
   const [rawTextPage, setRawTextPage] = useState(1);
   const [entriesPage, setEntriesPage] = useState(1);
   const ENTRIES_PER_PAGE = 100;
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [envModel, setEnvModel] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>("llama3.1:8b");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    fetch("/api/ai/config")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.model) {
+          setEnvModel(data.model);
+          setSelectedModel(data.model);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch AI config:", err));
+  }, []);
 
   if (!isEditing || !user) return null;
 
@@ -110,6 +142,16 @@ export function UploadBulletinButton() {
       es_homologacion: boolean;
       resolucion_homologada?: string;
       lugar_fecha?: string;
+      ai_data?: {
+        tipo: string;
+        identificador_acto: string;
+        fecha_acto: string;
+        referencia: string;
+        es_homologacion: boolean;
+        resolucion_homologada: string;
+        seccion: string;
+        organismo: string;
+      };
     }> = [];
 
     // Define sections and their regex (handling spaces between letters)
@@ -380,6 +422,93 @@ export function UploadBulletinButton() {
     return { metadata, entries };
   };
 
+  const handleConform = async () => {
+    console.log("Conformar Carga", parsedData);
+    // TODO: Implement actual upload logic
+    alert("Funcionalidad de carga pendiente de implementación final.");
+  };
+
+  const processWithAI = async () => {
+    if (!parsedData) return;
+
+    // Cancel any previous processing
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setIsProcessingAI(true);
+    setAiProgress({ current: 0, total: parsedData.entries.length });
+
+    const updatedEntries = [...parsedData.entries];
+
+    for (let i = 0; i < updatedEntries.length; i++) {
+      if (controller.signal.aborted) break;
+
+      const entry = updatedEntries[i];
+      try {
+        const response = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: [
+              {
+                role: "system",
+                content: `You are a data extraction assistant. Extract the following fields from the text into a JSON object:
+                  - tipo: The type of act (e.g., DECRETO, RESOLUCION, EDICTO).
+                  - identificador_acto: The full ID of the act (e.g., DECRETO-2025-2715-E-GDESDE-GSDE).
+                  - fecha_acto: The date of the act.
+                  - referencia: The reference or subject of the act.
+                  - es_homologacion: Boolean, true if it homologates another resolution.
+                  - resolucion_homologada: The ID of the resolution being homologated, if any.
+                  - seccion: The section of the bulletin it belongs to.
+                  - organismo: The issuing organization.
+
+                  Return ONLY the JSON object, no markdown formatting.`,
+              },
+              {
+                role: "user",
+                content: entry.texto_completo,
+              },
+            ],
+            stream: false,
+            format: "json",
+            generationConfig: {
+              response_mime_type: "application/json",
+            },
+          }),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const aiContent = JSON.parse(data.message.content);
+          updatedEntries[i] = { ...entry, ai_data: aiContent };
+        }
+      } catch (error: any) {
+        if (error.name === "AbortError") {
+          console.log("AI processing aborted");
+          break;
+        }
+        console.error(`Error processing entry ${i} with AI:`, error);
+      }
+
+      if (controller.signal.aborted) break;
+
+      setAiProgress({ current: i + 1, total: parsedData.entries.length });
+      // Update state incrementally to show progress
+      setParsedData({ ...parsedData, entries: [...updatedEntries] });
+    }
+
+    setIsProcessingAI(false);
+    abortControllerRef.current = null;
+  };
+
   const processFile = async (file: File) => {
     setIsExtracting(true);
     setError(null);
@@ -417,13 +546,26 @@ export function UploadBulletinButton() {
     }
   };
 
+  const stopAIProcessing = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsProcessingAI(false);
+  };
+
   const resetState = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     setIsOpen(false);
     setParsedData(null);
     setExtractedText("");
     setError(null);
     setFileName(null);
     setIsExtracting(false);
+    setIsProcessingAI(false);
   };
 
   return (
@@ -610,11 +752,23 @@ export function UploadBulletinButton() {
                             >
                               JSON
                             </button>
+                            <button
+                              onClick={() => setViewMode("ai_comparison")}
+                              className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1 ${
+                                viewMode === "ai_comparison"
+                                  ? "bg-background shadow-sm text-primary"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              IA
+                            </button>
                           </div>
                         </div>
 
                         <div className="flex-1 flex flex-col min-h-0 p-6">
-                          {viewMode === "structured" ? (
+                          {viewMode === "structured" ||
+                          viewMode === "ai_comparison" ? (
                             <div className="flex-1 flex flex-col gap-8 min-h-0">
                               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 shrink-0">
                                 <div className="p-3 bg-muted/30 rounded-lg border max-h-24 overflow-y-auto">
@@ -830,12 +984,119 @@ export function UploadBulletinButton() {
                                                     )}
                                                   </div>
                                                   <div className="space-y-2">
-                                                    <h5 className="text-[10px] text-muted-foreground uppercase font-bold">
-                                                      Texto Completo
-                                                    </h5>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <h4 className="text-sm font-medium text-gray-900">
+                                                        Texto Completo
+                                                      </h4>
+                                                      {entry.ai_data && (
+                                                        <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-medium flex items-center gap-1">
+                                                          <Sparkles className="w-3 h-3" />
+                                                          Procesado con IA
+                                                        </span>
+                                                      )}
+                                                    </div>
+
+                                                    {viewMode ===
+                                                      "ai_comparison" &&
+                                                    entry.ai_data ? (
+                                                      <div className="grid grid-cols-2 gap-4 mb-4">
+                                                        <div className="p-3 bg-gray-50 rounded-lg border">
+                                                          <h5 className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                                                            Extracción Regex
+                                                          </h5>
+                                                          <div className="space-y-2 text-xs">
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                ID:
+                                                              </span>{" "}
+                                                              {
+                                                                entry.identificador_acto
+                                                              }
+                                                            </div>
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                Ref:
+                                                              </span>{" "}
+                                                              {entry.referencia}
+                                                            </div>
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                Fecha:
+                                                              </span>{" "}
+                                                              {entry.lugar_fecha ||
+                                                                "-"}
+                                                            </div>
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                Homologación:
+                                                              </span>{" "}
+                                                              {entry.es_homologacion
+                                                                ? "Sí"
+                                                                : "No"}
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                        <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                                          <h5 className="text-xs font-semibold text-indigo-600 mb-2 uppercase flex items-center gap-1">
+                                                            <Sparkles className="w-3 h-3" />{" "}
+                                                            Extracción IA
+                                                          </h5>
+                                                          <div className="space-y-2 text-xs">
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                ID:
+                                                              </span>{" "}
+                                                              {
+                                                                entry.ai_data
+                                                                  .identificador_acto
+                                                              }
+                                                            </div>
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                Ref:
+                                                              </span>{" "}
+                                                              {
+                                                                entry.ai_data
+                                                                  .referencia
+                                                              }
+                                                            </div>
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                Fecha:
+                                                              </span>{" "}
+                                                              {
+                                                                entry.ai_data
+                                                                  .fecha_acto
+                                                              }
+                                                            </div>
+                                                            <div>
+                                                              <span className="font-medium">
+                                                                Homologación:
+                                                              </span>{" "}
+                                                              {entry.ai_data
+                                                                .es_homologacion
+                                                                ? "Sí"
+                                                                : "No"}
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    ) : null}
+
                                                     <div className="p-3 bg-muted/30 rounded-lg border text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto select-text">
                                                       {entry.texto_completo}
                                                     </div>
+                                                  </div>
+
+                                                  <div className="pt-2 border-t">
+                                                    <BulletinEntryChat
+                                                      entryContent={
+                                                        entry.texto_completo
+                                                      }
+                                                      entryTitle={
+                                                        entry.identificador_acto
+                                                      }
+                                                    />
                                                   </div>
                                                 </div>
                                               </div>
@@ -924,12 +1185,46 @@ export function UploadBulletinButton() {
               >
                 Cancelar
               </button>
-              <button
-                disabled={!parsedData || isExtracting}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all shadow-sm text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Confirmar y Cargar
-              </button>
+              <div className="flex gap-2 items-center">
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  disabled={isProcessingAI}
+                  className="h-9 rounded-lg border bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="llama3.1:8b">Default (llama3.1:8b)</option>
+                  {envModel && (
+                    <option value={envModel}>Env ({envModel})</option>
+                  )}
+                </select>
+
+                {isProcessingAI ? (
+                  <button
+                    onClick={stopAIProcessing}
+                    className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors text-sm font-medium"
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Detener ({aiProgress.current}/{aiProgress.total})
+                  </button>
+                ) : (
+                  <button
+                    onClick={processWithAI}
+                    disabled={!parsedData}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Procesar con IA
+                  </button>
+                )}
+
+                <button
+                  onClick={handleConform}
+                  disabled={!parsedData || isExtracting}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all shadow-sm text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Confirmar y Cargar
+                </button>
+              </div>
             </div>
           </div>
         </div>
