@@ -2,7 +2,15 @@
 
 import React, { useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Upload, X, FileText, Loader2, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 export function UploadBulletinButton() {
   const { isEditing, user } = useAuth();
@@ -18,18 +26,23 @@ export function UploadBulletinButton() {
       recaudacion_diaria: string;
     };
     entries: Array<{
-      id: string;
+      identificador_acto: string;
       tipo: string;
       seccion: string;
       referencia: string;
-      texto: string;
+      texto_completo: string;
+      paginas: number[];
     }>;
   } | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
   const [activeSection, setActiveSection] = useState<string>(
     "Sección Administrativa"
   );
+  const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"structured" | "json">("structured");
+  const [rawTextPage, setRawTextPage] = useState(1);
+  const [entriesPage, setEntriesPage] = useState(1);
+  const ENTRIES_PER_PAGE = 100;
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,11 +98,12 @@ export function UploadBulletinButton() {
     };
 
     const entries: Array<{
-      id: string;
+      identificador_acto: string;
       tipo: string;
       seccion: string;
       referencia: string;
-      texto: string;
+      texto_completo: string;
+      paginas: number[];
     }> = [];
 
     // Define sections and their regex (handling spaces between letters)
@@ -116,7 +130,14 @@ export function UploadBulletinButton() {
       },
     ];
 
-    // Find all section header positions with robust regex
+    // Pre-calculate page marker positions
+    const pageMarkers: Array<{ page: number; index: number }> = [];
+    const pageMatches = text.matchAll(/--- P[áa]gina (\d+) ---/gi);
+    for (const m of pageMatches) {
+      pageMarkers.push({ page: parseInt(m[1]), index: m.index! });
+    }
+
+    // Find all section header positions
     const sectionPositions: Array<{ id: string; index: number }> = [];
     sectionDefinitions.forEach((def) => {
       const matches = text.matchAll(new RegExp(def.regex, "gi"));
@@ -128,107 +149,160 @@ export function UploadBulletinButton() {
     });
     sectionPositions.sort((a, b) => a.index - b.index);
 
-    // If no sections found, treat everything as Administrative
-    if (sectionPositions.length === 0) {
-      sectionPositions.push({ id: "Sección Administrativa", index: 0 });
-    }
-
-    // Split text into section blocks
+    // Split by sections first to avoid cross-contamination
     for (let i = 0; i < sectionPositions.length; i++) {
       const currentSection = sectionPositions[i];
-      const nextSectionIndex = sectionPositions[i + 1]?.index || text.length;
-      const sectionText = text.substring(
-        currentSection.index,
-        nextSectionIndex
-      );
+      const nextSection = sectionPositions[i + 1];
+      const sectionEnd = nextSection ? nextSection.index : text.length;
+      const sectionText = text.substring(currentSection.index, sectionEnd);
 
-      // Define entry starters based on section type
-      let entryRegex: RegExp;
-      if (currentSection.id === "Sección Administrativa") {
-        entryRegex = /(?=DECRETO-\d{4}-\d+|RESOLUCION RESOL-\d{4}-\d+)/gi;
-      } else {
-        // More flexible detection for other sections
-        entryRegex =
-          /(?=EDICTO|LICITACI[ÓO]N|ASAMBLEA|CONVOCATORIA|AVISO|NOTIFICACI[ÓO]N|REMATES?|CONCURSOS?)/gi;
-      }
+      // Find all entry starters within this section using matchAll to get indices
+      // Use compound starters first to prevent incorrect splitting
+      // STRICT: Case-sensitive and only uppercase keywords
+      const entryRegex =
+        /(DECRETO|RESOLUCI[ÓO]N|EDICTO\s+NOTIFICACI[ÓO]N|EDICTO|LICITACI[ÓO]N|ASAMBLEA|CONVOCATORIA|AVISO|NOTIFICACI[ÓO]N|REMATES|CONCURSOS)/g;
+      const allMatches = Array.from(sectionText.matchAll(entryRegex));
 
-      const entryBlocks = sectionText.split(entryRegex);
+      // Filter matches that are likely references within the text
+      const entryMatches = allMatches.filter((match) => {
+        if (match.index === 0) return true;
 
-      entryBlocks.forEach((block, index) => {
-        const trimmedBlock = block.trim();
-        if (trimmedBlock.length < 100) return; // Skip short fragments
+        const nextChar = sectionText[match.index! + match[0].length];
+        const precedingText = sectionText
+          .substring(Math.max(0, match.index! - 40), match.index!)
+          .toLowerCase();
 
-        // Skip the first block if it doesn't start with a known keyword
-        // (This is usually the text between the section header and the first real entry)
-        if (index === 0) {
-          const startsWithKeyword =
-            /^(DECRETO|RESOLUCION|EDICTO|LICITACI|ASAMBLEA|CONVOCATORIA|AVISO|NOTIFICACI|REMATES|CONCURSOS)/i.test(
-              trimmedBlock
-            );
-          if (!startsWithKeyword) return;
-        }
+        // If followed by lowercase letters, it's likely not a header (e.g., "EDICTOs")
+        const isWholeWord = !nextChar || !/[a-z]/.test(nextChar);
 
-        const decretoMatch = block.match(/DECRETO-(\d{4}-\d+-[A-Z0-9-]+)/i);
-        const resolucionMatch = block.match(
-          /RESOLUCION RESOL-(\d{4}-\d+-[A-Z0-9-]+)/i
-        );
+        // If preceded by these words, it's a reference, not a new entry
+        // Expanded to include "este", "esta", "dicho", "presente", "el", "la"
+        const isReference =
+          /\b(conforme|seg[uú]n|en|de|citada|mencionada|referida|visto|por|este|esta|dicho|presente|el|la)\s+(?:la\s+)?$/i.test(
+            precedingText.trim() + " "
+          );
 
-        // For non-admin, try to find a title/ID in the first line
-        let id = decretoMatch?.[1] || resolucionMatch?.[1];
-        let tipo = decretoMatch
-          ? "Decreto"
-          : resolucionMatch
-          ? "Resolución"
-          : "Aviso";
+        return isWholeWord && !isReference;
+      });
 
-        if (!id) {
-          // Try to find something that looks like an ID (e.g., "Nº 123/2024" or "EXPTE. ...")
+      for (let j = 0; j < entryMatches.length; j++) {
+        const match = entryMatches[j];
+        const nextMatch = entryMatches[j + 1];
+
+        const blockStart = currentSection.index + match.index!;
+        const blockEnd = nextMatch
+          ? currentSection.index + nextMatch.index!
+          : sectionEnd;
+
+        const block = text.substring(blockStart, blockEnd);
+        if (block.trim().length < 100) continue;
+
+        let id = "";
+        let tipo = "Aviso";
+
+        if (block.match(/^DECRETO/i)) {
+          tipo = "Decreto";
+          const idMatch = block.match(/DECRETO-?\s*(\d{4}-\d+)/i);
+          id = idMatch ? `DECRETO-${idMatch[1]}` : "DECRETO-S/N";
+        } else if (block.match(/^RESOLUCI[ÓO]N/i)) {
+          tipo = "Resolución";
+          const idMatch = block.match(/RESOLUCI[ÓO]N-?\s*(\d{4}-\d+)/i);
+          id = idMatch ? `RESOL-${idMatch[1]}` : "RESOL-S/N";
+        } else {
+          // Improved ID extraction: avoid matching "NO" in "NOTIFICACION"
+          // Look for N, Nº, No, or EXPTE followed by numbers/slashes
           const idMatch = block.match(/(?:N[ºo\.]|EXPTE\.?)\s*([\w\/\.-]+)/i);
-          id =
-            idMatch?.[1] ||
-            "AVISO-" + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+          // If the match is just "NO" or part of "NOTIFICACION", it's likely a false positive
+          const potentialId = idMatch?.[1];
+          if (potentialId && !/^(?:NO|NOTIFICACION)$/i.test(potentialId)) {
+            id = potentialId;
+          } else {
+            id =
+              "AVISO-" + Math.random().toString(36).substr(2, 5).toUpperCase();
+          }
 
           if (block.match(/^EDICTO/i)) tipo = "Edicto";
-          else if (block.match(/LICITACI[ÓO]N/i)) tipo = "Licitación";
-          else if (block.match(/ASAMBLEA|CONVOCATORIA/i)) tipo = "Asamblea";
+          else if (block.match(/^LICITACI[ÓO]N/i)) tipo = "Licitación";
+          else if (block.match(/^ASAMBLEA|^CONVOCATORIA/i)) tipo = "Asamblea";
+          else if (block.match(/^NOTIFICACI[ÓO]N/i)) tipo = "Notificación";
+          else if (block.match(/^REMATES?/i)) tipo = "Remate";
+          else if (block.match(/^CONCURSOS?/i)) tipo = "Concurso";
         }
 
         // Improved reference detection
-        let referencia = block
-          .match(/Referencia\s*:\s*([\s\S]*?)(?=VISTO:|CONSIDERANDO:|$)/i)?.[1]
-          ?.trim();
-
-        if (!referencia || referencia === "") {
-          // Fallback: take the first 2-3 lines as reference
-          const lines = block.trim().split("\n");
-          referencia = lines.slice(0, 3).join(" ").trim();
-
-          // Clean up common headers and noise from reference
-          referencia = referencia
-            .replace(/S\s*E\s*C\s*C\s*I\s*[ÓO]\s*N\s*[\w\s]+/gi, "")
-            .replace(/Bolet[ií]n\s+Oficial\s+N\s*[\d\.]+/gi, "")
-            .replace(/P[áa]gina\s+\d+/gi, "")
-            .replace(/--- Página \d+ ---/gi, "")
-            .replace(
-              new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
-              ""
-            )
-            .replace(/\s+/g, " ")
-            .trim();
-
-          if (referencia.length > 300) {
-            referencia = referencia.substring(0, 250) + "...";
-          }
+        let referencia = "";
+        const refMatch = block.match(
+          /Refere\s*n\s*ci\s*a:\s*([^]*?)(?=VISTO:|CONSIDERANDO:|EL SEÑOR|ART[IÍ]CULO|POR ELLO|RESUELVE|DECRETA|$)/i
+        );
+        if (refMatch) {
+          referencia = refMatch[1].trim();
+        } else {
+          // Fallback: first 2 lines, but stop at keywords
+          const firstPart = block.split(
+            /(?=VISTO:|CONSIDERANDO:|EL SEÑOR|ART[IÍ]CULO|POR ELLO|RESUELVE|DECRETA)/i
+          )[0];
+          const lines = firstPart
+            .split("\n")
+            .filter((l) => l.trim().length > 0);
+          referencia = lines.slice(0, 2).join(" ").trim();
         }
 
+        // Clean up common headers and noise from reference
+        referencia = referencia
+          .replace(/S\s*E\s*C\s*C\s*I\s*[ÓO]\s*N\s*[\w\s]+/gi, "")
+          .replace(/Bolet[ií]n\s+Oficial\s+N\s*[\d\.]+/gi, "")
+          .replace(/P[áa]gina\s+\d+/gi, "")
+          .replace(/--- P[áa]gina \d+ ---/gi, "")
+          .replace(
+            new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+            ""
+          )
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (referencia.length > 300) {
+          referencia = referencia.substring(0, 250) + "...";
+        }
+
+        // Determine pages for this block using absolute indices
+        const blockPages = pageMarkers
+          .filter((pm) => pm.index >= blockStart && pm.index < blockEnd)
+          .map((pm) => pm.page);
+
+        // Also include the page the block starts on
+        const startPageMarker = pageMarkers
+          .filter((pm) => pm.index <= blockStart)
+          .pop();
+        const startPage = startPageMarker ? startPageMarker.page : 1;
+
+        if (!blockPages.includes(startPage)) {
+          blockPages.unshift(startPage);
+        }
+
+        // Clean texto_completo: remove headers, footers, and page markers
+        const cleanedTexto = block
+          .trim()
+          .replace(/S\s*E\s*C\s*C\s*I\s*[ÓO]\s*N\s*[\w\s]+/gi, "")
+          .replace(/Bolet[ií]n\s+Oficial\s+N\s*[\d\.]+/gi, "")
+          .replace(/P[áa]gina\s+\d+/gi, "")
+          .replace(/--- P[áa]gina \d+ ---/gi, "")
+          .replace(
+            /(?:Lunes|Martes|Miércoles|Jueves|Viernes|Sábado|Domingo)\s+\d{1,2}\s+de\s+\w+\s+de\s+\d{4}/gi,
+            ""
+          )
+          .replace(/\s+/g, " ")
+          .trim();
+
         entries.push({
-          id,
+          identificador_acto: id,
           tipo,
           seccion: currentSection.id,
           referencia: referencia || "Sin referencia",
-          texto: block.substring(0, 1500) + "...",
+          texto_completo: cleanedTexto,
+          paginas: blockPages,
         });
-      });
+      }
     }
 
     return { metadata, entries };
@@ -341,7 +415,7 @@ export function UploadBulletinButton() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col gap-6 min-h-0">
+                <div className="flex-1 flex flex-col gap-6 min-h-0 ">
                   <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border shrink-0">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-primary/10 rounded">
@@ -392,12 +466,46 @@ export function UploadBulletinButton() {
                           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             Texto Extraído del PDF
                           </h4>
-                          <span className="text-[10px] text-muted-foreground">
-                            {extractedText.length.toLocaleString()} caracteres
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-muted-foreground">
+                              Pág. {rawTextPage} de{" "}
+                              {extractedText.split("--- Página ").length - 1}
+                            </span>
+                            <div className="flex gap-1">
+                              <button
+                                disabled={rawTextPage === 1}
+                                onClick={() =>
+                                  setRawTextPage((p) => Math.max(1, p - 1))
+                                }
+                                className="h-6 w-6 flex items-center justify-center border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                              >
+                                <ChevronLeft className="h-3 w-3" />
+                              </button>
+                              <button
+                                disabled={
+                                  rawTextPage ===
+                                  extractedText.split("--- Página ").length - 1
+                                }
+                                onClick={() =>
+                                  setRawTextPage((p) =>
+                                    Math.min(
+                                      extractedText.split("--- Página ")
+                                        .length - 1,
+                                      p + 1
+                                    )
+                                  )
+                                }
+                                className="h-6 w-6 flex items-center justify-center border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                              >
+                                <ChevronRight className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed whitespace-pre-wrap select-text max-h-[65vh]">
-                          {extractedText}
+                        <div className="flex-1 bg-muted/30 p-4 font-mono text-[11px] leading-relaxed whitespace-pre-wrap overflow-y-auto max-h-[65vh] select-text">
+                          {extractedText
+                            .split(`--- Página ${rawTextPage} ---`)[1]
+                            ?.split("--- Página")[0] || "Cargando página..."}
                         </div>
                       </div>
 
@@ -530,43 +638,136 @@ export function UploadBulletinButton() {
                                   </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto border rounded-lg divide-y bg-card min-h-0 max-h-[55vh]">
+                                <div className="flex-1 flex flex-col min-h-0 gap-4">
+                                  <div className="flex-1 overflow-y-auto border rounded-lg divide-y bg-card min-h-0 max-h-[300px]">
+                                    {parsedData.entries.filter(
+                                      (e) => e.seccion === activeSection
+                                    ).length > 0 ? (
+                                      parsedData.entries
+                                        .filter(
+                                          (e) => e.seccion === activeSection
+                                        )
+                                        .slice(
+                                          (entriesPage - 1) * ENTRIES_PER_PAGE,
+                                          entriesPage * ENTRIES_PER_PAGE
+                                        )
+                                        .map((entry, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex flex-col border-b last:border-0"
+                                          >
+                                            <button
+                                              onClick={() =>
+                                                setExpandedEntry(
+                                                  expandedEntry ===
+                                                    entry.identificador_acto
+                                                    ? null
+                                                    : entry.identificador_acto
+                                                )
+                                              }
+                                              className="w-full text-left p-4 hover:bg-muted/30 transition-colors space-y-2"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                  <span
+                                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                      entry.tipo === "Decreto"
+                                                        ? "bg-blue-100 text-blue-700"
+                                                        : entry.tipo ===
+                                                          "Resolución"
+                                                        ? "bg-purple-100 text-purple-700"
+                                                        : "bg-orange-100 text-orange-700"
+                                                    }`}
+                                                  >
+                                                    {entry.tipo}
+                                                  </span>
+                                                  <span className="font-mono text-[10px] text-muted-foreground">
+                                                    {entry.identificador_acto}
+                                                  </span>
+                                                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                                    Pág.{" "}
+                                                    {entry.paginas.join(", ")}
+                                                  </span>
+                                                </div>
+                                                <div className="text-muted-foreground">
+                                                  {expandedEntry ===
+                                                  entry.identificador_acto ? (
+                                                    <X className="h-3 w-3" />
+                                                  ) : (
+                                                    <FileText className="h-3 w-3" />
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <p className="text-xs font-medium leading-relaxed">
+                                                {entry.referencia}
+                                              </p>
+                                            </button>
+
+                                            {expandedEntry ===
+                                              entry.identificador_acto && (
+                                              <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
+                                                <div className="p-3 bg-muted/30 rounded-lg border text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto select-text">
+                                                  {entry.texto_completo}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))
+                                    ) : (
+                                      <div className="p-12 text-center text-muted-foreground italic text-sm">
+                                        No se detectaron entradas en esta
+                                        sección.
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Entries Pagination */}
                                   {parsedData.entries.filter(
                                     (e) => e.seccion === activeSection
-                                  ).length > 0 ? (
-                                    parsedData.entries
-                                      .filter(
-                                        (e) => e.seccion === activeSection
-                                      )
-                                      .map((entry, idx) => (
-                                        <div
-                                          key={idx}
-                                          className="p-4 hover:bg-muted/30 transition-colors space-y-2"
+                                  ).length > ENTRIES_PER_PAGE && (
+                                    <div className="flex items-center justify-between px-2">
+                                      <span className="text-[10px] text-muted-foreground">
+                                        Mostrando{" "}
+                                        {Math.min(
+                                          parsedData.entries.filter(
+                                            (e) => e.seccion === activeSection
+                                          ).length,
+                                          entriesPage * ENTRIES_PER_PAGE
+                                        )}{" "}
+                                        de{" "}
+                                        {
+                                          parsedData.entries.filter(
+                                            (e) => e.seccion === activeSection
+                                          ).length
+                                        }
+                                      </span>
+                                      <div className="flex gap-1">
+                                        <button
+                                          disabled={entriesPage === 1}
+                                          onClick={() =>
+                                            setEntriesPage((p) =>
+                                              Math.max(1, p - 1)
+                                            )
+                                          }
+                                          className="h-7 px-3 text-[10px] border rounded hover:bg-muted disabled:opacity-50 transition-colors"
                                         >
-                                          <div className="flex items-center justify-between">
-                                            <span
-                                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                entry.tipo === "Decreto"
-                                                  ? "bg-blue-100 text-blue-700"
-                                                  : entry.tipo === "Resolución"
-                                                  ? "bg-purple-100 text-purple-700"
-                                                  : "bg-orange-100 text-orange-700"
-                                              }`}
-                                            >
-                                              {entry.tipo}
-                                            </span>
-                                            <span className="font-mono text-[10px] text-muted-foreground">
-                                              {entry.id}
-                                            </span>
-                                          </div>
-                                          <p className="text-xs font-medium leading-relaxed">
-                                            {entry.referencia}
-                                          </p>
-                                        </div>
-                                      ))
-                                  ) : (
-                                    <div className="p-12 text-center text-muted-foreground italic text-sm">
-                                      No se detectaron entradas en esta sección.
+                                          Anterior
+                                        </button>
+                                        <button
+                                          disabled={
+                                            entriesPage * ENTRIES_PER_PAGE >=
+                                            parsedData.entries.filter(
+                                              (e) => e.seccion === activeSection
+                                            ).length
+                                          }
+                                          onClick={() =>
+                                            setEntriesPage((p) => p + 1)
+                                          }
+                                          className="h-7 px-3 text-[10px] border rounded hover:bg-muted disabled:opacity-50 transition-colors"
+                                        >
+                                          Siguiente
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
