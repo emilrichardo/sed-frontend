@@ -283,40 +283,32 @@ export function UploadBulletinButton() {
           .replace(/^[\s,.-]+/, "")
           .trim();
 
+        // Create a de-spaced version of the block for more accurate matching
+        // (PDF artifacts: "E X - 2 0 2 5" -> "EX-2025", "H o m o l o g a" -> "Homologa")
+        const deSpacedBlock = fixSpacedLetters(block);
+
         // Ensure expediente number is in reference if present (e.g., EX-2025-...)
-        // Tightened regex to avoid capturing trailing noise like "y la Resoluci"
-        const expMatch = block.match(
-          /(EX-\d{4}-\d+-(?:[A-Z0-9\s-]+)?(?:[A-Z0-9#]+)?)/i
+        // Use the de-spaced block for much cleaner matching
+        const expMatch = deSpacedBlock.match(
+          /(EX-\d{4}-\d+-(?:[A-Z0-9-]+)?(?:[A-Z0-9#]+)?)/i
         );
 
         if (expMatch) {
-          const rawExp = expMatch[1].trim();
-          // Clean the rawExp to stop at the first lowercase letter or unexpected word
-          const cleanedRawExp = rawExp.split(/\s+(?=[a-z])/)[0].trim();
-
-          referencia = fixSpacedLetters(cleanedRawExp)
-            .replace(/\s+/g, " ")
-            .replace(/-\s+-/g, "--")
-            .trim();
+          referencia = expMatch[1].trim();
         }
 
-        const dateMatch = block.match(
+        const dateMatch = deSpacedBlock.match(
           /(?:SANTIAGO DEL ESTERO,?\s*)?(?:LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES|S[AÁ]BADO|DOMINGO)\s+\d+\s+DE\s+[A-Z]+\s+DE\s+\d{4}/i
         );
         const lugarFecha = dateMatch ? dateMatch[0].trim() : undefined;
 
         // Detect homologation and extract target resolution
-        // Restrict detection to the header area (before VISTO, CONSIDERANDO, etc.)
-        const headerArea = block.split(
-          /(?=VISTO:|CONSIDERANDO:|EL SEÑOR|ART[IÍ]CULO|POR ELLO|RESUELVE|DECRETA)/i
-        )[0];
-        const deSpacedHeader = fixSpacedLetters(headerArea);
-
-        const homologaMatch = deSpacedHeader.match(
+        // Search the entire de-spaced block for homologation keywords
+        const homologaMatch = deSpacedBlock.match(
           /Homologa(?:cion|[ií]n)?\s+(?:RESOL-?)?(\d{4}-\d+(?:-[A-Z0-9]+(?:-[A-Z0-9#\s]+)*)?)/i
         );
         const esHomologacion =
-          !!homologaMatch || /Homologa(?:cion|[ií]n)?/i.test(deSpacedHeader);
+          !!homologaMatch || /Homologa(?:cion|[ií]n)?/i.test(deSpacedBlock);
         const resolucionHomologada = homologaMatch
           ? fixSpacedLetters(homologaMatch[1].trim())
           : undefined;
