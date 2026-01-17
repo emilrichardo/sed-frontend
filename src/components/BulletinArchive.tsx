@@ -11,7 +11,6 @@ import {
   ChevronRight,
   Filter,
 } from "lucide-react";
-import { UploadBulletinButton } from "./UploadBulletinButton";
 
 interface BulletinArchiveProps {
   filters?: any;
@@ -19,7 +18,7 @@ interface BulletinArchiveProps {
 
 export default function BulletinArchive({ filters }: BulletinArchiveProps) {
   const [bulletins, setBulletins] = useState<PayloadResponse<Boletin> | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "list">("table");
@@ -76,7 +75,6 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <UploadBulletinButton />
             <div className="flex border rounded-md overflow-hidden">
               <button
                 onClick={() => setViewMode("table")}

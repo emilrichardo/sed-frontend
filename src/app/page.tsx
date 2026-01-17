@@ -1,7 +1,7 @@
 import { getNews, getBulletins } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { CreateNewsButton } from "@/components/CreateNewsButton";
-import { UploadBulletinButton } from "@/components/UploadBulletinButton";
+
 import Link from "next/link";
 import { FileText, ArrowRight } from "lucide-react";
 
@@ -24,7 +24,6 @@ export default async function Home() {
             Último Boletín Oficial
           </h2>
           <div className="flex items-center gap-4">
-            <UploadBulletinButton />
             <Link
               href="/boletines"
               className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
@@ -48,7 +47,7 @@ export default async function Home() {
                 <p className="text-muted-foreground">
                   Publicado el{" "}
                   {new Date(
-                    latestBulletin.fecha_publicacion
+                    latestBulletin.fecha_publicacion,
                   ).toLocaleDateString("es-AR")}
                 </p>
               </div>
@@ -87,7 +86,7 @@ export default async function Home() {
             const description =
               item.contenido?.root?.children?.find(
                 (child: any) =>
-                  child.type === "paragraph" || child.type === "heading"
+                  child.type === "paragraph" || child.type === "heading",
               )?.children?.[0]?.text || "Sin descripción";
 
             return (
