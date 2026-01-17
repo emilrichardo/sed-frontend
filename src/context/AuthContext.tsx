@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token && storedUser) {
       try {
         setUser(JSON.parse(storedUser));
+        setIsEditing(true);
       } catch (e) {
         console.error("Failed to parse user from local storage", e);
         localStorage.removeItem("payload-token");
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("payload-token", token);
     localStorage.setItem("payload-user", JSON.stringify(userData));
     setUser(userData);
+    setIsEditing(true);
     router.push("/");
     router.refresh();
   };

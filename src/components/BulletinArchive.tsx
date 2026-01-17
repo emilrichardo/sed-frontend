@@ -9,7 +9,7 @@ import {
   List as ListIcon,
   ChevronLeft,
   ChevronRight,
-  Filter,
+  Upload,
 } from "lucide-react";
 
 interface BulletinArchiveProps {
@@ -75,6 +75,13 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            <Link
+              href="/admin/subir-boletin"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm"
+            >
+              <Upload className="w-4 h-4" />
+              Cargar Boletín
+            </Link>
             <div className="flex border rounded-md overflow-hidden">
               <button
                 onClick={() => setViewMode("table")}

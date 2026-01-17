@@ -25,6 +25,13 @@ export default async function Home() {
           </h2>
           <div className="flex items-center gap-4">
             <Link
+              href="/admin/subir-boletin"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm"
+            >
+              <FileText className="w-4 h-4" />
+              Cargar Boletín
+            </Link>
+            <Link
               href="/boletines"
               className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
             >
