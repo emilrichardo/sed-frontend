@@ -98,12 +98,38 @@ export default function EntriesList({ filters }: EntriesListProps) {
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {entry.referencia}
                     </p>
-                    <div className="text-xs text-muted-foreground">
-                      Jurisdicción:{" "}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
                       {entry.jurisdiccion &&
-                      typeof entry.jurisdiccion === "object"
-                        ? entry.jurisdiccion.nombre
-                        : "N/A"}
+                        typeof entry.jurisdiccion === "object" && (
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold text-foreground/70">
+                              Jurisdicción:
+                            </span>
+                            <span>{entry.jurisdiccion.nombre}</span>
+                          </div>
+                        )}
+                      {entry.lugar_fecha && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-foreground/70">
+                            Fecha:
+                          </span>
+                          <span className="italic">{entry.lugar_fecha}</span>
+                        </div>
+                      )}
+                      {entry.paginas && entry.paginas.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-foreground/70">
+                            Páginas:
+                          </span>
+                          <span>
+                            {entry.paginas
+                              .map((p: any) =>
+                                typeof p === "object" ? p.numero : p
+                              )
+                              .join(", ")}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <button

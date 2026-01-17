@@ -74,6 +74,9 @@ export interface EntradaInterna {
   id_acto_referenciado?: string;
   nivel_opacidad?: "Transparente" | "Parcial" | "Opaco";
   parent_id?: string | EntradaInterna;
+  lugar_fecha?: string;
+  resolucion?: string;
+  paginas?: number[];
 }
 
 export interface DetalleEspecifico {
@@ -272,4 +275,105 @@ export async function getTaxonomy<T>(collection: string): Promise<T[]> {
   if (!res.ok) throw new Error(`Failed to fetch ${collection}`);
   const data = await res.json();
   return data.docs;
+}
+export async function createBulletin(
+  data: any
+): Promise<{ doc: Boletin; message: string }> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null;
+
+  console.log("API: createBulletin - Token exists:", !!token);
+
+  const res = await fetch(`${API_URL}/boletines`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `JWT ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    console.error("API: createBulletin error:", res.status, res.statusText);
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      "API: createBulletin error details:",
+      JSON.stringify(errorData, null, 2)
+    );
+    throw new Error(`Failed to create bulletin: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function createEntry(
+  data: any
+): Promise<{ doc: EntradaInterna; message: string }> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null;
+
+  console.log("API: createEntry - Token exists:", !!token);
+
+  const res = await fetch(`${API_URL}/entradas-internas`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `JWT ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    console.error("API: createEntry error:", res.status, res.statusText);
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      "API: createEntry error details:",
+      JSON.stringify(errorData, null, 2)
+    );
+    throw new Error(`Failed to create entry: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function createTaxonomy(
+  collection: string,
+  data: { nombre: string }
+): Promise<any> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null;
+
+  console.log(
+    `API: createTaxonomy (${collection}) - Token exists:`,
+    !!token,
+    token ? `(starts with: ${token.substring(0, 10)}...)` : ""
+  );
+
+  const res = await fetch(`${API_URL}/${collection}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `JWT ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    console.error(
+      `API: createTaxonomy (${collection}) error:`,
+      res.status,
+      res.statusText
+    );
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      `API: createTaxonomy (${collection}) error details:`,
+      JSON.stringify(errorData, null, 2)
+    );
+    throw new Error(`Failed to create ${collection}: ${res.statusText}`);
+  }
+  return res.json();
 }

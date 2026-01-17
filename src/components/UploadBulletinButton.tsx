@@ -14,6 +14,12 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { BulletinEntryChat } from "./BulletinEntryChat";
+import {
+  createBulletin,
+  createEntry,
+  createTaxonomy,
+  getTaxonomy,
+} from "@/lib/api";
 
 export function UploadBulletinButton() {
   const { isEditing, user } = useAuth();
@@ -132,6 +138,11 @@ export function UploadBulletinButton() {
       recaudacion_diaria: recaudacionMatch?.[1] || "",
     };
 
+    const fixSpacedLetters = (str: string) => {
+      // Join single characters (A-Z, 0-9, #, -) separated by single spaces
+      return str.replace(/([A-Z0-9#-])\s(?=[A-Z0-9#-](?:\s|$))/gi, "$1");
+    };
+
     const entries: Array<{
       identificador_acto: string;
       tipo: string;
@@ -187,6 +198,8 @@ export function UploadBulletinButton() {
 
     // Find all section header positions
     const sectionPositions: Array<{ id: string; index: number }> = [];
+
+    // 1. Fixed sections
     sectionDefinitions.forEach((def) => {
       const matches = text.matchAll(new RegExp(def.regex, "gi"));
       for (const match of matches) {
@@ -195,6 +208,52 @@ export function UploadBulletinButton() {
         }
       }
     });
+
+    // 2. Dynamic "MINISTERIO" sections (handling spaced letters)
+    const ministerioRegex =
+      /M\s*I\s*N\s*I\s*S\s*T\s*E\s*R\s*I\s*O\s+([A-Z\s,ÁÉÍÓÚÑ]+)(?=\n|$|DECRETO|RESOLUCI|EDICTO|LICITACI)/gi;
+    const minMatches = text.matchAll(ministerioRegex);
+
+    const normalizeSectionName = (name: string) => {
+      const clean = name
+        .replace(/SANTIAGO DEL ESTERO/gi, "")
+        .replace(/LLAMADO.*$/gi, "") // Remove "LLAMADO..." suffix
+        .replace(/DEPARTAMENTO.*$/gi, "") // Remove "DEPARTAMENTO..." suffix if it makes it too long
+        .replace(/CONSEJO.*$/gi, "") // Remove "CONSEJO..." suffix
+        .replace(/SUBSECRETARIA.*$/gi, "") // Remove "SUBSECRETARIA..." suffix
+        .replace(/DIRECCION.*$/gi, "") // Remove "DIRECCION..." suffix
+        .replace(/GOBIERN\s*O/gi, "GOBIERNO")
+        .replace(/DESALUD/gi, "DE SALUD")
+        .replace(/PUBLICOSy/gi, "PUBLICOS Y")
+        .replace(/OBRA\s*S/gi, "OBRAS")
+        .replace(/SERVICIOSP\s*[ÚU]\s*BLICOS/gi, "SERVICIOS PUBLICOS")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      // Capitalize first letter of each word for better readability
+      // clean = clean.toLowerCase().replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); });
+      // Actually, keep it uppercase for Ministries as is standard, or Title Case?
+      // Let's keep it uppercase but clean.
+      return "MINISTERIO " + clean;
+    };
+
+    for (const match of minMatches) {
+      if (match.index !== undefined) {
+        // Clean the captured name (fix spaced letters)
+        const rawName = match[1].trim(); // Capture group 1 is the name part
+        const fixedSpaced = fixSpacedLetters(rawName);
+        const cleanName = normalizeSectionName(fixedSpaced);
+
+        // Avoid duplicates or very short names
+        if (
+          cleanName.length > 15 &&
+          !sectionPositions.find((s) => s.id === cleanName)
+        ) {
+          sectionPositions.push({ id: cleanName, index: match.index });
+        }
+      }
+    }
+
     sectionPositions.sort((a, b) => a.index - b.index);
 
     // Split by sections first to avoid cross-contamination
@@ -250,26 +309,43 @@ export function UploadBulletinButton() {
 
         if (block.match(/^DECRETO/i)) {
           tipo = "Decreto";
-          // Capture full GDE format: DECRETO-2025-2716-E-GDESDE-GSDE
+          // Capture full GDE format: DECRETO-2025-2716-E-GDESDE-GSDE. Avoid double prefix if the captured group already has it.
           const idMatch = block.match(
             /DECRETO-?\s*(\d{4}-\d+(?:-[A-Z0-9]+(?:-[A-Z0-9#\s]+)*)?)/i
           );
           id = idMatch ? `DECRETO-${idMatch[1].trim()}` : "DECRETO-S/N";
         } else if (block.match(/^RESOLUCI[ÓO]N/i)) {
           tipo = "Resolución";
-          // Capture full GDE format for resolutions
+          // Capture full GDE format for resolutions, including prefixes like RESFC
           const idMatch = block.match(
-            /RESOLUCI[ÓO]N-?\s*(\d{4}-\d+(?:-[A-Z0-9]+(?:-[A-Z0-9#\s]+)*)?)/i
+            /RESOLUCI[ÓO]N-?\s*((?:[A-Z]+-)?\d{4}-\d+(?:-[A-Z0-9]+(?:-[A-Z0-9#\s]+)*)?)/i
           );
-          id = idMatch ? `RESOL-${idMatch[1].trim()}` : "RESOL-S/N";
-        } else {
-          // Improved ID extraction: avoid matching "NO" in "NOTIFICACION"
-          // Look for N, Nº, No, or EXPTE followed by numbers/slashes
-          const idMatch = block.match(/(?:N[ºo\.]|EXPTE\.?)\s*([\w\/\.-]+)/i);
 
-          // If the match is just "NO" or part of "NOTIFICACION", it's likely a false positive
+          if (idMatch) {
+            const rawId = idMatch[1].trim();
+            // Prevent "RESOL-RESOL-..."
+            if (rawId.startsWith("RESOL-")) {
+              id = rawId;
+            } else {
+              id = `RESOL-${rawId}`;
+            }
+          } else {
+            id = "RESOL-S/N";
+          }
+        } else {
+          // Improved ID extraction: avoid matching "NO" in "NOTIFICACION" or "no formular"
+          // Look for N°, No., N /, or EXPTE followed by numbers/slashes
+          const idMatch = block.match(
+            /(?:N[º°\.]|No\.|N\s*\/|EXPTE\.?)\s*([\w\/\.-]+)/i
+          );
+
           const potentialId = idMatch?.[1];
-          if (potentialId && !/^(?:NO|NOTIFICACION)$/i.test(potentialId)) {
+          // Must contain at least one digit to be considered a valid ID (avoids words like "formular")
+          if (
+            potentialId &&
+            /\d/.test(potentialId) &&
+            !/^(?:NO|NOTIFICACION)$/i.test(potentialId)
+          ) {
             id = potentialId;
           } else {
             id =
@@ -286,12 +362,18 @@ export function UploadBulletinButton() {
 
         // Clean ID from city names and trailing noise
         id = id.split(/SANTIAGO DEL ESTERO/i)[0].trim();
+        // Remove trailing punctuation like ".-" or "."
+        id = id.replace(/[.-]+$/, "");
 
         // Improved reference detection
+        // Handle "Referencia:", "Ref:", "Asunto:", or just the text before VISTO
         let referencia = "";
-        const refMatch = block.match(
-          /Refere\s*n\s*ci\s*a:\s*([^]*?)(?=VISTO:|CONSIDERANDO:|EL SEÑOR|ART[IÍ]CULO|POR ELLO|RESUELVE|DECRETA|$)/i
-        );
+
+        // 1. Try to find explicit reference label (handling spaced letters)
+        const refLabelRegex =
+          /(?:R\s*e\s*f\s*e\s*r\s*e\s*n\s*c\s*i\s*a|R\s*e\s*f|A\s*s\s*u\s*n\s*t\s*o)\s*[:.]\s*([^]*?)(?=VISTO:|CONSIDERANDO:|EL SEÑOR|ART[IÍ]CULO|POR ELLO|RESUELVE|DECRETA|$)/i;
+        const refMatch = block.match(refLabelRegex);
+
         if (refMatch) {
           referencia = refMatch[1].trim();
         } else {
@@ -302,14 +384,9 @@ export function UploadBulletinButton() {
           const lines = firstPart
             .split("\n")
             .filter((l) => l.trim().length > 0);
-          referencia = lines.slice(0, 2).join(" ").trim();
+          // Take up to 3 lines for reference if no label found
+          referencia = lines.slice(0, 3).join(" ").trim();
         }
-
-        // Helper to fix spaced-out letters (PDF artifact: "G D E S D E" -> "GDESDE")
-        const fixSpacedLetters = (str: string) => {
-          // Join single characters (A-Z, 0-9, #, -) separated by single spaces
-          return str.replace(/([A-Z0-9#-])\s(?=[A-Z0-9#-](?:\s|$))/gi, "$1");
-        };
 
         // Clean up common headers and noise from reference
         referencia = fixSpacedLetters(referencia)
@@ -318,29 +395,44 @@ export function UploadBulletinButton() {
           .replace(/P[áa]gina\s+\d+/gi, "")
           .replace(/--- P[áa]gina \d+ ---/gi, "")
           .replace(
-            /,?\s*(?:LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES|S[AÁ]BADO|DOMINGO)\s+\d+\s+DE\s+[A-Z]+\s+DE\s+\d{4}/gi,
+            /,?\s*(?:LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES|S[AÁ]BADO|DOMINGO)?\s*\d+\s+DE\s+[A-Z]+\s+DE\s+\d{4}/gi,
             ""
           )
-          .replace(/Referenci\s*a\s*:\s*/gi, "")
+          .replace(
+            /(?:R\s*e\s*f\s*e\s*r\s*e\s*n\s*c\s*i\s*a|R\s*e\s*f|A\s*s\s*u\s*n\s*t\s*o)\s*[:.]\s*/gi,
+            ""
+          )
           .replace(/^[\s,.-]+/, "")
           .trim();
 
         // Create a de-spaced version of the block for more accurate matching
-        // (PDF artifacts: "E X - 2 0 2 5" -> "EX-2025", "H o m o l o g a" -> "Homologa")
         const deSpacedBlock = fixSpacedLetters(block);
 
-        // Ensure expediente number is in reference if present (e.g., EX-2025-...)
-        // Use the de-spaced block for much cleaner matching
+        // Extract Expediente ID if present
         const expMatch = deSpacedBlock.match(
           /(EX-\d{4}-\d+-(?:[A-Z0-9-]+)?(?:[A-Z0-9#]+)?)/i
         );
 
+        // If reference is empty or very short, and we have an expediente, use it.
+        // BUT if we have a reference, just ensure the expediente is in it?
+        // Actually, usually the reference *starts* with the expediente.
+        // If the extracted reference doesn't contain the expediente (maybe due to bad OCR/spacing), prepend it.
         if (expMatch) {
-          referencia = expMatch[1].trim();
+          const expId = expMatch[1].trim();
+          if (!referencia.includes(expId)) {
+            // If reference is just "Sin referencia" or empty, replace it.
+            if (!referencia || referencia === "Sin referencia") {
+              referencia = expId;
+            } else {
+              // Otherwise prepend it
+              referencia = `${expId} - ${referencia}`;
+            }
+          }
         }
 
+        // Improved Date Extraction: Optional "Santiago del Estero", Optional Day of Week
         const dateMatch = deSpacedBlock.match(
-          /(?:SANTIAGO DEL ESTERO,?\s*)?(?:LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES|S[AÁ]BADO|DOMINGO)\s+\d+\s+DE\s+[A-Z]+\s+DE\s+\d{4}/i
+          /(?:SANTIAGO DEL ESTERO,?\s*)?(?:(?:LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES|S[AÁ]BADO|DOMINGO)\s+)?\d{1,2}\s+DE\s+[A-Z]+\s+DE\s+\d{4}/i
         );
         const lugarFecha = dateMatch ? dateMatch[0].trim() : undefined;
 
@@ -423,9 +515,165 @@ export function UploadBulletinButton() {
   };
 
   const handleConform = async () => {
-    console.log("Conformar Carga", parsedData);
-    // TODO: Implement actual upload logic
-    alert("Funcionalidad de carga pendiente de implementación final.");
+    if (!parsedData) return;
+
+    try {
+      setIsExtracting(true); // Reuse loading state
+
+      // 1. Resolve or Create Taxonomies
+      const secciones = await getTaxonomy<{ id: string; nombre: string }>(
+        "secciones"
+      );
+      const tiposActos = await getTaxonomy<{ id: string; nombre: string }>(
+        "tipos-de-acto"
+      );
+      // Organismos might be needed if extracted, but currently parsedData doesn't seem to have it reliably for all entries
+      // We'll focus on Seccion and Tipo
+
+      const getTaxonomyId = async (
+        collection: string,
+        name: string,
+        existing: { id: string; nombre: string }[]
+      ) => {
+        const match = existing.find(
+          (item) => item.nombre.toLowerCase() === name.toLowerCase()
+        );
+        if (match) return match.id;
+
+        console.log(`Creating new taxonomy in ${collection}: ${name}`);
+        const newItem = await createTaxonomy(collection, { nombre: name });
+        // Payload REST API returns the document directly, but let's handle both cases
+        const createdDoc = newItem.doc || newItem;
+
+        // Update local cache to prevent duplicates in the same loop
+        existing.push({ id: createdDoc.id, nombre: createdDoc.nombre });
+
+        return createdDoc.id;
+      };
+
+      // 2. Create Bulletin
+      // Format date: "Jueves 27 de Noviembre de 2025" -> ISO or YYYY-MM-DD?
+      // Payload usually expects ISO date string.
+      // We need to parse the Spanish date string.
+      const parseSpanishDate = (dateStr: string) => {
+        const months: { [key: string]: string } = {
+          Enero: "01",
+          Febrero: "02",
+          Marzo: "03",
+          Abril: "04",
+          Mayo: "05",
+          Junio: "06",
+          Julio: "07",
+          Agosto: "08",
+          Septiembre: "09",
+          Octubre: "10",
+          Noviembre: "11",
+          Diciembre: "12",
+        };
+        const match = dateStr.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i);
+        if (match) {
+          const day = match[1].padStart(2, "0");
+          const month = months[match[2]];
+          const year = match[3];
+          if (month) return `${year}-${month}-${day}`;
+        }
+        return new Date().toISOString().split("T")[0]; // Fallback
+      };
+
+      const fechaPublicacion = parseSpanishDate(parsedData.metadata.fecha);
+      const bulletinData = {
+        numero: parseInt(parsedData.metadata.numero.replace(/\./g, "")) || 0,
+        fecha_publicacion: fechaPublicacion,
+        año_edicion: parsedData.metadata.año,
+        cantidad_paginas: parseInt(parsedData.metadata.paginas) || 0,
+        recaudacion_diaria:
+          parseFloat(
+            parsedData.metadata.recaudacion_diaria.replace(/\./g, "")
+          ) || 0,
+        slug: `boletin-${parsedData.metadata.numero.replace(/\./g, "")}`,
+      };
+
+      const createdBulletin = await createBulletin(bulletinData);
+      console.log("Bulletin created:", createdBulletin);
+
+      // 3. Create Entries
+      for (const entry of parsedData.entries) {
+        const seccionId = await getTaxonomyId(
+          "secciones",
+          entry.seccion,
+          secciones
+        );
+        const tipoId = await getTaxonomyId(
+          "tipos-de-acto",
+          entry.tipo,
+          tiposActos
+        );
+
+        // Use AI data if available and preferred, otherwise Regex data
+        // For now, we stick to the main entry data which might have been enriched or is the base
+        // If we want to save AI data specifically, we should probably merge it or have specific fields
+        // The user request shows "entries" with standard fields.
+
+        const entryData = {
+          id_boletin: createdBulletin.doc.id,
+          identificador_acto:
+            entry.ai_data?.identificador_acto || entry.identificador_acto,
+          seccion: seccionId,
+          tipo_acto: tipoId,
+          referencia: entry.ai_data?.referencia || entry.referencia,
+          texto_completo: {
+            root: {
+              type: "root",
+              format: "",
+              indent: 0,
+              version: 1,
+              children: [
+                {
+                  type: "paragraph",
+                  format: "",
+                  indent: 0,
+                  version: 1,
+                  children: [
+                    {
+                      mode: "normal",
+                      text: entry.texto_completo,
+                      type: "text",
+                      style: "",
+                      detail: 0,
+                      format: 0,
+                      version: 1,
+                    },
+                  ],
+                  direction: "ltr",
+                },
+              ],
+              direction: "ltr",
+            },
+          },
+          es_homologacion:
+            entry.ai_data?.es_homologacion ?? entry.es_homologacion,
+          resolucion:
+            entry.ai_data?.resolucion_homologada || entry.resolucion_homologada,
+          id_acto_referenciado:
+            entry.ai_data?.resolucion_homologada || entry.resolucion_homologada,
+          lugar_fecha: entry.ai_data?.fecha_acto || entry.lugar_fecha,
+          paginas: entry.paginas?.map((p: number) => ({ numero: p })),
+          // ai_data: entry.ai_data // If we want to save raw AI data?
+        };
+
+        await createEntry(entryData);
+      }
+
+      alert("Boletín y entradas cargados exitosamente!");
+      resetState();
+    } catch (err) {
+      console.error("Error saving bulletin:", err);
+      setError(
+        "Error al guardar el boletín. Revisa la consola para más detalles."
+      );
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   const processWithAI = async () => {
