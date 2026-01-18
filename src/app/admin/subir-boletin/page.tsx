@@ -96,6 +96,32 @@ export default function UploadBulletinPage() {
     );
   }
 
+  // --- Handlers ---
+  const processText = async () => {
+    if (!extractedText) return;
+    console.log("Sending text to API...");
+
+    try {
+      const response = await fetch("/api/extract-bulletin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: extractedText }),
+      });
+
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      if (!response.ok) {
+        alert("Error sending text: " + (result.error || response.statusText));
+      } else {
+        alert("Texto enviado correctamente. Ver consola.");
+      }
+    } catch (error) {
+      console.error("Error processing text:", error);
+      alert("Error de conexión al procesar texto.");
+    }
+  };
+
   // --- Handlers for File Upload ---
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -370,12 +396,21 @@ export default function UploadBulletinPage() {
                 {fileName}
               </div>
             </div>
-            <button
-              onClick={resetState}
-              className="text-sm text-destructive hover:underline font-medium"
-            >
-              Descartar y Nuevo
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={processText}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+              >
+                <Loader2 className="w-4 h-4" /> {/* Or another icon */}
+                Procesar Texto
+              </button>
+              <button
+                onClick={resetState}
+                className="text-sm text-destructive hover:underline font-medium"
+              >
+                Descartar y Nuevo
+              </button>
+            </div>
           </div>
 
           {/* Tabs */}
