@@ -80,17 +80,162 @@ export async function POST(req: Request) {
       recaudacion_diaria = parseFloat(cleanAmount);
     }
 
+    // --- Section Extraction Logic ---
+    let secciones: any[] = [];
+
+    // 1. Fetch valid sections from CMS
+    // Note: In production this should be cached or passed as context
+    let validSections: string[] = [];
+    try {
+      const sectionsRes = await fetch(
+        "http://localhost:3000/api/secciones?limit=100",
+        {
+          cache: "no-store",
+        },
+      );
+      if (sectionsRes.ok) {
+        const data = await sectionsRes.json();
+        validSections = data.docs.map((s: any) => s.nombre);
+      }
+    } catch (e) {
+      console.warn("Assuming default sections due to fetch error");
+      // Fallback defaults
+      validSections = [
+        "Sección Administrativa",
+        "Sección Judicial",
+        "Ministerio de Salud",
+        "Ministerio de Obras, Servicios Públicos y Agua",
+        "Ministerio de Gobierno, Seguridad y Culto",
+        "Sección Avisos Varios",
+        "Notificaciones Catastrales",
+      ];
+    }
+
+    if (validSections.length > 0) {
+      // Deduplicate valid sections
+      validSections = Array.from(new Set(validSections));
+
+      // 2. Normalize and find section positions
+      // Helper to create flexible regex
+      const createFlexibleRegex = (title: string) => {
+        // Remove punctuation for cleaner matching
+        const cleanTitle = title.replace(/[.,;:\-]/g, "");
+        // CONVERT TO UPPERCASE to strictly match headers
+        const upperTitle = cleanTitle.toUpperCase();
+
+        // Map for accent insensitivity (only uppercase needed)
+        const charMap: { [key: string]: string } = {
+          A: "[AÁÀÄÂ]",
+          E: "[EÉÈËÊ]",
+          I: "[IÍÌÏÎ]",
+          O: "[OÓÒÖÔ]",
+          U: "[UÚÙÜÛ]",
+          N: "[NÑ]",
+          C: "[CÇ]",
+        };
+
+        const pattern = upperTitle
+          .split("")
+          .map((char) => {
+            if (/\s/.test(char)) return "\\s+";
+            const matchedChar =
+              charMap[char] || (char.match(/[A-Z0-9]/) ? char : `\\${char}`);
+            // Allow spaces/punctuation between characters
+            return `${matchedChar}[\\s.,;:\\-_]*`;
+          })
+          .join("");
+
+        // "g" flag only. NO "i" flag to ensure we only match Uppercase Headers.
+        return new RegExp(pattern, "g");
+      };
+
+      const foundSections: {
+        name: string;
+        index: number;
+        normalizedName: string;
+        isWide: boolean;
+      }[] = [];
+
+      validSections.forEach((sectionName) => {
+        const regex = createFlexibleRegex(sectionName);
+        let match;
+        regex.lastIndex = 0;
+
+        while ((match = regex.exec(text)) !== null) {
+          // Heuristic: Check if it's "Wide" (spaced out) vs "Compact"
+          // "MINISTERIO" (10 chars) vs "M I N I S T E R I O" (19+ chars)
+          // If match length is significantly longer than the base name length, it's likely the spaced header.
+          const isWide = match[0].length > sectionName.length * 1.2;
+
+          foundSections.push({
+            name: match[0],
+            index: match.index,
+            normalizedName: sectionName,
+            isWide,
+          });
+        }
+      });
+
+      // Deduplication Logic:
+      // Group matches by normalizedName
+      const sectionsByName: { [key: string]: typeof foundSections } = {};
+      foundSections.forEach((s) => {
+        if (!sectionsByName[s.normalizedName])
+          sectionsByName[s.normalizedName] = [];
+        sectionsByName[s.normalizedName].push(s);
+      });
+
+      const uniqueFoundSections: typeof foundSections = [];
+      Object.keys(sectionsByName).forEach((name) => {
+        const matches = sectionsByName[name];
+        // Prioritize WIDE matches. If any wide match exists, take the FIRST wide match.
+        // If no wide match, take the FIRST compact match (fallback).
+        const wideMatch = matches.find((m) => m.isWide);
+        if (wideMatch) {
+          uniqueFoundSections.push(wideMatch);
+        } else {
+          // If only compact matches found, use the first one (appearing earliest in text)
+          // Sort by index to be sure
+          matches.sort((a, b) => a.index - b.index);
+          uniqueFoundSections.push(matches[0]);
+        }
+      });
+
+      // Sort final unique sections by position
+      uniqueFoundSections.sort((a, b) => a.index - b.index);
+
+      // 3. Extract content for each section
+      uniqueFoundSections.forEach((section, i) => {
+        const start = section.index + section.name.length;
+        const end =
+          i < uniqueFoundSections.length - 1
+            ? uniqueFoundSections[i + 1].index
+            : text.length;
+
+        const content = text.substring(start, end).trim();
+
+        secciones.push({
+          id: crypto.randomUUID(),
+          nombre: section.normalizedName,
+          entradas: [],
+        });
+      });
+    }
+
     const parsedData = {
       numero,
       fecha_publicacion,
       año_edicion,
       cantidad_paginas,
       recaudacion_diaria,
-      staff_autoridades: [], // Hard to extract reliably with simple regex, leaving empty as requested
-      secciones: [], // Sections will be populated later or via AI if specifically requested for body
+      staff_autoridades: [],
+      secciones: secciones.length > 0 ? secciones : [],
     };
 
-    console.log("Regex Extracted Metadata:", parsedData);
+    console.log(
+      "Regex Extracted Metadata & Sections:",
+      parsedData.secciones.map((s) => s.nombre),
+    );
 
     return NextResponse.json(parsedData);
   } catch (error) {
