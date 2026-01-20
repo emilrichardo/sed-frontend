@@ -8,10 +8,21 @@ import {
   Loader2,
   AlertCircle,
   ArrowLeft,
-  Save,
   Cloud,
+  X,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface BoletinData {
   numero: number | "";
@@ -21,34 +32,61 @@ interface BoletinData {
   recaudacion_diaria: number | "";
 }
 
+interface UploadItem {
+  id: string;
+  file: File;
+  status: "pending" | "processing" | "ready" | "saving" | "success" | "error";
+  extractedText: string;
+  data: BoletinData;
+  error?: string;
+  isExpanded: boolean;
+}
+
 export default function UploadBulletinPage() {
   const { user } = useAuth();
 
-  // Upload State
-  const [isDragging, setIsDragging] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractedText, setExtractedText] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Drive Sync State
+  // --- Drive Sync & Scan State ---
   const [driveToken, setDriveToken] = useState("");
   const [folderId, setFolderId] = useState("");
   const [useManualToken, setUseManualToken] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncResults, setSyncResults] = useState<any>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [scannedFiles, setScannedFiles] = useState<any[]>([]);
+  const [currentSyncIndex, setCurrentSyncIndex] = useState(-1);
+  const [payloadApiKey, setPayloadApiKey] = useState("");
 
-  // Metadata State
-  const [data, setData] = useState<BoletinData>({
-    numero: "",
-    fecha_publicacion: new Date().toISOString().split("T")[0],
-    año_edicion: "",
-    cantidad_paginas: "",
-    recaudacion_diaria: "",
-  });
+  // --- Multi-Upload State ---
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- Helpers ---
+  const getAuthHeader = () => {
+    // Prioritize API Key if provided manually
+    if (payloadApiKey) {
+      return `users API-Key ${payloadApiKey}`;
+    }
+    // Fallback to Session Token
+    const token = localStorage.getItem("payload-token");
+    if (token) {
+      return `JWT ${token}`;
+    }
+    return null;
+  };
+
+  // Load API Key from local storage on mount
+  React.useEffect(() => {
+    const storedKey = localStorage.getItem("payload-api-key");
+    if (storedKey) setPayloadApiKey(storedKey);
+  }, []);
+
+  // Save API Key when changed
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPayloadApiKey(val);
+    localStorage.setItem("payload-api-key", val);
+  };
 
   // Redirect if not authorized
   if (!user) {
@@ -66,85 +104,118 @@ export default function UploadBulletinPage() {
     );
   }
 
-  // --- Handlers for Drive Sync ---
-  const handleDriveSync = async () => {
+  // --- Handlers: Scan & Sync ---
+  const handleScan = async () => {
     if (!folderId) {
-      alert("Por favor ingresa el ID de la Carpeta de Drive");
+      alert("Ingresa ID de Carpeta");
       return;
     }
-    if (useManualToken && !driveToken) {
-      alert("Por favor ingresa el Token Manual");
+    const authHeader = getAuthHeader();
+    if (!authHeader) {
+      alert("Falta Auth (Token o API Key)");
       return;
     }
 
-    setIsSyncing(true);
-    setSyncResults(null);
+    setIsScanning(true);
+    setScannedFiles([]);
     try {
       const payload = {
         folderId,
         accessToken: useManualToken ? driveToken : undefined,
       };
-
-      const res = await fetch("/api/drive-sync", {
+      const res = await fetch("/api/drive-scan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+        },
         body: JSON.stringify(payload),
       });
       const json = await res.json();
-      setSyncResults(json);
+
       if (!res.ok) {
-        alert("Error en sincronización: " + (json.error || "Desconocido"));
+        alert(`Error Scanning: ${json.error}`);
       } else {
-        alert("Sincronización completada. Revisa los resultados.");
+        setScannedFiles(json.files || []);
       }
-    } catch (err: any) {
-      console.error(err);
-      alert("Error de conexión");
+    } catch {
+      alert("Error de conexión al escanear");
     } finally {
-      setIsSyncing(false);
+      setIsScanning(false);
     }
   };
 
-  // --- Handlers for File Upload ---
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
+  const handleSyncScanned = async () => {
+    if (scannedFiles.length === 0) return;
+    const authHeader = getAuthHeader();
+    if (!authHeader) return;
 
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
+    setIsSyncing(true);
+    setCurrentSyncIndex(0);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type === "application/pdf") {
-      processFile(file);
-    } else {
-      setError("Por favor, sube un archivo PDF válido.");
+    for (let i = 0; i < scannedFiles.length; i++) {
+      const file = scannedFiles[i];
+      setCurrentSyncIndex(i);
+
+      setScannedFiles((prev) =>
+        prev.map((f, idx) => (idx === i ? { ...f, status: "processing" } : f)),
+      );
+
+      try {
+        if (file.status === "synced") {
+          continue; // Skip already synced
+        }
+
+        const payload = {
+          fileId: file.id,
+          accessToken: useManualToken ? driveToken : undefined,
+        };
+
+        const res = await fetch("/api/drive-process-item", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          setScannedFiles((prev) =>
+            prev.map((f, idx) =>
+              idx === i ? { ...f, status: "error", error: json.error } : f,
+            ),
+          );
+        } else {
+          setScannedFiles((prev) =>
+            prev.map((f, idx) =>
+              idx === i ? { ...f, status: "synced", pages: json.pages } : f,
+            ),
+          );
+        }
+      } catch (e: any) {
+        setScannedFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === i ? { ...f, status: "error", error: e.message } : f,
+          ),
+        );
+      }
     }
+
+    setIsSyncing(false);
+    setCurrentSyncIndex(-1);
+    alert("Sincronización Completada");
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processFile(file);
-    }
-  };
-
-  const processFile = async (file: File) => {
-    setError(null);
-    setIsExtracting(true);
-    setFileName(file.name);
-    setPdfFile(file); // Store the file for later upload
-
+  // --- Handlers: Manual Upload ---
+  const processPdfFile = async (item: UploadItem): Promise<UploadItem> => {
     try {
-      // Dynamically import pdfjs-dist
       const pdfjsLib = await import("pdfjs-dist");
       pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-      const arrayBuffer = await file.arrayBuffer();
+      const arrayBuffer = await item.file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let fullText = "";
 
@@ -152,12 +223,11 @@ export default function UploadBulletinPage() {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const pageText = textContent.items
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .map((item: { str: string } | any) => item.str)
           .join(" ");
         fullText += `--- Página ${i} ---\n${pageText}\n\n`;
       }
-
-      setExtractedText(fullText);
 
       const firstPageText = fullText.split("--- Página 2 ---")[0] || "";
       const numberMatch = firstPageText.match(/N\s*\/\s*([\d.]+)/i);
@@ -167,141 +237,182 @@ export default function UploadBulletinPage() {
       const yearMatch = firstPageText.match(/Año\s+([XIVLCDM]+)/i);
       const yearRoman = yearMatch ? yearMatch[1] : "";
 
-      setData((prev) => ({
-        ...prev,
-        cantidad_paginas: pdf.numPages,
-        numero: number || prev.numero,
-        año_edicion: yearRoman || prev.año_edicion,
-      }));
-    } catch (err) {
-      console.error("Error extracting text:", err);
-      setError("Error al extraer texto del PDF.");
-    } finally {
-      setIsExtracting(false);
+      return {
+        ...item,
+        status: "ready",
+        extractedText: fullText,
+        data: {
+          ...item.data,
+          cantidad_paginas: pdf.numPages,
+          numero: number || item.data.numero,
+          año_edicion: yearRoman || item.data.año_edicion,
+        },
+      };
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("Error extracting text for file", item.file.name, err);
+      return {
+        ...item,
+        status: "error",
+        error: "Fallo al procesar PDF: " + errorMessage,
+      };
     }
   };
 
-  const resetState = () => {
-    setExtractedText("");
-    setFileName(null);
-    setPdfFile(null);
-    setError(null);
-    setData({
-      numero: "",
-      fecha_publicacion: new Date().toISOString().split("T")[0],
-      año_edicion: "",
-      cantidad_paginas: "",
-      recaudacion_diaria: "",
+  const handleFiles = async (files: FileList | null) => {
+    if (!files) return;
+
+    const newItems: UploadItem[] = Array.from(files)
+      .filter((f) => f.type === "application/pdf")
+      .map((f) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        file: f,
+        status: "processing",
+        extractedText: "",
+        data: {
+          numero: "",
+          fecha_publicacion: new Date().toISOString().split("T")[0],
+          año_edicion: "",
+          cantidad_paginas: "",
+          recaudacion_diaria: "",
+        },
+        isExpanded: true,
+      }));
+
+    if (newItems.length === 0) return;
+
+    setUploads((prev) => [...prev, ...newItems]);
+
+    newItems.forEach(async (item) => {
+      const processed = await processPdfFile(item);
+      setUploads((prev) => prev.map((p) => (p.id === item.id ? processed : p)));
     });
   };
 
-  const saveBulletin = async () => {
-    if (!data.fecha_publicacion) {
-      alert("Por favor, ingresa la fecha de publicación.");
-      return;
-    }
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFiles(e.dataTransfer.files);
+  };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFiles(e.target.files);
+    if (e.target) e.target.value = "";
+  };
 
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const API_BASE_URL =
-        process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
-      let mediaId: number | null = null;
-
-      if (pdfFile) {
-        const formData = new FormData();
-        const altText = `Boletin Oficial N° ${data.numero || "?"} - ${data.fecha_publicacion || "Sin Fecha"}`;
-
-        let fileToUpload = pdfFile;
-        if (data.numero) {
-          const newFileName = `${data.numero}.pdf`;
-          fileToUpload = new File([pdfFile], newFileName, {
-            type: pdfFile.type,
-          });
-        }
-
-        formData.append("alt", altText);
-        formData.append("file", fileToUpload);
-
-        const mediaRes = await fetch(`${API_BASE_URL}/api/boletines-pdf`, {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-
-        if (!mediaRes.ok) {
-          const errorText = await mediaRes.text();
-          throw new Error(`Error uploading PDF: ${errorText}`);
-        }
-
-        const mediaData = await mediaRes.json();
-        mediaId = mediaData.doc?.id || mediaData.id;
-      }
-
-      const boletinPayload = {
-        numero: data.numero ? parseInt(String(data.numero)) : undefined,
-        fecha_publicacion: data.fecha_publicacion,
-        año_edicion:
-          data.año_edicion ||
-          String(new Date(data.fecha_publicacion).getFullYear()),
-        cantidad_paginas: data.cantidad_paginas
-          ? parseInt(String(data.cantidad_paginas))
-          : undefined,
-        recaudacion_diaria: data.recaudacion_diaria
-          ? parseFloat(String(data.recaudacion_diaria))
-          : undefined,
-        raw_text: extractedText.substring(0, 1000000),
-        archivo_binario: mediaId,
-      };
-
-      const boletinRes = await fetch(`${API_BASE_URL}/api/boletines`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(boletinPayload),
-      });
-
-      if (!boletinRes.ok) {
-        const errorText = await boletinRes.text();
-        throw new Error(`Error creating bulletin: ${errorText}`);
-      }
-
-      const boletinData = await boletinRes.json();
-      const boletinId = boletinData.doc?.id || boletinData.id;
-      alert(`¡Boletín guardado exitosamente! ID: ${boletinId}`);
-    } catch (err) {
-      console.error("Error saving bulletin:", err);
-      let errorMessage =
-        err instanceof Error ? err.message : "Error al guardar el boletín";
-
-      if (errorMessage.includes("numero") && errorMessage.includes("unique")) {
-        errorMessage =
-          "Error: Ya existe un boletín registrado con este Número. Verifica el número o elimina el existente.";
-      } else if (
-        errorMessage.includes("slug") &&
-        errorMessage.includes("unique")
-      ) {
-        errorMessage =
-          "Error: Ya existe un boletín con esta fecha/slug. Verifica la fecha.";
-      }
-
-      setError(errorMessage);
-      alert(errorMessage);
-    } finally {
-      setIsSaving(false);
+  const removeUpload = (id: string) => {
+    if (confirm("¿Estás seguro de quitar este archivo?")) {
+      setUploads((prev) => prev.filter((u) => u.id !== id));
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateUploadData = (
+    id: string,
+    field: keyof BoletinData,
+    value: any,
+  ) => {
+    setUploads((prev) =>
+      prev.map((u) =>
+        u.id === id ? { ...u, data: { ...u.data, [field]: value } } : u,
+      ),
+    );
+  };
+
+  const toggleExpand = (id: string) => {
+    setUploads((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, isExpanded: !u.isExpanded } : u)),
+    );
+  };
+
+  const saveItem = async (item: UploadItem) => {
+    if (item.status === "saving" || item.status === "success") return;
+    if (!item.data.fecha_publicacion) {
+      alert(`Falta fecha en ${item.file.name}`);
+      return;
+    }
+
+    setUploads((prev) =>
+      prev.map((u) => (u.id === item.id ? { ...u, status: "saving" } : u)),
+    );
+
+    try {
+      const formData = new FormData();
+      let fileToUpload = item.file;
+      if (item.data.numero) {
+        const newFileName = `${item.data.numero}.pdf`;
+        fileToUpload = new File([item.file], newFileName, {
+          type: item.file.type,
+        });
+      }
+
+      const metadata = {
+        ...item.data,
+        extractedText: item.extractedText,
+      };
+
+      formData.append("file", fileToUpload);
+      formData.append("metadata", JSON.stringify(metadata));
+
+      const authHeader = getAuthHeader();
+      if (!authHeader) throw new Error("No hay sesión activa ni API Key.");
+
+      const response = await fetch("/api/manual-upload", {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.error && result.error.includes("unique")) {
+          throw new Error("Boletín duplicado (Número o Fecha ya existen).");
+        }
+        throw new Error(result.error || "Error desconocido al guardar");
+      }
+
+      setUploads((prev) =>
+        prev.map((u) =>
+          u.id === item.id
+            ? { ...u, status: "success", error: undefined, isExpanded: false }
+            : u,
+        ),
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(err);
+      setUploads((prev) =>
+        prev.map((u) =>
+          u.id === item.id ? { ...u, status: "error", error: errorMessage } : u,
+        ),
+      );
+    }
+  };
+
+  const saveAllReady = async () => {
+    const readyItems = uploads.filter((u) => u.status === "ready");
+    if (readyItems.length === 0) return;
+    await Promise.all(readyItems.map((item) => saveItem(item)));
+  };
+
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
+    <div className="max-w-6xl mx-auto py-8 px-4 font-sans">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">
-            Cargar Boletín Oficial
+            Cargar Boletines
           </h1>
           <p className="text-muted-foreground">
-            Elige entre sincronización automática con Drive o carga manual.
+            Sube múltiples archivos PDF o sincroniza con Google Drive.
           </p>
         </div>
         <Link
@@ -313,34 +424,72 @@ export default function UploadBulletinPage() {
         </Link>
       </div>
 
-      {/* Drive Sync Section */}
+      {/* --- Drive Scan & Process Section --- */}
       <div className="mb-8 p-6 bg-card border rounded-xl shadow-sm">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Cloud className="w-5 h-5 text-blue-500" /> Sincronizar con Google
-          Drive
+          <Cloud className="w-5 h-5 text-blue-500" /> Sincronización Automática
+          (Drive)
         </h2>
+
+        <div className="mb-4 p-3 bg-yellow-50/50 border border-yellow-100 rounded-lg">
+          <label className="block text-xs font-semibold text-yellow-700 mb-1">
+            Payload API Key (Opcional - Para permisos Admin)
+          </label>
+          <input
+            type="password"
+            placeholder="users API-Key ..."
+            className="w-full max-w-md p-2 border rounded text-sm font-mono bg-white"
+            value={payloadApiKey}
+            onChange={handleApiKeyChange}
+          />
+          <p className="text-[10px] text-yellow-600/80 mt-1">
+            Si ves errores de &quot;Not allowed&quot;, genera una API Key en
+            Payload (Usuarios) e ingrésala aquí. Se usará en lugar de tu sesión
+            actual.
+          </p>
+        </div>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div className="space-y-2">
               <label className="text-sm font-medium">ID de Carpeta Drive</label>
               <input
-                type="text"
-                placeholder="Ej: 1AbCd..."
                 className="w-full p-2 border rounded text-sm font-mono"
+                placeholder="Ej: 1AbCd..."
                 value={folderId}
                 onChange={(e) => setFolderId(e.target.value)}
               />
             </div>
 
-            <button
-              onClick={handleDriveSync}
-              disabled={isSyncing}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2 h-10"
-            >
-              {isSyncing && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSyncing ? "Sincronizando..." : "Iniciar Sincronización"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleScan}
+                disabled={isScanning || isSyncing}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-2 h-10 border"
+              >
+                {isScanning ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+                {isScanning ? "Escaneando..." : "Escanear"}
+              </button>
+
+              <button
+                onClick={handleSyncScanned}
+                disabled={isSyncing || scannedFiles.length === 0}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-2 h-10"
+              >
+                {isSyncing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Cloud className="w-4 h-4" />
+                )}
+                {isSyncing
+                  ? `Sincronizando (${currentSyncIndex + 1}/${scannedFiles.length})`
+                  : "Sincronizar Todo"}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -353,238 +502,337 @@ export default function UploadBulletinPage() {
             />
             <label
               htmlFor="tokenToggle"
-              className="text-xs text-muted-foreground select-none cursor-pointer"
+              className="text-xs text-muted-foreground cursor-pointer select-none"
             >
-              Usar Token de Acceso Manual (Avanzado)
+              Usar Token Manual (Avanzado)
             </label>
           </div>
-
           {useManualToken && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-              <label className="text-sm font-medium">Google Access Token</label>
-              <input
-                type="password"
-                placeholder="Pega tu token OAuth2 aquí..."
-                className="w-full p-2 border rounded text-sm font-mono"
-                value={driveToken}
-                onChange={(e) => setDriveToken(e.target.value)}
-              />
-            </div>
+            <input
+              type="password"
+              placeholder="Access Token..."
+              className="w-full p-2 border rounded text-sm font-mono"
+              value={driveToken}
+              onChange={(e) => setDriveToken(e.target.value)}
+            />
           )}
 
-          <p className="text-xs text-muted-foreground">
-            Por defecto, usa las credenciales del servidor (auto-refresh).
-          </p>
-
-          {syncResults && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-xs font-mono max-h-60 overflow-y-auto border">
-              <div className="flex justify-between font-bold mb-2">
-                <span>Resultados:</span>
-                <span>{syncResults.results?.length || 0} archivos</span>
+          {scannedFiles.length > 0 && (
+            <div className="mt-4 border rounded-md overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2 border-b text-xs font-semibold text-gray-500 uppercase flex justify-between">
+                <span>Archivos ({scannedFiles.length})</span>
+                <span>Estado</span>
               </div>
-              {syncResults.results?.map((res: any, i: number) => (
-                <div
-                  key={i}
-                  className={`mb-1 ${res.status === "success" ? "text-green-600" : res.status.includes("skipped") ? "text-yellow-600" : "text-red-600"}`}
-                >
-                  [{res.status}] {res.name} {res.error ? `(${res.error})` : ""}
+              <div className="max-h-80 overflow-y-auto divide-y">
+                {scannedFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className="px-4 py-2 text-sm flex justify-between items-center hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <span className="truncate max-w-[300px]">
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {file.mimeType}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {file.status === "pending" && (
+                        <span className="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded text-xs">
+                          Pendiente
+                        </span>
+                      )}
+                      {file.status === "processing" && (
+                        <span className="text-blue-600 flex items-center gap-1 text-xs">
+                          <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                          Procesando
+                        </span>
+                      )}
+                      {file.status === "synced" && (
+                        <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Completado
+                        </span>
+                      )}
+                      {file.status === "error" && (
+                        <span
+                          className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs"
+                          title={file.error}
+                        >
+                          Error
+                        </span>
+                      )}
+                      {/* Show Pages if available */}
+                      {file.pages && (
+                        <span className="text-gray-500 text-xs text-[10px] ml-2">
+                          {file.pages} pág.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t pt-8">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Upload className="w-5 h-5 text-purple-500" /> Carga Manual (PDFs)
+        </h2>
+        {/* Dropzone */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            "border-2 border-dashed rounded-xl p-8 transition-colors text-center cursor-pointer mb-6",
+            isDragging
+              ? "border-primary bg-primary/5"
+              : "border-muted-foreground/25 hover:border-primary/50",
+          )}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            multiple
+            accept="application/pdf"
+            className="hidden"
+          />
+          <div className="flex flex-col items-center gap-2">
+            <div className="p-4 bg-muted rounded-full">
+              <Upload className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium">
+                Arrastra y suelta tus archivos PDF aquí
+              </p>
+              <p className="text-sm text-muted-foreground">
+                o haz clic para explorar
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Uploads List */}
+        <div className="space-y-4">
+          {uploads.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "border rounded-lg overflow-hidden transition-all",
+                item.status === "error" && "border-red-200 bg-red-50",
+                item.status === "success" && "border-green-200 bg-green-50",
+              )}
+            >
+              {/* Header Row */}
+              <div className="flex items-center justify-between p-4 bg-card/50">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div
+                    className={cn(
+                      "p-2 rounded-md",
+                      item.status === "success"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-blue-100 text-blue-600",
+                    )}
+                  >
+                    {item.status === "success" ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <FileText className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{item.file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
                 </div>
-              ))}
-              {syncResults.error && (
-                <div className="text-red-600">{syncResults.error}</div>
+
+                <div className="flex items-center gap-2">
+                  {item.status === "processing" && (
+                    <span className="text-xs text-blue-600 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Procesando
+                    </span>
+                  )}
+                  {item.status === "saving" && (
+                    <span className="text-xs text-orange-600 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Guardando
+                    </span>
+                  )}
+                  {item.status === "error" && (
+                    <span className="text-xs text-red-600 font-medium">
+                      Error
+                    </span>
+                  )}
+
+                  <button
+                    onClick={() => toggleExpand(item.id)}
+                    className="p-1 hover:bg-muted rounded text-muted-foreground"
+                  >
+                    {item.isExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => removeUpload(item.id)}
+                    className="p-1 hover:bg-red-100 text-red-400 hover:text-red-600 rounded"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Expanded Details Form */}
+              {item.isExpanded && (
+                <div className="p-4 border-t bg-card/30 space-y-4">
+                  {item.error && (
+                    <div className="p-3 bg-red-100 text-red-700 text-sm rounded-md flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <p>{item.error}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Número
+                      </label>
+                      <input
+                        className="w-full p-2 border rounded text-sm"
+                        value={item.data.numero}
+                        onChange={(e) =>
+                          updateUploadData(item.id, "numero", e.target.value)
+                        }
+                        placeholder="Ej: 12345"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Fecha Publicación
+                      </label>
+                      <input
+                        type="date"
+                        className="w-full p-2 border rounded text-sm"
+                        value={item.data.fecha_publicacion}
+                        onChange={(e) =>
+                          updateUploadData(
+                            item.id,
+                            "fecha_publicacion",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Año Edición
+                      </label>
+                      <input
+                        className="w-full p-2 border rounded text-sm"
+                        value={item.data.año_edicion}
+                        onChange={(e) =>
+                          updateUploadData(
+                            item.id,
+                            "año_edicion",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Ej: CXX"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Páginas
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border rounded text-sm"
+                        value={item.data.cantidad_paginas}
+                        onChange={(e) =>
+                          updateUploadData(
+                            item.id,
+                            "cantidad_paginas",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Recaudación
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="w-full p-2 border rounded text-sm"
+                        value={item.data.recaudacion_diaria}
+                        onChange={(e) =>
+                          updateUploadData(
+                            item.id,
+                            "recaudacion_diaria",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={() => saveItem(item)}
+                      disabled={
+                        item.status === "saving" || item.status === "success"
+                      }
+                      className={cn(
+                        "px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2",
+                        item.status === "success"
+                          ? "bg-green-600 text-white cursor-default"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90",
+                      )}
+                    >
+                      {item.status === "saving" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />{" "}
+                          Guardando...
+                        </>
+                      ) : item.status === "success" ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" /> Guardado
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" /> Guardar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
+          ))}
+
+          {uploads.length > 0 && (
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={saveAllReady}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Guardar Todo (
+                {uploads.filter((u) => u.status === "ready").length})
+              </button>
+            </div>
           )}
         </div>
       </div>
-
-      <div className="relative my-8">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            O Carga Manual
-          </span>
-        </div>
-      </div>
-
-      {/* File Upload Area (Manual) */}
-      {!extractedText && (
-        <div className="mb-8">
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`min-h-[300px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl transition-all duration-200 ${
-              isDragging
-                ? "border-primary bg-primary/5 scale-[0.99]"
-                : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/20"
-            }`}
-          >
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileChange}
-              className="hidden"
-              ref={fileInputRef}
-            />
-
-            {isExtracting ? (
-              <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                  <Loader2 className="w-12 h-12 text-primary animate-spin relative z-10" />
-                </div>
-                <div className="text-center space-y-1">
-                  <p className="font-medium text-lg">Procesando PDF...</p>
-                  <p className="text-sm text-muted-foreground">
-                    Extrayendo texto...
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center space-y-4 max-w-md mx-auto">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold">Sube tu archivo PDF</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Arrastra y suelta tu boletín aquí.
-                  </p>
-                </div>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all font-medium"
-                >
-                  Seleccionar Archivo
-                </button>
-              </div>
-            )}
-
-            {error && (
-              <div className="mt-8 p-4 bg-destructive/10 text-destructive rounded-lg flex items-center gap-2 animate-in slide-in-from-bottom-2">
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      {extractedText && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center justify-between bg-card p-4 rounded-lg border shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md text-sm font-medium">
-                <FileText className="w-4 h-4 text-primary" />
-                {fileName}
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={saveBulletin}
-                disabled={isSaving}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium shadow-sm ${
-                  isSaving
-                    ? "bg-green-400 cursor-wait"
-                    : "bg-green-600 hover:bg-green-700"
-                } text-white`}
-              >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                {isSaving ? "Guardando..." : "Guardar Boletín"}
-              </button>
-
-              <button
-                onClick={resetState}
-                className="text-sm text-destructive hover:underline font-medium"
-              >
-                Descartar y Nuevo
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
-              <h3 className="text-lg font-semibold">Datos del Boletín</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Número</label>
-                  <input
-                    type="number"
-                    className="w-full p-2 border rounded-md"
-                    value={data.numero}
-                    onChange={(e) =>
-                      setData({
-                        ...data,
-                        numero: parseInt(e.target.value) || "",
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Fecha Publicación
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full p-2 border rounded-md"
-                    value={data.fecha_publicacion}
-                    onChange={(e) =>
-                      setData({ ...data, fecha_publicacion: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Año Edición (Romano)
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded-md"
-                    placeholder="Ej: XCIII"
-                    value={data.año_edicion}
-                    onChange={(e) =>
-                      setData({ ...data, año_edicion: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Cant. Páginas</label>
-                  <input
-                    type="number"
-                    className="w-full p-2 border rounded-md bg-muted"
-                    value={data.cantidad_paginas}
-                    onChange={(e) =>
-                      setData({
-                        ...data,
-                        cantidad_paginas: parseInt(e.target.value) || "",
-                      })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground">
-                Texto Extraído Preview
-              </h3>
-              <textarea
-                readOnly
-                value={extractedText}
-                className="w-full h-[300px] p-4 font-mono text-xs leading-relaxed bg-muted/20 rounded-lg border focus:outline-none resize-y"
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

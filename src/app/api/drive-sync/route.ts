@@ -2,9 +2,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createRequire } from "module";
 
 // 60s timeout for processing multiple files
 export const maxDuration = 60;
+
+// Use pdf2json instead
+const require = createRequire(import.meta.url);
+const PDFParser = require("pdf2json");
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,22 +56,25 @@ export async function POST(req: NextRequest) {
 
     const drive = google.drive({ version: "v3", auth });
 
-    // Load pdf-parse dynamically to handle CommonJS/ESM interop
-    const pdfModule = await import("pdf-parse");
-    // @ts-ignore
-    const pdf = pdfModule.default || pdfModule;
-
     // 2. List PDF Files
     const listRes = await drive.files.list({
       q: `'${folderId}' in parents and mimeType='application/pdf' and trashed=false`,
       fields: "files(id, name, createdTime)",
-      pageSize: 10, // Process 10 at a time to avoid timeouts
+      pageSize: 10,
     });
 
     const files = listRes.data.files || [];
     const results = [];
+    // Extract Authorization header (JWT token)
+    const authHeader = req.headers.get("Authorization");
+    console.log(
+      "Drive Sync Auth Header received:",
+      authHeader ? `${authHeader.substring(0, 15)}...` : "NONE",
+    );
+
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
+    console.log(`Using API Base URL: ${API_BASE_URL}`);
 
     for (const file of files) {
       if (!file.id || !file.name) continue;
@@ -78,7 +86,6 @@ export async function POST(req: NextRequest) {
         .eq("file_id", file.id)
         .single();
 
-      // If already processed success, skip
       if (existing && existing.status === "success") {
         results.push({ name: file.name, status: "skipped_exists" });
         continue;
@@ -94,9 +101,27 @@ export async function POST(req: NextRequest) {
         );
         const buffer = Buffer.from(fileStream.data as ArrayBuffer);
 
-        // 5. Parse Text
-        const pdfData = await pdf(buffer);
-        const text = pdfData.text;
+        // 5. Parse Text using pdf2json
+        const pdfParser = new PDFParser(null, 1); // 1 = text only
+
+        const textPromise = new Promise<string>((resolve, reject) => {
+          pdfParser.on("pdfParser_dataError", (errData: any) =>
+            reject(errData.parserError),
+          );
+          pdfParser.on("pdfParser_dataReady", () => {
+            try {
+              // getRawTextContent() is the method for raw text
+              const rawText = pdfParser.getRawTextContent();
+              resolve(rawText);
+            } catch {
+              resolve("");
+            }
+          });
+        });
+
+        // Trigger parsing
+        pdfParser.parseBuffer(buffer);
+        const text = await textPromise;
 
         // 6. Extract Metadata
         // Number
@@ -128,6 +153,7 @@ export async function POST(req: NextRequest) {
 
         const mediaRes = await fetch(`${API_BASE_URL}/api/boletines-pdf`, {
           method: "POST",
+          headers: authHeader ? { Authorization: authHeader } : undefined,
           body: formData,
         });
 
@@ -149,7 +175,10 @@ export async function POST(req: NextRequest) {
 
         const bolRes = await fetch(`${API_BASE_URL}/api/boletines`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(authHeader ? { Authorization: authHeader } : {}),
+          },
           body: JSON.stringify(boletinPayload),
         });
 
