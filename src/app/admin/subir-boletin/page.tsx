@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Layout,
   FileType,
+  Save,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -60,6 +61,8 @@ export default function UploadBulletinPage() {
   const [extractedText, setExtractedText] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Structured Data State
@@ -154,6 +157,7 @@ export default function UploadBulletinPage() {
     setError(null);
     setIsExtracting(true);
     setFileName(file.name);
+    setPdfFile(file); // Store the file for later upload
 
     try {
       // Dynamically import pdfjs-dist to avoid SSR issues
@@ -174,7 +178,32 @@ export default function UploadBulletinPage() {
       }
 
       setExtractedText(fullText);
-      setData((prev) => ({ ...prev, cantidad_paginas: pdf.numPages }));
+
+      // Auto-extraction of metadata from first page
+      const firstPageText = fullText.split("--- Página 2 ---")[0] || "";
+
+      // Extract Number (e.g., "Boletin Oficial N / 22.980")
+      const numberMatch = firstPageText.match(/N\s*\/\s*([\d.]+)/i);
+      const number = numberMatch
+        ? parseInt(numberMatch[1].replace(/\./g, ""))
+        : "";
+
+      // Extract Year (Roman) (e.g., "Año XCIII")
+      const yearMatch = firstPageText.match(/Año\s+([XIVLCDM]+)/i);
+      const yearRoman = yearMatch ? yearMatch[1] : "";
+
+      // Extract Year (Numeric) - fallback or explicit
+      const yearNumMatch =
+        firstPageText.match(/Total.*\d{4}/i) || firstPageText.match(/(\d{4})/);
+      // We'll let the user verify the date, but try to extract the year string if possible for the edition field
+
+      setData((prev) => ({
+        ...prev,
+        cantidad_paginas: pdf.numPages,
+        numero: number || prev.numero,
+        año_edicion: yearRoman || prev.año_edicion,
+        // We could also try to parse the date string "Jueves 27 de Noviembre de 2025" and format it YYYY-MM-DD
+      }));
 
       // Auto-switch to structure tab to encourage filling data
       setActiveTab("structure");
@@ -189,6 +218,7 @@ export default function UploadBulletinPage() {
   const resetState = () => {
     setExtractedText("");
     setFileName(null);
+    setPdfFile(null);
     setError(null);
     setData({
       numero: "",
@@ -198,6 +228,126 @@ export default function UploadBulletinPage() {
       recaudacion_diaria: "",
       secciones: [],
     });
+  };
+
+  // Save Bulletin to API
+  const saveBulletin = async () => {
+    if (!data.fecha_publicacion) {
+      alert("Por favor, ingresa la fecha de publicación.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const API_BASE_URL =
+        process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
+      let mediaId: number | null = null;
+      console.log("Saving bulletin...", {
+        date: data.fecha_publicacion,
+        hasPdf: !!pdfFile,
+      });
+
+      // 1. Upload PDF to media if available
+      if (pdfFile) {
+        const formData = new FormData();
+        const altText = `Boletin Oficial N° ${data.numero || "?"} - ${data.fecha_publicacion || "Sin Fecha"}`;
+
+        let fileToUpload = pdfFile;
+        if (data.numero) {
+          // Rename file to [numero].pdf
+          const newFileName = `${data.numero}.pdf`;
+          fileToUpload = new File([pdfFile], newFileName, {
+            type: pdfFile.type,
+          });
+        }
+
+        formData.append("alt", altText);
+        formData.append("file", fileToUpload);
+
+        console.log("Uploading PDF...", {
+          fileName: fileToUpload.name,
+          fileSize: fileToUpload.size,
+          alt: altText,
+        });
+
+        const mediaRes = await fetch(`${API_BASE_URL}/api/boletines-pdf`, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+
+        if (!mediaRes.ok) {
+          const errorText = await mediaRes.text();
+          throw new Error(`Error uploading PDF: ${errorText}`);
+        }
+
+        const mediaData = await mediaRes.json();
+        mediaId = mediaData.doc?.id || mediaData.id;
+        console.log("PDF uploaded, media ID:", mediaId);
+      }
+
+      // 2. Create the Boletin
+      const boletinPayload = {
+        numero: data.numero ? parseInt(String(data.numero)) : undefined,
+        fecha_publicacion: data.fecha_publicacion,
+        año_edicion:
+          data.año_edicion ||
+          String(new Date(data.fecha_publicacion).getFullYear()),
+        cantidad_paginas: data.cantidad_paginas
+          ? parseInt(String(data.cantidad_paginas))
+          : undefined,
+        recaudacion_diaria: data.recaudacion_diaria
+          ? parseFloat(String(data.recaudacion_diaria))
+          : undefined,
+        raw_text: extractedText.substring(0, 1000000), // Enforce limit
+        archivo_binario: mediaId, // Reference to the uploaded PDF
+      };
+
+      const boletinRes = await fetch(`${API_BASE_URL}/api/boletines`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(boletinPayload),
+      });
+
+      if (!boletinRes.ok) {
+        const errorText = await boletinRes.text();
+        throw new Error(`Error creating bulletin: ${errorText}`);
+      }
+
+      const boletinData = await boletinRes.json();
+      const boletinId = boletinData.doc?.id || boletinData.id;
+      console.log("Bulletin created, ID:", boletinId);
+
+      alert(`¡Boletín guardado exitosamente! ID: ${boletinId}`);
+
+      // Optionally reset state or redirect
+      // resetState();
+      // window.location.href = `/admin/boletines/${boletinId}`;
+    } catch (err) {
+      console.error("Error saving bulletin:", err);
+      let errorMessage =
+        err instanceof Error ? err.message : "Error al guardar el boletín";
+
+      // Improve user feedback for common errors
+      if (errorMessage.includes("numero") && errorMessage.includes("unique")) {
+        errorMessage =
+          "Error: Ya existe un boletín registrado con este Número. Verifica el número o elimina el existente.";
+      } else if (
+        errorMessage.includes("slug") &&
+        errorMessage.includes("unique")
+      ) {
+        errorMessage =
+          "Error: Ya existe un boletín con esta fecha/slug. Verifica la fecha.";
+      }
+
+      setError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // --- Handlers for Structured Data ---
@@ -398,12 +548,22 @@ export default function UploadBulletinPage() {
             </div>
             <div className="flex items-center gap-4">
               <button
-                onClick={processText}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                onClick={saveBulletin}
+                disabled={isSaving}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 transition-colors text-sm font-medium shadow-sm ${
+                  isSaving
+                    ? "bg-green-400 cursor-wait"
+                    : "bg-green-600 hover:bg-green-700"
+                } text-white`}
               >
-                <Loader2 className="w-4 h-4" /> {/* Or another icon */}
-                Procesar Texto
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {isSaving ? "Guardando..." : "Guardar Boletín"}
               </button>
+
               <button
                 onClick={resetState}
                 className="text-sm text-destructive hover:underline font-medium"
