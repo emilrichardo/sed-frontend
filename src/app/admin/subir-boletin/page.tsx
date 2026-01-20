@@ -9,6 +9,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Save,
+  Cloud,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -32,6 +33,13 @@ export default function UploadBulletinPage() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drive Sync State
+  const [driveToken, setDriveToken] = useState("");
+  const [folderId, setFolderId] = useState("");
+  const [useManualToken, setUseManualToken] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResults, setSyncResults] = useState<any>(null);
 
   // Metadata State
   const [data, setData] = useState<BoletinData>({
@@ -57,6 +65,45 @@ export default function UploadBulletinPage() {
       </div>
     );
   }
+
+  // --- Handlers for Drive Sync ---
+  const handleDriveSync = async () => {
+    if (!folderId) {
+      alert("Por favor ingresa el ID de la Carpeta de Drive");
+      return;
+    }
+    if (useManualToken && !driveToken) {
+      alert("Por favor ingresa el Token Manual");
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncResults(null);
+    try {
+      const payload = {
+        folderId,
+        accessToken: useManualToken ? driveToken : undefined,
+      };
+
+      const res = await fetch("/api/drive-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      setSyncResults(json);
+      if (!res.ok) {
+        alert("Error en sincronización: " + (json.error || "Desconocido"));
+      } else {
+        alert("Sincronización completada. Revisa los resultados.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Error de conexión");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // --- Handlers for File Upload ---
   const handleDragOver = (e: React.DragEvent) => {
@@ -93,7 +140,7 @@ export default function UploadBulletinPage() {
     setPdfFile(file); // Store the file for later upload
 
     try {
-      // Dynamically import pdfjs-dist to avoid SSR issues
+      // Dynamically import pdfjs-dist
       const pdfjsLib = await import("pdfjs-dist");
       pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -112,16 +159,11 @@ export default function UploadBulletinPage() {
 
       setExtractedText(fullText);
 
-      // Auto-extraction of metadata from first page
       const firstPageText = fullText.split("--- Página 2 ---")[0] || "";
-
-      // Extract Number (e.g., "Boletin Oficial N / 22.980")
       const numberMatch = firstPageText.match(/N\s*\/\s*([\d.]+)/i);
       const number = numberMatch
         ? parseInt(numberMatch[1].replace(/\./g, ""))
         : "";
-
-      // Extract Year (Roman) (e.g., "Año XCIII")
       const yearMatch = firstPageText.match(/Año\s+([XIVLCDM]+)/i);
       const yearRoman = yearMatch ? yearMatch[1] : "";
 
@@ -153,7 +195,6 @@ export default function UploadBulletinPage() {
     });
   };
 
-  // Save Bulletin to API
   const saveBulletin = async () => {
     if (!data.fecha_publicacion) {
       alert("Por favor, ingresa la fecha de publicación.");
@@ -167,21 +208,14 @@ export default function UploadBulletinPage() {
       const API_BASE_URL =
         process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
       let mediaId: number | null = null;
-      console.log("Saving bulletin...", {
-        date: data.fecha_publicacion,
-        hasPdf: !!pdfFile,
-      });
 
-      // 1. Upload PDF to media if available
       if (pdfFile) {
         const formData = new FormData();
         const altText = `Boletin Oficial N° ${data.numero || "?"} - ${data.fecha_publicacion || "Sin Fecha"}`;
 
         let fileToUpload = pdfFile;
-        // Rename logic check
         if (data.numero) {
           const newFileName = `${data.numero}.pdf`;
-          // Create a new File object with the new name
           fileToUpload = new File([pdfFile], newFileName, {
             type: pdfFile.type,
           });
@@ -189,12 +223,6 @@ export default function UploadBulletinPage() {
 
         formData.append("alt", altText);
         formData.append("file", fileToUpload);
-
-        console.log("Uploading PDF...", {
-          fileName: fileToUpload.name,
-          fileSize: fileToUpload.size,
-          alt: altText,
-        });
 
         const mediaRes = await fetch(`${API_BASE_URL}/api/boletines-pdf`, {
           method: "POST",
@@ -209,10 +237,8 @@ export default function UploadBulletinPage() {
 
         const mediaData = await mediaRes.json();
         mediaId = mediaData.doc?.id || mediaData.id;
-        console.log("PDF uploaded, media ID:", mediaId);
       }
 
-      // 2. Create the Boletin
       const boletinPayload = {
         numero: data.numero ? parseInt(String(data.numero)) : undefined,
         fecha_publicacion: data.fecha_publicacion,
@@ -225,8 +251,8 @@ export default function UploadBulletinPage() {
         recaudacion_diaria: data.recaudacion_diaria
           ? parseFloat(String(data.recaudacion_diaria))
           : undefined,
-        raw_text: extractedText.substring(0, 1000000), // Enforce limit
-        archivo_binario: mediaId, // Reference to the uploaded PDF
+        raw_text: extractedText.substring(0, 1000000),
+        archivo_binario: mediaId,
       };
 
       const boletinRes = await fetch(`${API_BASE_URL}/api/boletines`, {
@@ -243,18 +269,12 @@ export default function UploadBulletinPage() {
 
       const boletinData = await boletinRes.json();
       const boletinId = boletinData.doc?.id || boletinData.id;
-      console.log("Bulletin created, ID:", boletinId);
-
       alert(`¡Boletín guardado exitosamente! ID: ${boletinId}`);
-
-      // Optional: reset or redirect
-      // resetState();
     } catch (err) {
       console.error("Error saving bulletin:", err);
       let errorMessage =
         err instanceof Error ? err.message : "Error al guardar el boletín";
 
-      // Improve user feedback for common errors
       if (errorMessage.includes("numero") && errorMessage.includes("unique")) {
         errorMessage =
           "Error: Ya existe un boletín registrado con este Número. Verifica el número o elimina el existente.";
@@ -281,7 +301,7 @@ export default function UploadBulletinPage() {
             Cargar Boletín Oficial
           </h1>
           <p className="text-muted-foreground">
-            Sube el PDF y completa los metadatos.
+            Elige entre sincronización automática con Drive o carga manual.
           </p>
         </div>
         <Link
@@ -293,7 +313,103 @@ export default function UploadBulletinPage() {
         </Link>
       </div>
 
-      {/* File Upload Area */}
+      {/* Drive Sync Section */}
+      <div className="mb-8 p-6 bg-card border rounded-xl shadow-sm">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Cloud className="w-5 h-5 text-blue-500" /> Sincronizar con Google
+          Drive
+        </h2>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">ID de Carpeta Drive</label>
+              <input
+                type="text"
+                placeholder="Ej: 1AbCd..."
+                className="w-full p-2 border rounded text-sm font-mono"
+                value={folderId}
+                onChange={(e) => setFolderId(e.target.value)}
+              />
+            </div>
+
+            <button
+              onClick={handleDriveSync}
+              disabled={isSyncing}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-2 h-10"
+            >
+              {isSyncing && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSyncing ? "Sincronizando..." : "Iniciar Sincronización"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="tokenToggle"
+              checked={useManualToken}
+              onChange={(e) => setUseManualToken(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <label
+              htmlFor="tokenToggle"
+              className="text-xs text-muted-foreground select-none cursor-pointer"
+            >
+              Usar Token de Acceso Manual (Avanzado)
+            </label>
+          </div>
+
+          {useManualToken && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+              <label className="text-sm font-medium">Google Access Token</label>
+              <input
+                type="password"
+                placeholder="Pega tu token OAuth2 aquí..."
+                className="w-full p-2 border rounded text-sm font-mono"
+                value={driveToken}
+                onChange={(e) => setDriveToken(e.target.value)}
+              />
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            Por defecto, usa las credenciales del servidor (auto-refresh).
+          </p>
+
+          {syncResults && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-xs font-mono max-h-60 overflow-y-auto border">
+              <div className="flex justify-between font-bold mb-2">
+                <span>Resultados:</span>
+                <span>{syncResults.results?.length || 0} archivos</span>
+              </div>
+              {syncResults.results?.map((res: any, i: number) => (
+                <div
+                  key={i}
+                  className={`mb-1 ${res.status === "success" ? "text-green-600" : res.status.includes("skipped") ? "text-yellow-600" : "text-red-600"}`}
+                >
+                  [{res.status}] {res.name} {res.error ? `(${res.error})` : ""}
+                </div>
+              ))}
+              {syncResults.error && (
+                <div className="text-red-600">{syncResults.error}</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            O Carga Manual
+          </span>
+        </div>
+      </div>
+
+      {/* File Upload Area (Manual) */}
       {!extractedText && (
         <div className="mb-8">
           <div
@@ -360,7 +476,6 @@ export default function UploadBulletinPage() {
       {/* Main Content Area */}
       {extractedText && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Toolbar */}
           <div className="flex items-center justify-between bg-card p-4 rounded-lg border shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md text-sm font-medium">
@@ -372,7 +487,7 @@ export default function UploadBulletinPage() {
               <button
                 onClick={saveBulletin}
                 disabled={isSaving}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-sm font-medium shadow-sm ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium shadow-sm ${
                   isSaving
                     ? "bg-green-400 cursor-wait"
                     : "bg-green-600 hover:bg-green-700"
@@ -396,7 +511,6 @@ export default function UploadBulletinPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-6">
-            {/* 1. Boletin Fields */}
             <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
               <h3 className="text-lg font-semibold">Datos del Boletín</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -458,7 +572,6 @@ export default function UploadBulletinPage() {
               </div>
             </div>
 
-            {/* Raw Text */}
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground">
                 Texto Extraído Preview
