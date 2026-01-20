@@ -10,8 +10,11 @@ const require = createRequire(import.meta.url);
 const PDFParser = require("pdf2json");
 
 export async function POST(req: NextRequest) {
+  let fileId = "";
   try {
-    const { accessToken: manualToken, fileId } = await req.json();
+    const body = await req.json();
+    const manualToken = body.accessToken;
+    fileId = body.fileId;
 
     if (!fileId) {
       return NextResponse.json({ error: "File ID required" }, { status: 400 });
@@ -148,25 +151,56 @@ export async function POST(req: NextRequest) {
     }
 
     // 8. Update State
-    await supabaseAdmin.from("drive_sync_state").upsert({
-      file_id: fileId,
-      file_name: fileName,
-      status: "success",
-      updated_at: new Date().toISOString(),
-    });
+    if (supabaseAdmin) {
+      const { error: upsertError } = await supabaseAdmin
+        .from("drive_sync_state")
+        .upsert(
+          {
+            file_id: fileId,
+            file_name: fileName,
+            status: "success",
+            processed_at: new Date().toISOString(),
+          },
+          { onConflict: "file_id" },
+        );
 
-    return NextResponse.json({ status: "success", name: fileName, pages });
+      if (upsertError)
+        console.error("Supabase upsert success error:", upsertError);
+    }
+
+    return NextResponse.json({
+      status: "success",
+      name: fileName,
+      pages,
+      extracted: {
+        numero,
+        fecha_publicacion: fechaPublicacion,
+        año_edicion: añoEdicion,
+      },
+    });
   } catch (error: any) {
     console.error("Process error:", error);
     // Mark as error
-    await supabaseAdmin.from("drive_sync_state").upsert({
-      file_id: req.json
-        ? (await req.json().catch(() => ({}))).fileId
-        : "unknown", // Safe try
-      status: "error",
-      error_message: error.message,
-      updated_at: new Date().toISOString(),
-    });
+    if (supabaseAdmin) {
+      // We must read fileId safely. It might be consumed already?
+      // Actually req.json() can only be read once. we already read it at the top.
+      // But we have 'fileId' variable from the top scope! Use it!
+      const fid = fileId || "unknown";
+
+      const { error: failError } = await supabaseAdmin
+        .from("drive_sync_state")
+        .upsert(
+          {
+            file_id: fid,
+            status: "error",
+            // error_message: error.message, // Column missing in schema
+            processed_at: new Date().toISOString(),
+          },
+          { onConflict: "file_id" },
+        );
+
+      if (failError) console.error("Supabase upsert fail error:", failError);
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

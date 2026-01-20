@@ -15,6 +15,7 @@ import {
   ChevronUp,
   Search,
   Check,
+  Save,
 } from "lucide-react";
 import Link from "next/link";
 import { clsx, type ClassValue } from "clsx";
@@ -46,15 +47,12 @@ export default function UploadBulletinPage() {
   const { user } = useAuth();
 
   // --- Drive Sync & Scan State ---
-  const [driveToken, setDriveToken] = useState("");
   const [folderId, setFolderId] = useState("");
-  const [useManualToken, setUseManualToken] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scannedFiles, setScannedFiles] = useState<any[]>([]);
   const [currentSyncIndex, setCurrentSyncIndex] = useState(-1);
-  const [payloadApiKey, setPayloadApiKey] = useState("");
 
   // --- Multi-Upload State ---
   const [uploads, setUploads] = useState<UploadItem[]>([]);
@@ -63,29 +61,11 @@ export default function UploadBulletinPage() {
 
   // --- Helpers ---
   const getAuthHeader = () => {
-    // Prioritize API Key if provided manually
-    if (payloadApiKey) {
-      return `users API-Key ${payloadApiKey}`;
-    }
-    // Fallback to Session Token
     const token = localStorage.getItem("payload-token");
     if (token) {
       return `JWT ${token}`;
     }
     return null;
-  };
-
-  // Load API Key from local storage on mount
-  React.useEffect(() => {
-    const storedKey = localStorage.getItem("payload-api-key");
-    if (storedKey) setPayloadApiKey(storedKey);
-  }, []);
-
-  // Save API Key when changed
-  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setPayloadApiKey(val);
-    localStorage.setItem("payload-api-key", val);
   };
 
   // Redirect if not authorized
@@ -112,17 +92,14 @@ export default function UploadBulletinPage() {
     }
     const authHeader = getAuthHeader();
     if (!authHeader) {
-      alert("Falta Auth (Token o API Key)");
+      alert("Falta Auth (inicia sesión)");
       return;
     }
 
     setIsScanning(true);
     setScannedFiles([]);
     try {
-      const payload = {
-        folderId,
-        accessToken: useManualToken ? driveToken : undefined,
-      };
+      const payload = { folderId };
       const res = await fetch("/api/drive-scan", {
         method: "POST",
         headers: {
@@ -145,68 +122,88 @@ export default function UploadBulletinPage() {
     }
   };
 
-  const handleSyncScanned = async () => {
+  const handleSyncItem = async (index: number) => {
+    const file = scannedFiles[index];
+    const authHeader = getAuthHeader();
+    if (!authHeader) return;
+
+    // Update status to processing
+    setScannedFiles((prev) =>
+      prev.map((f, idx) =>
+        idx === index ? { ...f, status: "processing" } : f,
+      ),
+    );
+
+    try {
+      const payload = { fileId: file.id };
+
+      const res = await fetch("/api/drive-process-item", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        setScannedFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === index ? { ...f, status: "error", error: json.error } : f,
+          ),
+        );
+      } else {
+        setScannedFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === index
+              ? {
+                  ...f,
+                  status: "synced",
+                  pages: json.pages,
+                  extracted: json.extracted,
+                }
+              : f,
+          ),
+        );
+      }
+    } catch (e: any) {
+      setScannedFiles((prev) =>
+        prev.map((f, idx) =>
+          idx === index ? { ...f, status: "error", error: e.message } : f,
+        ),
+      );
+    }
+  };
+
+  const handleSyncAll = async () => {
     if (scannedFiles.length === 0) return;
     const authHeader = getAuthHeader();
     if (!authHeader) return;
 
     setIsSyncing(true);
-    setCurrentSyncIndex(0);
 
     for (let i = 0; i < scannedFiles.length; i++) {
       const file = scannedFiles[i];
+      if (file.status === "synced") continue;
+
       setCurrentSyncIndex(i);
-
-      setScannedFiles((prev) =>
-        prev.map((f, idx) => (idx === i ? { ...f, status: "processing" } : f)),
-      );
-
-      try {
-        if (file.status === "synced") {
-          continue; // Skip already synced
-        }
-
-        const payload = {
-          fileId: file.id,
-          accessToken: useManualToken ? driveToken : undefined,
-        };
-
-        const res = await fetch("/api/drive-process-item", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const json = await res.json();
-
-        if (!res.ok) {
-          setScannedFiles((prev) =>
-            prev.map((f, idx) =>
-              idx === i ? { ...f, status: "error", error: json.error } : f,
-            ),
-          );
-        } else {
-          setScannedFiles((prev) =>
-            prev.map((f, idx) =>
-              idx === i ? { ...f, status: "synced", pages: json.pages } : f,
-            ),
-          );
-        }
-      } catch (e: any) {
-        setScannedFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i ? { ...f, status: "error", error: e.message } : f,
-          ),
-        );
-      }
+      await handleSyncItem(i);
     }
 
     setIsSyncing(false);
     setCurrentSyncIndex(-1);
     alert("Sincronización Completada");
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const showInfo = (file: any) => {
+    if (!file.extracted) return;
+    const { numero, fecha_publicacion, año_edicion } = file.extracted;
+    alert(
+      `Boletín N° ${numero}\nFecha: ${fecha_publicacion}\nAño: ${año_edicion}\nPáginas: ${file.pages}`,
+    );
   };
 
   // --- Handlers: Manual Upload ---
@@ -361,7 +358,7 @@ export default function UploadBulletinPage() {
       formData.append("metadata", JSON.stringify(metadata));
 
       const authHeader = getAuthHeader();
-      if (!authHeader) throw new Error("No hay sesión activa ni API Key.");
+      if (!authHeader) throw new Error("No hay sesión activa.");
 
       const response = await fetch("/api/manual-upload", {
         method: "POST",
@@ -431,24 +428,6 @@ export default function UploadBulletinPage() {
           (Drive)
         </h2>
 
-        <div className="mb-4 p-3 bg-yellow-50/50 border border-yellow-100 rounded-lg">
-          <label className="block text-xs font-semibold text-yellow-700 mb-1">
-            Payload API Key (Opcional - Para permisos Admin)
-          </label>
-          <input
-            type="password"
-            placeholder="users API-Key ..."
-            className="w-full max-w-md p-2 border rounded text-sm font-mono bg-white"
-            value={payloadApiKey}
-            onChange={handleApiKeyChange}
-          />
-          <p className="text-[10px] text-yellow-600/80 mt-1">
-            Si ves errores de &quot;Not allowed&quot;, genera una API Key en
-            Payload (Usuarios) e ingrésala aquí. Se usará en lugar de tu sesión
-            actual.
-          </p>
-        </div>
-
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div className="space-y-2">
@@ -476,7 +455,7 @@ export default function UploadBulletinPage() {
               </button>
 
               <button
-                onClick={handleSyncScanned}
+                onClick={handleSyncAll}
                 disabled={isSyncing || scannedFiles.length === 0}
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-2 h-10"
               >
@@ -492,83 +471,76 @@ export default function UploadBulletinPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="tokenToggle"
-              checked={useManualToken}
-              onChange={(e) => setUseManualToken(e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            <label
-              htmlFor="tokenToggle"
-              className="text-xs text-muted-foreground cursor-pointer select-none"
-            >
-              Usar Token Manual (Avanzado)
-            </label>
-          </div>
-          {useManualToken && (
-            <input
-              type="password"
-              placeholder="Access Token..."
-              className="w-full p-2 border rounded text-sm font-mono"
-              value={driveToken}
-              onChange={(e) => setDriveToken(e.target.value)}
-            />
-          )}
-
           {scannedFiles.length > 0 && (
             <div className="mt-4 border rounded-md overflow-hidden">
               <div className="bg-gray-50 px-4 py-2 border-b text-xs font-semibold text-gray-500 uppercase flex justify-between">
                 <span>Archivos ({scannedFiles.length})</span>
-                <span>Estado</span>
+                <span>Acciones</span>
               </div>
               <div className="max-h-80 overflow-y-auto divide-y">
-                {scannedFiles.map((file) => (
+                {scannedFiles.map((file, i) => (
                   <div
                     key={file.id}
                     className="px-4 py-2 text-sm flex justify-between items-center hover:bg-gray-50"
                   >
-                    <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="flex items-center gap-2 overflow-hidden flex-1">
                       <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="truncate max-w-[300px]">
+                      <span className="truncate max-w-[200px] font-medium">
                         {file.name}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 hidden md:block">
                         {file.mimeType}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {file.status === "pending" && (
-                        <span className="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded text-xs">
-                          Pendiente
-                        </span>
-                      )}
+
+                      {/* Status Badges */}
                       {file.status === "processing" && (
-                        <span className="text-blue-600 flex items-center gap-1 text-xs">
+                        <span className="text-blue-600 flex items-center gap-1 text-xs ml-2">
                           <Loader2 className="w-3 h-3 animate-spin" />{" "}
                           Procesando
                         </span>
                       )}
                       {file.status === "synced" && (
-                        <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Completado
+                        <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1 ml-2">
+                          <Check className="w-3 h-3" /> Ok
                         </span>
                       )}
                       {file.status === "error" && (
                         <span
-                          className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs"
+                          className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs ml-2"
                           title={file.error}
                         >
                           Error
                         </span>
                       )}
-                      {/* Show Pages if available */}
-                      {file.pages && (
-                        <span className="text-gray-500 text-xs text-[10px] ml-2">
-                          {file.pages} pág.
-                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Info Button */}
+                      {(file.status === "synced" || file.extracted) && (
+                        <button
+                          onClick={() => showInfo(file)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                          title="Ver Información Extraída"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
                       )}
+
+                      {/* Sync Button (Individual) */}
+                      <button
+                        onClick={() => handleSyncItem(i)}
+                        disabled={file.status === "processing" || isSyncing}
+                        className={cn(
+                          "px-3 py-1.5 text-xs font-medium rounded border flex items-center gap-1",
+                          file.status === "synced"
+                            ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
+                        )}
+                      >
+                        {file.status === "synced"
+                          ? "Re-Sincronizar"
+                          : "Sincronizar"}
+                      </button>
                     </div>
                   </div>
                 ))}
