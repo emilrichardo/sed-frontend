@@ -57,6 +57,7 @@ export interface Boletin {
   cantidad_paginas: number;
   recaudacion_diaria?: number;
   staff_autoridades?: any;
+  archivo_binario?: any; // Media object or ID
   createdAt: string;
   updatedAt: string;
 }
@@ -91,7 +92,7 @@ export async function getNews(
     limit?: number;
     sort?: string;
     where?: any;
-  } = {}
+  } = {},
 ): Promise<PayloadResponse<NewsItem>> {
   const { page = 1, limit = 10, sort = "-createdAt", where } = params;
   let url = `${API_URL}/noticias?page=${page}&limit=${limit}&sort=${sort}&draft=false`;
@@ -138,7 +139,7 @@ export async function getNewsItem(slug: string): Promise<NewsItem | null> {
       `${API_URL}/noticias?where[slug][equals]=${slug}&depth=2&draft=false`,
       {
         next: { revalidate: 60 },
-      }
+      },
     );
 
     if (!res.ok) {
@@ -166,7 +167,7 @@ export async function getBulletins(
     limit?: number;
     sort?: string;
     where?: any;
-  } = {}
+  } = {},
 ): Promise<PayloadResponse<Boletin>> {
   const { page = 1, limit = 10, sort = "-fecha_publicacion", where } = params;
   let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}`;
@@ -191,9 +192,24 @@ export async function getBulletins(
 }
 
 export async function getBulletin(idOrSlug: string): Promise<Boletin> {
-  // Check if it's a slug (YYYY-MM-DD) or a numeric ID
+  // 1. Check if it's a numeric string (for 'numero')
+  const isNumber = /^\d+$/.test(idOrSlug);
+  // 2. Check if it's a slug (contains hyphens)
   const isSlug = idOrSlug.includes("-");
-  const query = isSlug ? `?where[slug][equals]=${idOrSlug}` : `/${idOrSlug}`;
+
+  let query = "";
+  let isSearch = false;
+
+  if (isNumber) {
+    query = `?where[numero][equals]=${idOrSlug}`;
+    isSearch = true;
+  } else if (isSlug) {
+    query = `?where[slug][equals]=${idOrSlug}`;
+    isSearch = true;
+  } else {
+    // Assume internal ID
+    query = `/${idOrSlug}`;
+  }
 
   const res = await fetch(`${API_URL}/boletines${query}`, {
     headers: {
@@ -205,7 +221,15 @@ export async function getBulletin(idOrSlug: string): Promise<Boletin> {
   if (!res.ok) throw new Error("Failed to fetch bulletin");
 
   const data = await res.json();
-  return isSlug ? data.docs[0] : data;
+
+  if (isSearch) {
+    if (!data.docs || data.docs.length === 0) {
+      throw new Error("Bulletin not found");
+    }
+    return data.docs[0];
+  }
+
+  return data;
 }
 
 export async function getEntries(
@@ -215,7 +239,7 @@ export async function getEntries(
     sort?: string;
     where?: any;
     depth?: number;
-  } = {}
+  } = {},
 ): Promise<PayloadResponse<EntradaInterna>> {
   const {
     page = 1,
@@ -257,11 +281,11 @@ export async function getEntry(id: string): Promise<EntradaInterna> {
 }
 
 export async function getEntryDetails(
-  entryId: string
+  entryId: string,
 ): Promise<DetalleEspecifico[]> {
   const res = await fetch(
     `${API_URL}/detalles-especificos?where[id_entrada][equals]=${entryId}&depth=2`,
-    { next: { revalidate: 60 } }
+    { next: { revalidate: 60 } },
   );
   if (!res.ok) throw new Error("Failed to fetch entry details");
   const data = await res.json();
@@ -277,7 +301,7 @@ export async function getTaxonomy<T>(collection: string): Promise<T[]> {
   return data.docs;
 }
 export async function createBulletin(
-  data: any
+  data: any,
 ): Promise<{ doc: Boletin; message: string }> {
   const token =
     typeof window !== "undefined"
@@ -300,7 +324,7 @@ export async function createBulletin(
     const errorData = await res.json().catch(() => ({}));
     console.error(
       "API: createBulletin error details:",
-      JSON.stringify(errorData, null, 2)
+      JSON.stringify(errorData, null, 2),
     );
     throw new Error(`Failed to create bulletin: ${res.statusText}`);
   }
@@ -308,7 +332,7 @@ export async function createBulletin(
 }
 
 export async function createEntry(
-  data: any
+  data: any,
 ): Promise<{ doc: EntradaInterna; message: string }> {
   const token =
     typeof window !== "undefined"
@@ -331,7 +355,7 @@ export async function createEntry(
     const errorData = await res.json().catch(() => ({}));
     console.error(
       "API: createEntry error details:",
-      JSON.stringify(errorData, null, 2)
+      JSON.stringify(errorData, null, 2),
     );
     throw new Error(`Failed to create entry: ${res.statusText}`);
   }
@@ -340,7 +364,7 @@ export async function createEntry(
 
 export async function createTaxonomy(
   collection: string,
-  data: { nombre: string }
+  data: { nombre: string },
 ): Promise<any> {
   const token =
     typeof window !== "undefined"
@@ -350,7 +374,7 @@ export async function createTaxonomy(
   console.log(
     `API: createTaxonomy (${collection}) - Token exists:`,
     !!token,
-    token ? `(starts with: ${token.substring(0, 10)}...)` : ""
+    token ? `(starts with: ${token.substring(0, 10)}...)` : "",
   );
 
   const res = await fetch(`${API_URL}/${collection}`, {
@@ -366,12 +390,12 @@ export async function createTaxonomy(
     console.error(
       `API: createTaxonomy (${collection}) error:`,
       res.status,
-      res.statusText
+      res.statusText,
     );
     const errorData = await res.json().catch(() => ({}));
     console.error(
       `API: createTaxonomy (${collection}) error details:`,
-      JSON.stringify(errorData, null, 2)
+      JSON.stringify(errorData, null, 2),
     );
     throw new Error(`Failed to create ${collection}: ${res.statusText}`);
   }

@@ -142,7 +142,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
                       <td className="px-4 py-3">{b.cantidad_paginas}</td>
                       <td className="px-4 py-3 text-right">
                         <Link
-                          href={`/boletines/${b.slug}`}
+                          href={`/boletines/${b.numero}`}
                           className="text-primary hover:underline font-medium"
                         >
                           Ver Detalle
@@ -158,7 +158,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
               {bulletins?.docs.map((b) => (
                 <Link
                   key={b.id}
-                  href={`/boletines/${b.slug}`}
+                  href={`/boletines/${b.numero}`}
                   className="block p-4 border rounded-lg hover:border-primary transition-colors bg-card"
                 >
                   <div className="flex justify-between items-start">

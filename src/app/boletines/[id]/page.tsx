@@ -3,6 +3,7 @@ import { getBulletin, getEntries, Boletin, EntradaInterna } from "@/lib/api";
 import Link from "next/link";
 import { ChevronLeft, FileText } from "lucide-react";
 import BulletinEntriesBySection from "@/components/BulletinEntriesBySection";
+import BulletinActions from "@/components/BulletinActions";
 
 export default async function BulletinDetailPage({
   params,
@@ -69,6 +70,7 @@ export default async function BulletinDetailPage({
           Publicado el {formatDate(bulletin.fecha_publicacion)} •{" "}
           {bulletin.cantidad_paginas} páginas
         </p>
+        <BulletinActions bulletin={bulletin} />
       </div>
 
       <div className="space-y-6">
