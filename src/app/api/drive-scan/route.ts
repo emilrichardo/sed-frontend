@@ -145,12 +145,20 @@ export async function POST(req: NextRequest) {
     const processedMap = new Map();
     processed?.forEach((p) => processedMap.set(p.file_id, p.status));
 
-    const results = foundFiles.map((f) => ({
-      id: f.id,
-      name: f.name,
-      createdTime: f.createdTime,
-      status: processedMap.get(f.id) === "success" ? "synced" : "pending",
-    }));
+    const results = foundFiles.map((f) => {
+      const dbStatus = processedMap.get(f.id);
+      let status = "pending";
+      if (dbStatus === "success") status = "synced";
+      if (dbStatus === "error") status = "error";
+
+      return {
+        id: f.id,
+        name: f.name,
+        createdTime: f.createdTime,
+        status,
+        dbStatus, // debug info
+      };
+    });
 
     return NextResponse.json({ files: results });
   } catch (error: any) {

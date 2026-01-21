@@ -12,9 +12,12 @@ if (!supabaseUrl) {
 }
 
 // Client for public access
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = supabaseUrl
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : (null as any);
 
 // Admin client for backend ops (bypasses RLS)
-export const supabaseAdmin = supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
+export const supabaseAdmin =
+  supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null;

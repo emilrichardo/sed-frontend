@@ -31,7 +31,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
       try {
         const data = await getBulletins({
           page,
-          limit: 10,
+          limit: 50,
           where: {
             ...filters,
             ...(searchQuery ? { numero: searchQuery } : {}),
@@ -187,7 +187,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
           <div className="flex items-center justify-between pt-4">
             <p className="text-sm text-muted-foreground">
               Mostrando {bulletins?.docs.length} de {bulletins?.totalDocs}{" "}
-              boletines
+              boletines (duplicados fusionados automáticamente)
             </p>
             <div className="flex gap-2">
               <button

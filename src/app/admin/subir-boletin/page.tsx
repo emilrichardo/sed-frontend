@@ -63,7 +63,7 @@ export default function UploadBulletinPage() {
   const getAuthHeader = () => {
     const token = localStorage.getItem("payload-token");
     if (token) {
-      return `JWT ${token}`;
+      return `Bearer ${token}`;
     }
     return null;
   };
@@ -564,34 +564,58 @@ export default function UploadBulletinPage() {
                     key={file.id}
                     className="px-4 py-2 text-sm flex justify-between items-center hover:bg-gray-50"
                   >
-                    <div className="flex items-center gap-2 overflow-hidden flex-1">
-                      <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="truncate max-w-[200px] font-medium">
-                        {file.name}
-                      </span>
-                      <span className="text-xs text-gray-400 hidden md:block">
-                        {file.mimeType}
-                      </span>
+                    <div className="flex flex-col flex-1 overflow-hidden gap-1">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="truncate max-w-[300px] font-medium">
+                          {file.name}
+                        </span>
 
-                      {/* Status Badges */}
-                      {file.status === "processing" && (
-                        <span className="text-blue-600 flex items-center gap-1 text-xs ml-2">
-                          <Loader2 className="w-3 h-3 animate-spin" />{" "}
-                          Procesando
-                        </span>
-                      )}
-                      {file.status === "synced" && (
-                        <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1 ml-2">
-                          <Check className="w-3 h-3" /> Ok
-                        </span>
-                      )}
-                      {file.status === "error" && (
-                        <span
-                          className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs ml-2"
-                          title={file.error}
-                        >
-                          Error
-                        </span>
+                        {/* Status Badges */}
+                        {file.status === "processing" && (
+                          <span className="text-blue-600 flex items-center gap-1 text-xs px-2 py-0.5 bg-blue-50 rounded">
+                            <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                            Procesando
+                          </span>
+                        )}
+                        {file.status === "synced" && (
+                          <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Ok
+                          </span>
+                        )}
+                        {file.status === "error" && (
+                          <span
+                            className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs"
+                            title={file.error}
+                          >
+                            Error
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Metadata Row */}
+                      {(file.extracted ||
+                        (file.status === "synced" && file.pages)) && (
+                        <div className="text-xs text-gray-500 ml-6 flex gap-3">
+                          {file.extracted?.numero && (
+                            <span>
+                              <span className="font-semibold">N°:</span>{" "}
+                              {file.extracted.numero}
+                            </span>
+                          )}
+                          {file.extracted?.fecha_publicacion && (
+                            <span>
+                              <span className="font-semibold">Fecha:</span>{" "}
+                              {file.extracted.fecha_publicacion}
+                            </span>
+                          )}
+                          {(file.pages || file.data?.cantidad_paginas) && (
+                            <span>
+                              <span className="font-semibold">Págs:</span>{" "}
+                              {file.pages || file.data?.cantidad_paginas}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
 

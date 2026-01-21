@@ -138,6 +138,54 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
+
+    // 5.1 Check if Bulletin already exists (Optimization to avoid duplicate media)
+    if (fechaPublicacion && numero) {
+      const potentialSlug = `${fechaPublicacion.split("T")[0]}-${numero}`;
+      try {
+        const checkRes = await fetch(
+          `${API_BASE_URL}/api/boletines?where[slug][equals]=${potentialSlug}`,
+          {
+            headers: authHeader ? { Authorization: authHeader } : undefined,
+          },
+        );
+        if (checkRes.ok) {
+          const checkJson = await checkRes.json();
+          if (checkJson.docs && checkJson.docs.length > 0) {
+            console.log(
+              `[DriveProcess] Bulletin ${potentialSlug} already exists. Skipping media upload.`,
+            );
+            // Mark as success in Supabase
+            if (supabaseAdmin) {
+              await supabaseAdmin.from("drive_sync_state").upsert(
+                {
+                  file_id: fileId,
+                  file_name: fileName,
+                  status: "success",
+                  processed_at: new Date().toISOString(),
+                },
+                { onConflict: "file_id" },
+              );
+            }
+            return NextResponse.json({
+              status: "skipped_exists",
+              name: fileName,
+              pages: finalPages, // Ensure this variable is available in scope
+              extracted: {
+                numero,
+                fecha_publicacion: fechaPublicacion,
+                año_edicion: añoEdicion,
+              },
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("Error checking for existing bulletin:", e);
+      }
+    }
+
     // 6. Upload to Payload Media
     const fileNameToSave = numero ? `${numero}.pdf` : fileName;
     const formData = new FormData();
@@ -145,21 +193,41 @@ export async function POST(req: NextRequest) {
     formData.append("file", blob, fileNameToSave);
     formData.append("alt", `Boletin N° ${numero || "??"} (Auto-sync)`);
 
-    const API_BASE_URL =
-      process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
-
     const mediaRes = await fetch(`${API_BASE_URL}/api/boletines-pdf`, {
       method: "POST",
       headers: authHeader ? { Authorization: authHeader } : undefined,
       body: formData,
     });
 
+    let mediaId = "";
+
     if (!mediaRes.ok) {
       const txt = await mediaRes.text();
-      throw new Error(`Media Upload Failed: ${txt}`);
+      console.warn("Media Upload Failed, trying to find existing:", txt);
+
+      // Attempt to find existing file
+      const findRes = await fetch(
+        `${API_BASE_URL}/api/boletines-pdf?where[filename][equals]=${fileNameToSave}`,
+        {
+          headers: authHeader ? { Authorization: authHeader } : undefined,
+        },
+      );
+
+      if (findRes.ok) {
+        const findJson = await findRes.json();
+        if (findJson.docs && findJson.docs.length > 0) {
+          mediaId = findJson.docs[0].id;
+          console.log("Found existing media, using it:", mediaId);
+        } else {
+          throw new Error(`Media Upload Failed and Not Found: ${txt}`);
+        }
+      } else {
+        throw new Error(`Media Upload Failed: ${txt}`);
+      }
+    } else {
+      const mediaJson = await mediaRes.json();
+      mediaId = mediaJson.doc?.id || mediaJson.id;
     }
-    const mediaJson = await mediaRes.json();
-    const mediaId = mediaJson.doc?.id || mediaJson.id;
 
     // 7. Create Bulletin
     const boletinPayload = {
@@ -204,6 +272,9 @@ export async function POST(req: NextRequest) {
 
     // 8. Update State
     if (supabaseAdmin) {
+      console.log(
+        `[DriveProcess] Updating Supabase status=success for ${fileId}`,
+      );
       const { error: upsertError } = await supabaseAdmin
         .from("drive_sync_state")
         .upsert(
@@ -218,6 +289,11 @@ export async function POST(req: NextRequest) {
 
       if (upsertError)
         console.error("Supabase upsert success error:", upsertError);
+    } else {
+      console.warn(
+        "[DriveProcess] supabaseAdmin is NULL - Skipping DB update for",
+        fileId,
+      );
     }
 
     return NextResponse.json({
