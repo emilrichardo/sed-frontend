@@ -80,8 +80,8 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
                 node.listType === "check"
                   ? "check"
                   : node.tag === "ol"
-                  ? "ol"
-                  : "ul",
+                    ? "ol"
+                    : "ul",
               text,
               checked: listItem.checked,
             });
@@ -186,7 +186,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
   const handleDelete = async () => {
     if (
       !confirm(
-        "¿Estás seguro de que quieres eliminar esta noticia? Esta acción no se puede deshacer."
+        "¿Estás seguro de que quieres eliminar esta noticia? Esta acción no se puede deshacer.",
       )
     ) {
       return;
@@ -221,7 +221,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
       const token = localStorage.getItem("payload-token");
       if (!token) {
         alert(
-          "No se encontró el token de sesión. Por favor, inicia sesión nuevamente."
+          "No se encontró el token de sesión. Por favor, inicia sesión nuevamente.",
         );
         return;
       }
@@ -241,8 +241,8 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
             block.type === "check"
               ? "check"
               : block.type === "ol"
-              ? "number"
-              : "bullet";
+                ? "number"
+                : "bullet";
           const tag =
             block.type === "ul" || block.type === "check" ? "ul" : "ol";
 
@@ -640,7 +640,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
             {/* Simple preview based on blocks */}
             {blocks.map((block) => {
               if (block.type.startsWith("h")) {
-                const Tag = block.type as keyof JSX.IntrinsicElements;
+                const Tag = block.type as React.ElementType;
                 return <Tag key={block.id}>{block.text}</Tag>;
               }
               if (block.type === "upload") {

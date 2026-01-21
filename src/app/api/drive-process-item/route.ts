@@ -189,12 +189,14 @@ export async function POST(req: NextRequest) {
       const txt = await bolRes.text();
       if (txt.includes("unique")) {
         // Mark as skipped/exists
-        await supabaseAdmin.from("drive_sync_state").upsert({
-          file_id: fileId,
-          file_name: fileName,
-          status: "success", // Considered success if it exists
-          updated_at: new Date().toISOString(),
-        });
+        if (supabaseAdmin) {
+          await supabaseAdmin.from("drive_sync_state").upsert({
+            file_id: fileId,
+            file_name: fileName,
+            status: "success", // Considered success if it exists
+            updated_at: new Date().toISOString(),
+          });
+        }
         return NextResponse.json({ status: "skipped_exists", name: fileName });
       }
       throw new Error(`Bulletin Create Failed: ${txt}`);

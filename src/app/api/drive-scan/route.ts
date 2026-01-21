@@ -133,10 +133,14 @@ export async function POST(req: NextRequest) {
     // Let's return the list and let frontend handle status or check casually.
 
     // We can do a quick check for "success" status
-    const { data: processed } = await supabaseAdmin
-      .from("drive_sync_state")
-      .select("file_id, status")
-      .in("file_id", fileIds.slice(0, 500)); // Limit check to 500
+    let processed: any[] | null = [];
+    if (supabaseAdmin) {
+      const { data } = await supabaseAdmin
+        .from("drive_sync_state")
+        .select("file_id, status")
+        .in("file_id", fileIds.slice(0, 500)); // Limit check to 500
+      processed = data;
+    }
 
     const processedMap = new Map();
     processed?.forEach((p) => processedMap.set(p.file_id, p.status));
