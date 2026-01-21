@@ -44,7 +44,7 @@ interface UploadItem {
 }
 
 export default function UploadBulletinPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // --- Drive Sync & Scan State ---
   const [folderId, setFolderId] = useState("");
@@ -111,6 +111,11 @@ export default function UploadBulletinPage() {
       const json = await res.json();
 
       if (!res.ok) {
+        if (res.status === 401) {
+          alert("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+          logout();
+          return;
+        }
         alert(`Error Scanning: ${json.error}`);
       } else {
         setScannedFiles(json.files || []);
@@ -149,6 +154,11 @@ export default function UploadBulletinPage() {
       const json = await res.json();
 
       if (!res.ok) {
+        if (res.status === 401) {
+          alert("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+          logout();
+          return;
+        }
         setScannedFiles((prev) =>
           prev.map((f, idx) =>
             idx === index ? { ...f, status: "error", error: json.error } : f,
@@ -371,6 +381,11 @@ export default function UploadBulletinPage() {
       const result = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          alert("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+          logout();
+          return;
+        }
         if (result.error && result.error.includes("unique")) {
           throw new Error("Boletín duplicado (Número o Fecha ya existen).");
         }

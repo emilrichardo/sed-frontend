@@ -31,17 +31,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("payload-token");
     const storedUser = localStorage.getItem("payload-user");
 
-    if (token && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-        setIsEditing(true);
-      } catch (e) {
-        console.error("Failed to parse user from local storage", e);
-        localStorage.removeItem("payload-token");
-        localStorage.removeItem("payload-user");
+    const validateSession = async () => {
+      if (!token) {
+        setIsLoading(false);
+        return;
       }
-    }
-    setIsLoading(false);
+
+      try {
+        const API_URL =
+          process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
+        const res = await fetch(`${API_URL}/api/users/me`, {
+          headers: {
+            Authorization: `JWT ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          // Token is valid
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
+            setIsEditing(true);
+          } else {
+            // Fallback: fetch user data if missing but token valid
+            const data = await res.json();
+            if (data.user) {
+              setUser(data.user);
+              localStorage.setItem("payload-user", JSON.stringify(data.user));
+              setIsEditing(true);
+            }
+          }
+        } else {
+          // Token invalid/expired
+          console.warn("Session expired, logging out.");
+          localStorage.removeItem("payload-token");
+          localStorage.removeItem("payload-user");
+          setUser(null);
+          setIsEditing(false);
+          // Optional: router.push("/login") if you want to force them there
+        }
+      } catch (e) {
+        console.error("Auth validation error", e);
+        // On network error we might not want to logout immediately,
+        // but for safety/simplicity let's keep the user logged in locally
+        // until a definite 401.
+        // However, if we can't validate, we accept the local storage state.
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+          setIsEditing(true);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    validateSession();
   }, []);
 
   const login = (token: string, userData: User) => {
