@@ -58,6 +58,8 @@ export interface Boletin {
   recaudacion_diaria?: number;
   staff_autoridades?: any;
   archivo_binario?: any; // Media object or ID
+  contenido_procesado?: string | null;
+  status_procesamiento?: ("unprocessed" | "basic" | "ai_enhanced") | null;
   createdAt: string;
   updatedAt: string;
 }

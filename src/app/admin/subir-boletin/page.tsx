@@ -1044,7 +1044,7 @@ export default function UploadBulletinPage() {
                         (u) => u.status === "ready" && !u.isDuplicate,
                       ).length === 0
                     }
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                    className="px-4 py-2 bg-blue-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                   >
                     <Save className="w-4 h-4" />
                     Guardar Todo (

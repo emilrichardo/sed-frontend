@@ -230,18 +230,22 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Create Bulletin
+    // synced with manual-upload schema and User's "Valid Payload Example"
     const boletinPayload = {
       numero: numero,
       fecha_publicacion: fechaPublicacion,
       año_edicion: añoEdicion,
+
       raw_text: text.substring(0, 1000000),
       archivo_binario: mediaId,
       cantidad_paginas: finalPages,
       recaudacion_diaria: recaudacionDiaria,
-      slug:
-        fechaPublicacion && numero
-          ? `${fechaPublicacion.split("T")[0]}-${numero}`
-          : undefined,
+
+      // Initialize new fields
+      status_procesamiento: "unprocessed",
+      contenido_procesado: null,
+
+      // Removed 'slug' to let backend hook generate it.
     };
 
     const bolRes = await fetch(`${API_BASE_URL}/api/boletines`, {
