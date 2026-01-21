@@ -236,13 +236,76 @@ export default function UploadBulletinPage() {
         fullText += `--- Página ${i} ---\n${pageText}\n\n`;
       }
 
-      const firstPageText = fullText.split("--- Página 2 ---")[0] || "";
-      const numberMatch = firstPageText.match(/N\s*\/\s*([\d.]+)/i);
+      // Use the first part of the text for metadata search to avoid false positives later in valid text
+      const headerText = fullText.substring(0, 3000);
+
+      // 1. Number: e.g. "Boletin Oficial N/ 22.980", "N° 22.980", "N / 22.969"
+      // Allow spaces between N, the separator (/ or °), and the number
+      const numberMatch = headerText.match(/N\s*(?:°|\/)?\s*([\d.]+)/i);
       const number = numberMatch
         ? parseInt(numberMatch[1].replace(/\./g, ""))
         : "";
-      const yearMatch = firstPageText.match(/Año\s+([XIVLCDM]+)/i);
+
+      // 2. Year: e.g. "Año XCIII"
+      const yearMatch = headerText.match(/Año\s+([XIVLCDM]+)/i);
       const yearRoman = yearMatch ? yearMatch[1] : "";
+
+      // 3. Pages: e.g. "Edición de 40 Páginas"
+      const pagesMatch = headerText.match(/Edición\s+de\s+(\d+)\s+Páginas/i);
+      const pagesFromText = pagesMatch ? parseInt(pagesMatch[1]) : "";
+      const finalPages = pagesFromText || pdf.numPages;
+
+      // 4. Recaudacion: e.g. "TOTAL ________ $ 448.700", "TOTAL _____ $ 118.200"
+      // Handles variable underscores, spaces, dots
+      const recaudacionMatch = headerText.match(
+        /TOTAL\s+[_]+\s*\$\s*([\d.,]+)/i,
+      );
+      let recaudacion: number | "" = "";
+      if (recaudacionMatch) {
+        // remove dots, replace comma with dot if exists (though usually it's integer in examples)
+        // Example: 448.700 -> 448700.  118.200 -> 118200
+        const cleanVal = recaudacionMatch[1]
+          .replace(/\./g, "")
+          .replace(",", ".");
+        recaudacion = parseFloat(cleanVal);
+      }
+
+      // 5. Date: e.g. "Jueves 27 de Noviembre de 2025" or "Lunes 10 de Noviembre de 2025"
+      const monthMap: { [key: string]: string } = {
+        enero: "01",
+        febrero: "02",
+        marzo: "03",
+        abril: "04",
+        mayo: "05",
+        junio: "06",
+        julio: "07",
+        agosto: "08",
+        septiembre: "09",
+        setiembre: "09",
+        octubre: "10",
+        noviembre: "11",
+        diciembre: "12",
+      };
+
+      // Look for: Word (Day) Number (DD) de Word (Month) de Number (YYYY)
+      const dateRegex =
+        /([a-záéíóú]+)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/gi;
+      let fecha_publicacion = item.data.fecha_publicacion;
+
+      // Find all matches, pick the valid one (sometimes "Boletin Oficial" appears before date)
+      const dateMatches = [...headerText.matchAll(dateRegex)];
+
+      for (const match of dateMatches) {
+        const day = match[2].padStart(2, "0");
+        const monthName = match[3].toLowerCase();
+        const year = match[4];
+
+        if (monthMap[monthName]) {
+          const month = monthMap[monthName];
+          fecha_publicacion = `${year}-${month}-${day}`;
+          break; // Use the first valid date found
+        }
+      }
 
       return {
         ...item,
@@ -250,9 +313,12 @@ export default function UploadBulletinPage() {
         extractedText: fullText,
         data: {
           ...item.data,
-          cantidad_paginas: pdf.numPages,
+          cantidad_paginas: finalPages || item.data.cantidad_paginas,
           numero: number || item.data.numero,
           año_edicion: yearRoman || item.data.año_edicion,
+          recaudacion_diaria:
+            recaudacion !== "" ? recaudacion : item.data.recaudacion_diaria,
+          fecha_publicacion: fecha_publicacion,
         },
       };
     } catch (err: unknown) {

@@ -78,20 +78,64 @@ export async function POST(req: NextRequest) {
     const { text, pages } = parseResult;
 
     // 5. Extract Metadata
-    // Number
-    const numberMatch = text.match(/N\s*\/\s*([\d.]+)/i);
+    const headerText = text.substring(0, 3000);
+
+    // Number: e.g. "N/ 22.980" or "N° 22.980" or "N / 22.969"
+    const numberMatch = headerText.match(/N\s*(?:°|\/)?\s*([\d.]+)/i);
     const numero = numberMatch
       ? parseInt(numberMatch[1].replace(/\./g, ""))
       : undefined;
 
-    // Date (Fallback to CreatedTime)
-    const fechaPublicacion = fileMeta.data.createdTime
-      ? fileMeta.data.createdTime.split("T")[0]
-      : new Date().toISOString().split("T")[0];
-
     // Year Roman
-    const yearMatch = text.match(/Año\s+([XIVLCDM]+)/i);
+    const yearMatch = headerText.match(/Año\s+([XIVLCDM]+)/i);
     const añoEdicion = yearMatch ? yearMatch[1] : "";
+
+    // Pages from text (fallback to pdf.pages)
+    const pagesMatch = headerText.match(/Edición\s+de\s+(\d+)\s+Páginas/i);
+    const pagesFromText = pagesMatch ? parseInt(pagesMatch[1]) : 0;
+    const finalPages = pagesFromText || pages;
+
+    // Recaudacion
+    const recaudacionMatch = headerText.match(/TOTAL\s+[_]+\s*\$\s*([\d.,]+)/i);
+    let recaudacionDiaria: number | undefined = undefined;
+    if (recaudacionMatch) {
+      const cleanVal = recaudacionMatch[1].replace(/\./g, "").replace(",", ".");
+      recaudacionDiaria = parseFloat(cleanVal);
+    }
+
+    // Date
+    const monthMap: { [key: string]: string } = {
+      enero: "01",
+      febrero: "02",
+      marzo: "03",
+      abril: "04",
+      mayo: "05",
+      junio: "06",
+      julio: "07",
+      agosto: "08",
+      septiembre: "09",
+      setiembre: "09",
+      octubre: "10",
+      noviembre: "11",
+      diciembre: "12",
+    };
+    const dateRegex =
+      /([a-záéíóú]+)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/gi;
+    let fechaPublicacion = fileMeta.data.createdTime
+      ? fileMeta.data.createdTime.split("T")[0]
+      : new Date().toISOString().split("T")[0]; // Fallback
+
+    const dateMatches = [...headerText.matchAll(dateRegex)];
+    for (const match of dateMatches) {
+      const day = match[2].padStart(2, "0");
+      const monthName = match[3].toLowerCase();
+      const year = match[4];
+      if (monthMap[monthName]) {
+        const month = monthMap[monthName];
+        fechaPublicacion = `${year}-${month}-${day}`;
+        break;
+      }
+    }
 
     // 6. Upload to Payload Media
     const fileNameToSave = numero ? `${numero}.pdf` : fileName;
@@ -123,7 +167,8 @@ export async function POST(req: NextRequest) {
       año_edicion: añoEdicion,
       raw_text: text.substring(0, 1000000),
       archivo_binario: mediaId,
-      cantidad_paginas: pages, // NEW FIELD
+      cantidad_paginas: finalPages,
+      recaudacion_diaria: recaudacionDiaria,
     };
 
     const bolRes = await fetch(`${API_BASE_URL}/api/boletines`, {
