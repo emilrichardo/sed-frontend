@@ -11,12 +11,10 @@ import {
   Cloud,
   X,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
+  RefreshCw,
   Search,
   Check,
   Save,
-  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { clsx, type ClassValue } from "clsx";
@@ -34,6 +32,20 @@ interface BoletinData {
   recaudacion_diaria: number | "";
 }
 
+interface ScannedFile {
+  id: string;
+  name: string;
+  mimeType?: string;
+  status?: "pending" | "processing" | "synced" | "error";
+  error?: string;
+  extracted?: {
+    numero?: string | number;
+    fecha_publicacion?: string;
+  };
+  pages?: number;
+  data?: BoletinData;
+}
+
 interface UploadItem {
   id: string;
   file: File;
@@ -41,7 +53,6 @@ interface UploadItem {
   extractedText: string;
   data: BoletinData;
   error?: string;
-  isExpanded: boolean;
   isDuplicate?: boolean;
   existingId?: string;
 }
@@ -53,14 +64,12 @@ export default function UploadBulletinPage() {
   const [folderId, setFolderId] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [scannedFiles, setScannedFiles] = useState<any[]>([]);
+  const [scannedFiles, setScannedFiles] = useState<ScannedFile[]>([]);
   const [currentSyncIndex, setCurrentSyncIndex] = useState(-1);
 
   // --- Multi-Upload State ---
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
   const [activeTab, setActiveTab] = useState<"manual" | "drive">("manual");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,7 +122,7 @@ export default function UploadBulletinPage() {
         },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
+      const json: { error?: string; files?: ScannedFile[] } = await res.json();
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -156,7 +165,11 @@ export default function UploadBulletinPage() {
         body: JSON.stringify(payload),
       });
 
-      const json = await res.json();
+      const json: {
+        error?: string;
+        pages?: number;
+        extracted?: ScannedFile["extracted"];
+      } = await res.json();
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -212,12 +225,11 @@ export default function UploadBulletinPage() {
     alert("Sincronización Completada");
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const showInfo = (file: any) => {
+  const showInfo = (file: ScannedFile) => {
     if (!file.extracted) return;
-    const { numero, fecha_publicacion, año_edicion } = file.extracted;
+    const { numero, fecha_publicacion } = file.extracted;
     alert(
-      `Boletín N° ${numero}\nFecha: ${fecha_publicacion}\nAño: ${año_edicion}\nPáginas: ${file.pages}`,
+      `Boletín N° ${numero}\nFecha: ${fecha_publicacion}\nAño: ${file.data?.año_edicion || ""}\nPáginas: ${file.pages}`,
     );
   };
 
@@ -244,9 +256,18 @@ export default function UploadBulletinPage() {
       // Use the first part of the text for metadata search to avoid false positives later in valid text
       const headerText = fullText.substring(0, 10000);
 
-      // 1. Number: e.g. "Boletin Oficial N/ 22.980", "N° 22.980", "Nº 22.980", "N. 22.980"
-      // Allow spaces between N, the separator (/ or ° or º), and the number
-      const numberMatch = headerText.match(/N\s*(?:°|º|\.|o|\/)?\s*([\d.]+)/i);
+      // 1. Number: e.g. "Boletin Oficial N/ 22.980", "N° 22.980"
+      // IMPROVED: Look for "Boletin Oficial" context to avoid matching "Ley N° 123"
+      // Use [\s\S] to match across newlines
+      let numberMatch = headerText.match(
+        /Bolet[íi]n\s+Oficial[\s\S]*?N\s*[º°o./]?\s*([\d.]+)/i,
+      );
+
+      if (!numberMatch) {
+        // Fallback: Start of line matches for N°
+        numberMatch = headerText.match(/(?:^|\n)\s*N\s*[º°o./]?\s*([\d.]+)/i);
+      }
+
       const number = numberMatch
         ? parseInt(numberMatch[1].replace(/\./g, ""))
         : "";
@@ -292,18 +313,21 @@ export default function UploadBulletinPage() {
         diciembre: "12",
       };
 
-      // Look for: Word (Day) Number (DD) de Word (Month) de Number (YYYY)
+      // Improved Date Regex: Don't require preceding word (DayName).
+      // Matches: "1 de Noviembre de 2024", "07 de Agosto de 2015"
+      // Groups: 1=Day, 2=MonthName, 3=Year
+      // Use (?:^|[\s,.-]) to match start of line or separators
       const dateRegex =
-        /([a-záéíóú]+)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/gi;
+        /(?:^|[\s,.-])(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/gi;
       let fecha_publicacion = item.data.fecha_publicacion;
 
       // Find all matches, pick the valid one (sometimes "Boletin Oficial" appears before date)
       const dateMatches = [...headerText.matchAll(dateRegex)];
 
       for (const match of dateMatches) {
-        const day = match[2].padStart(2, "0");
-        const monthName = match[3].toLowerCase();
-        const year = match[4];
+        const day = match[1].padStart(2, "0");
+        const monthName = match[2].toLowerCase();
+        const year = match[3];
 
         if (monthMap[monthName]) {
           const month = monthMap[monthName];
@@ -312,8 +336,8 @@ export default function UploadBulletinPage() {
         }
       }
 
-      let status: UploadItem["status"] = "ready";
-      let errorMsg: string | undefined = undefined;
+      const status: UploadItem["status"] = "ready";
+      const errorMsg: string | undefined = undefined;
       let isDuplicate = false;
       let existingId: string | undefined = undefined;
 
@@ -384,7 +408,6 @@ export default function UploadBulletinPage() {
           cantidad_paginas: "",
           recaudacion_diaria: "",
         },
-        isExpanded: true,
       }));
 
     if (newItems.length === 0) return;
@@ -420,22 +443,15 @@ export default function UploadBulletinPage() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateUploadData = (
     id: string,
     field: keyof BoletinData,
-    value: any,
+    value: string | number,
   ) => {
     setUploads((prev) =>
       prev.map((u) =>
         u.id === id ? { ...u, data: { ...u.data, [field]: value } } : u,
       ),
-    );
-  };
-
-  const toggleExpand = (id: string) => {
-    setUploads((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isExpanded: !u.isExpanded } : u)),
     );
   };
 
@@ -877,8 +893,8 @@ export default function UploadBulletinPage() {
                           item.status === "error") && (
                           <div className="ml-10 mt-1 max-w-4xl">
                             {item.isDuplicate && (
-                              <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600 flex items-start gap-2">
-                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                              <div className="mb-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-800 flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-600" />
                                 <p>
                                   <strong>Advertencia:</strong> Este boletín ya
                                   existe. Si actualizas, se sobrescribirán los
