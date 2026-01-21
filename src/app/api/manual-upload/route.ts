@@ -59,6 +59,10 @@ export async function POST(req: NextRequest) {
         ? itemData.extractedText.substring(0, 1000000)
         : "",
       archivo_binario: mediaId,
+      slug:
+        itemData.fecha_publicacion && itemData.numero
+          ? `${itemData.fecha_publicacion}-${itemData.numero}`
+          : undefined,
     };
 
     const bolRes = await fetch(`${API_BASE_URL}/api/boletines`, {

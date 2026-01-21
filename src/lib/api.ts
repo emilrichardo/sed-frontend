@@ -201,7 +201,7 @@ export async function getBulletin(idOrSlug: string): Promise<Boletin> {
   let isSearch = false;
 
   if (isNumber) {
-    query = `?where[numero][equals]=${idOrSlug}`;
+    query = `?where[numero][equals]=${idOrSlug}&sort=-createdAt`;
     isSearch = true;
   } else if (isSlug) {
     query = `?where[slug][equals]=${idOrSlug}`;

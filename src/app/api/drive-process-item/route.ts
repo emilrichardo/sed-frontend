@@ -169,6 +169,10 @@ export async function POST(req: NextRequest) {
       archivo_binario: mediaId,
       cantidad_paginas: finalPages,
       recaudacion_diaria: recaudacionDiaria,
+      slug:
+        fechaPublicacion && numero
+          ? `${fechaPublicacion}-${numero}`
+          : undefined,
     };
 
     const bolRes = await fetch(`${API_BASE_URL}/api/boletines`, {
