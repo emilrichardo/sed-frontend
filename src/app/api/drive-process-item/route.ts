@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
       recaudacion_diaria: recaudacionDiaria,
       slug:
         fechaPublicacion && numero
-          ? `${fechaPublicacion}-${numero}`
+          ? `${fechaPublicacion.split("T")[0]}-${numero}`
           : undefined,
     };
 
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
 
     if (!bolRes.ok) {
       const txt = await bolRes.text();
-      if (txt.includes("unique")) {
+      if (txt.includes("unique") || txt.includes("único")) {
         // Mark as skipped/exists
         if (supabaseAdmin) {
           await supabaseAdmin.from("drive_sync_state").upsert({
