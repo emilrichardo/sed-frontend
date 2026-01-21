@@ -45,7 +45,9 @@ export async function POST(req: NextRequest) {
     // 2. Create Bulletin Entry
     const boletinPayload = {
       numero: itemData.numero ? parseInt(String(itemData.numero)) : undefined,
-      fecha_publicacion: itemData.fecha_publicacion,
+      fecha_publicacion: itemData.fecha_publicacion
+        ? `${itemData.fecha_publicacion}T12:00:00.000Z`
+        : undefined,
       año_edicion:
         itemData.año_edicion ||
         String(new Date(itemData.fecha_publicacion).getFullYear()),

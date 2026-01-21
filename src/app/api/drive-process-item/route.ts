@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
       const year = match[4];
       if (monthMap[monthName]) {
         const month = monthMap[monthName];
-        fechaPublicacion = `${year}-${month}-${day}`;
+        // Append T12:00:00.000Z to prevent timezone offset making it the previous day
+        fechaPublicacion = `${year}-${month}-${day}T12:00:00.000Z`;
         break;
       }
     }
