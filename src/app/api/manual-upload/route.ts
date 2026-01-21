@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const mediaJson = await mediaRes.json();
     const mediaId = mediaJson.doc?.id || mediaJson.id;
 
-    // 2. Create Bulletin Entry
+    // 2. Create or Update Bulletin Entry
     const boletinPayload = {
       numero: itemData.numero ? parseInt(String(itemData.numero)) : undefined,
       fecha_publicacion: itemData.fecha_publicacion
@@ -67,19 +67,35 @@ export async function POST(req: NextRequest) {
           : undefined,
     };
 
-    const bolRes = await fetch(`${API_BASE_URL}/api/boletines`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
-      body: JSON.stringify(boletinPayload),
-    });
+    let bolRes;
+    if (itemData.id) {
+      // Update existing
+      bolRes = await fetch(`${API_BASE_URL}/api/boletines/${itemData.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authHeader ? { Authorization: authHeader } : {}),
+        },
+        body: JSON.stringify(boletinPayload),
+      });
+    } else {
+      // Create new
+      bolRes = await fetch(`${API_BASE_URL}/api/boletines`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authHeader ? { Authorization: authHeader } : {}),
+        },
+        body: JSON.stringify(boletinPayload),
+      });
+    }
 
     if (!bolRes.ok) {
       const txt = await bolRes.text();
       return NextResponse.json(
-        { error: `Falló creación de boletín: ${txt}` },
+        {
+          error: `Falló ${itemData.id ? "actualización" : "creación"} de boletín: ${txt}`,
+        },
         { status: bolRes.status },
       );
     }

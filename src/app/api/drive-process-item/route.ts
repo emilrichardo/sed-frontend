@@ -78,10 +78,10 @@ export async function POST(req: NextRequest) {
     const { text, pages } = parseResult;
 
     // 5. Extract Metadata
-    const headerText = text.substring(0, 3000);
+    const headerText = text.substring(0, 10000);
 
-    // Number: e.g. "N/ 22.980" or "N° 22.980" or "N / 22.969"
-    const numberMatch = headerText.match(/N\s*(?:°|\/)?\s*([\d.]+)/i);
+    // Number: e.g. "N/ 22.980", "N° 22.980", "Nº 22.980", "N. 22.980"
+    const numberMatch = headerText.match(/N\s*(?:°|º|\.|o|\/)?\s*([\d.]+)/i);
     const numero = numberMatch
       ? parseInt(numberMatch[1].replace(/\./g, ""))
       : undefined;

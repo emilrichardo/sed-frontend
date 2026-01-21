@@ -16,6 +16,7 @@ import {
   Search,
   Check,
   Save,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { clsx, type ClassValue } from "clsx";
@@ -41,6 +42,8 @@ interface UploadItem {
   data: BoletinData;
   error?: string;
   isExpanded: boolean;
+  isDuplicate?: boolean;
+  existingId?: string;
 }
 
 export default function UploadBulletinPage() {
@@ -57,6 +60,8 @@ export default function UploadBulletinPage() {
   // --- Multi-Upload State ---
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [activeTab, setActiveTab] = useState<"manual" | "drive">("manual");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Helpers ---
@@ -237,11 +242,11 @@ export default function UploadBulletinPage() {
       }
 
       // Use the first part of the text for metadata search to avoid false positives later in valid text
-      const headerText = fullText.substring(0, 3000);
+      const headerText = fullText.substring(0, 10000);
 
-      // 1. Number: e.g. "Boletin Oficial N/ 22.980", "N° 22.980", "N / 22.969"
-      // Allow spaces between N, the separator (/ or °), and the number
-      const numberMatch = headerText.match(/N\s*(?:°|\/)?\s*([\d.]+)/i);
+      // 1. Number: e.g. "Boletin Oficial N/ 22.980", "N° 22.980", "Nº 22.980", "N. 22.980"
+      // Allow spaces between N, the separator (/ or ° or º), and the number
+      const numberMatch = headerText.match(/N\s*(?:°|º|\.|o|\/)?\s*([\d.]+)/i);
       const number = numberMatch
         ? parseInt(numberMatch[1].replace(/\./g, ""))
         : "";
@@ -307,10 +312,40 @@ export default function UploadBulletinPage() {
         }
       }
 
+      let status: UploadItem["status"] = "ready";
+      let errorMsg: string | undefined = undefined;
+      let isDuplicate = false;
+      let existingId: string | undefined = undefined;
+
+      // 6. Check for duplicates in DB
+      if (fecha_publicacion && number) {
+        try {
+          const slug = `${fecha_publicacion}-${number}`;
+          const authHeader = getAuthHeader();
+          const checkRes = await fetch(`/api/check-bulletin?slug=${slug}`, {
+            headers: authHeader ? { Authorization: authHeader } : undefined,
+          });
+          if (checkRes.ok) {
+            const checkJson = await checkRes.json();
+            if (checkJson.docs && checkJson.docs.length > 0) {
+              // Found duplicate
+              isDuplicate = true;
+              existingId = checkJson.docs[0].id;
+              // We keep status as "ready" so user can choose to Update
+            }
+          }
+        } catch (e) {
+          console.warn("Error checking duplicate:", e);
+        }
+      }
+
       return {
         ...item,
-        status: "ready",
+        status: status,
+        error: errorMsg,
         extractedText: fullText,
+        isDuplicate,
+        existingId,
         data: {
           ...item.data,
           cantidad_paginas: finalPages || item.data.cantidad_paginas,
@@ -411,6 +446,16 @@ export default function UploadBulletinPage() {
       return;
     }
 
+    if (item.isDuplicate) {
+      if (
+        !confirm(
+          "Este boletín ya existe. Al actualizar, se sobrescribirán los datos y el archivo. ¿Deseas continuar?",
+        )
+      ) {
+        return;
+      }
+    }
+
     setUploads((prev) =>
       prev.map((u) => (u.id === item.id ? { ...u, status: "saving" } : u)),
     );
@@ -428,6 +473,7 @@ export default function UploadBulletinPage() {
       const metadata = {
         ...item.data,
         extractedText: item.extractedText,
+        id: item.existingId, // Pass ID if update
       };
 
       formData.append("file", fileToUpload);
@@ -503,15 +549,45 @@ export default function UploadBulletinPage() {
       </div>
 
       {/* --- Drive Scan & Process Section --- */}
-      <div className="mb-8 p-6 bg-card border rounded-xl shadow-sm">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Cloud className="w-5 h-5 text-blue-500" /> Sincronización Automática
-          (Drive)
-        </h2>
+      {/* Tabs */}
+      {/* Tabs */}
+      <div className="flex justify-center mb-8">
+        <div className="bg-gray-100 p-1 rounded-lg inline-flex">
+          <button
+            onClick={() => setActiveTab("manual")}
+            className={cn(
+              "px-6 py-2 text-sm font-medium rounded-md transition-all",
+              activeTab === "manual"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-900",
+            )}
+          >
+            Carga Manual (PDFs)
+          </button>
+          <button
+            onClick={() => setActiveTab("drive")}
+            className={cn(
+              "px-6 py-2 text-sm font-medium rounded-md transition-all",
+              activeTab === "drive"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-900",
+            )}
+          >
+            Sincronización Automática (Drive)
+          </button>
+        </div>
+      </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <div className="space-y-2">
+      {/* --- Drive Scan & Process Section --- */}
+      {activeTab === "drive" && (
+        <div className="mb-8 p-12 bg-white border rounded-xl shadow-sm flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
+          <Cloud className="w-16 h-16 text-gray-300" />
+          <h2 className="text-xl font-semibold">
+            Sincronización Automática (Drive)
+          </h2>
+
+          <div className="w-full max-w-lg space-y-4 px-4">
+            <div className="space-y-2 text-left">
               <label className="text-sm font-medium">ID de Carpeta Drive</label>
               <input
                 className="w-full p-2 border rounded text-sm font-mono"
@@ -552,364 +628,399 @@ export default function UploadBulletinPage() {
             </div>
           </div>
 
-          {scannedFiles.length > 0 && (
-            <div className="mt-4 border rounded-md overflow-hidden">
-              <div className="bg-gray-50 px-4 py-2 border-b text-xs font-semibold text-gray-500 uppercase flex justify-between">
-                <span>Archivos ({scannedFiles.length})</span>
-                <span>Acciones</span>
-              </div>
-              <div className="max-h-80 overflow-y-auto divide-y">
-                {scannedFiles.map((file, i) => (
-                  <div
-                    key={file.id}
-                    className="px-4 py-2 text-sm flex justify-between items-center hover:bg-gray-50"
-                  >
-                    <div className="flex flex-col flex-1 overflow-hidden gap-1">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="truncate max-w-[300px] font-medium">
-                          {file.name}
-                        </span>
+          <div className="w-full text-left">
+            {scannedFiles.length > 0 && (
+              <div className="mt-4 border rounded-md overflow-hidden">
+                <div className="bg-gray-50 px-4 py-2 border-b text-xs font-semibold text-gray-500 uppercase flex justify-between">
+                  <span>Archivos ({scannedFiles.length})</span>
+                  <span>Acciones</span>
+                </div>
+                <div className="max-h-80 overflow-y-auto divide-y">
+                  {scannedFiles.map((file, i) => (
+                    <div
+                      key={file.id}
+                      className="px-4 py-2 text-sm flex justify-between items-center hover:bg-gray-50"
+                    >
+                      <div className="flex flex-col flex-1 overflow-hidden gap-1">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <span className="truncate max-w-[300px] font-medium">
+                            {file.name}
+                          </span>
 
-                        {/* Status Badges */}
-                        {file.status === "processing" && (
-                          <span className="text-blue-600 flex items-center gap-1 text-xs px-2 py-0.5 bg-blue-50 rounded">
-                            <Loader2 className="w-3 h-3 animate-spin" />{" "}
-                            Procesando
-                          </span>
-                        )}
-                        {file.status === "synced" && (
-                          <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                            <Check className="w-3 h-3" /> Ok
-                          </span>
-                        )}
-                        {file.status === "error" && (
-                          <span
-                            className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs"
-                            title={file.error}
-                          >
-                            Error
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Metadata Row */}
-                      {(file.extracted ||
-                        (file.status === "synced" && file.pages)) && (
-                        <div className="text-xs text-gray-500 ml-6 flex gap-3">
-                          {file.extracted?.numero && (
-                            <span>
-                              <span className="font-semibold">N°:</span>{" "}
-                              {file.extracted.numero}
+                          {/* Status Badges */}
+                          {file.status === "processing" && (
+                            <span className="text-blue-600 flex items-center gap-1 text-xs px-2 py-0.5 bg-blue-50 rounded">
+                              <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                              Procesando
                             </span>
                           )}
-                          {file.extracted?.fecha_publicacion && (
-                            <span>
-                              <span className="font-semibold">Fecha:</span>{" "}
-                              {file.extracted.fecha_publicacion}
+                          {file.status === "synced" && (
+                            <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
+                              <Check className="w-3 h-3" /> Ok
                             </span>
                           )}
-                          {(file.pages || file.data?.cantidad_paginas) && (
-                            <span>
-                              <span className="font-semibold">Págs:</span>{" "}
-                              {file.pages || file.data?.cantidad_paginas}
+                          {file.status === "error" && (
+                            <span
+                              className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs"
+                              title={file.error}
+                            >
+                              Error
                             </span>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* Info Button */}
-                      {(file.status === "synced" || file.extracted) && (
-                        <button
-                          onClick={() => showInfo(file)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                          title="Ver Información Extraída"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      {/* Sync Button (Individual) */}
-                      <button
-                        onClick={() => handleSyncItem(i)}
-                        disabled={file.status === "processing" || isSyncing}
-                        className={cn(
-                          "px-3 py-1.5 text-xs font-medium rounded border flex items-center gap-1",
-                          file.status === "synced"
-                            ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                            : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
+                        {/* Metadata Row */}
+                        {(file.extracted ||
+                          (file.status === "synced" && file.pages)) && (
+                          <div className="text-xs text-gray-500 ml-6 flex gap-3">
+                            {file.extracted?.numero && (
+                              <span>
+                                <span className="font-semibold">N°:</span>{" "}
+                                {file.extracted.numero}
+                              </span>
+                            )}
+                            {file.extracted?.fecha_publicacion && (
+                              <span>
+                                <span className="font-semibold">Fecha:</span>{" "}
+                                {file.extracted.fecha_publicacion}
+                              </span>
+                            )}
+                            {(file.pages || file.data?.cantidad_paginas) && (
+                              <span>
+                                <span className="font-semibold">Págs:</span>{" "}
+                                {file.pages || file.data?.cantidad_paginas}
+                              </span>
+                            )}
+                          </div>
                         )}
-                      >
-                        {file.status === "synced"
-                          ? "Re-Sincronizar"
-                          : "Sincronizar"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+                      </div>
 
-      <div className="border-t pt-8">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Upload className="w-5 h-5 text-purple-500" /> Carga Manual (PDFs)
-        </h2>
-        {/* Dropzone */}
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={cn(
-            "border-2 border-dashed rounded-xl p-8 transition-colors text-center cursor-pointer mb-6",
-            isDragging
-              ? "border-primary bg-primary/5"
-              : "border-muted-foreground/25 hover:border-primary/50",
-          )}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            multiple
-            accept="application/pdf"
-            className="hidden"
-          />
-          <div className="flex flex-col items-center gap-2">
-            <div className="p-4 bg-muted rounded-full">
-              <Upload className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <div className="space-y-1">
-              <p className="font-medium">
-                Arrastra y suelta tus archivos PDF aquí
-              </p>
-              <p className="text-sm text-muted-foreground">
-                o haz clic para explorar
-              </p>
-            </div>
+                      <div className="flex items-center gap-2">
+                        {/* Info Button */}
+                        {(file.status === "synced" || file.extracted) && (
+                          <button
+                            onClick={() => showInfo(file)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                            title="Ver Información Extraída"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Sync Button (Individual) */}
+                        <button
+                          onClick={() => handleSyncItem(i)}
+                          disabled={file.status === "processing" || isSyncing}
+                          className={cn(
+                            "px-3 py-1.5 text-xs font-medium rounded border flex items-center gap-1",
+                            file.status === "synced"
+                              ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                              : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
+                          )}
+                        >
+                          {file.status === "synced"
+                            ? "Re-Sincronizar"
+                            : "Sincronizar"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        {/* Uploads List */}
-        <div className="space-y-4">
-          {uploads.map((item) => (
-            <div
-              key={item.id}
-              className={cn(
-                "border rounded-lg overflow-hidden transition-all",
-                item.status === "error" && "border-red-200 bg-red-50",
-                item.status === "success" && "border-green-200 bg-green-50",
-              )}
+      {activeTab === "manual" && (
+        <div className="border-t pt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Upload className="w-5 h-5 text-purple-500" /> Carga Manual (PDFs)
+            </h2>
+            <button
+              onClick={saveAllReady}
+              disabled={
+                uploads.filter((u) => u.status === "ready" && !u.isDuplicate)
+                  .length === 0
+              }
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
             >
-              {/* Header Row */}
-              <div className="flex items-center justify-between p-4 bg-card/50">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div
-                    className={cn(
-                      "p-2 rounded-md",
-                      item.status === "success"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-blue-100 text-blue-600",
-                    )}
-                  >
-                    {item.status === "success" ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : (
-                      <FileText className="w-5 h-5" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{item.file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {item.status === "processing" && (
-                    <span className="text-xs text-blue-600 flex items-center gap-1">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Procesando
-                    </span>
-                  )}
-                  {item.status === "saving" && (
-                    <span className="text-xs text-orange-600 flex items-center gap-1">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Guardando
-                    </span>
-                  )}
-                  {item.status === "error" && (
-                    <span className="text-xs text-red-600 font-medium">
-                      Error
-                    </span>
-                  )}
-
-                  <button
-                    onClick={() => toggleExpand(item.id)}
-                    className="p-1 hover:bg-muted rounded text-muted-foreground"
-                  >
-                    {item.isExpanded ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => removeUpload(item.id)}
-                    className="p-1 hover:bg-red-100 text-red-400 hover:text-red-600 rounded"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+              <Save className="w-4 h-4" />
+              Guardar Todo (
+              {
+                uploads.filter((u) => u.status === "ready" && !u.isDuplicate)
+                  .length
+              }
+              )
+            </button>
+          </div>
+          {/* Dropzone */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={cn(
+              "border-2 border-dashed rounded-xl p-8 transition-colors text-center cursor-pointer mb-6",
+              isDragging
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-primary/50",
+            )}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              multiple
+              accept="application/pdf"
+              className="hidden"
+            />
+            <div className="flex flex-col items-center gap-2">
+              <div className="p-4 bg-muted rounded-full">
+                <Upload className="w-8 h-8 text-muted-foreground" />
               </div>
+              <div className="space-y-1">
+                <p className="font-medium">
+                  Arrastra y suelta tus archivos PDF aquí
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  o haz clic para explorar
+                </p>
+              </div>
+            </div>
+          </div>
 
-              {/* Expanded Details Form */}
-              {item.isExpanded && (
-                <div className="p-4 border-t bg-card/30 space-y-4">
-                  {item.error && (
-                    <div className="p-3 bg-red-100 text-red-700 text-sm rounded-md flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <p>{item.error}</p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Número
-                      </label>
-                      <input
-                        className="w-full p-2 border rounded text-sm"
-                        value={item.data.numero}
-                        onChange={(e) =>
-                          updateUploadData(item.id, "numero", e.target.value)
-                        }
-                        placeholder="Ej: 12345"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Fecha Publicación
-                      </label>
-                      <input
-                        type="date"
-                        className="w-full p-2 border rounded text-sm"
-                        value={item.data.fecha_publicacion}
-                        onChange={(e) =>
-                          updateUploadData(
-                            item.id,
-                            "fecha_publicacion",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Año Edición
-                      </label>
-                      <input
-                        className="w-full p-2 border rounded text-sm"
-                        value={item.data.año_edicion}
-                        onChange={(e) =>
-                          updateUploadData(
-                            item.id,
-                            "año_edicion",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Ej: CXX"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Páginas
-                      </label>
-                      <input
-                        type="number"
-                        className="w-full p-2 border rounded text-sm"
-                        value={item.data.cantidad_paginas}
-                        onChange={(e) =>
-                          updateUploadData(
-                            item.id,
-                            "cantidad_paginas",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Recaudación
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="w-full p-2 border rounded text-sm"
-                        value={item.data.recaudacion_diaria}
-                        onChange={(e) =>
-                          updateUploadData(
-                            item.id,
-                            "recaudacion_diaria",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <button
-                      onClick={() => saveItem(item)}
-                      disabled={
-                        item.status === "saving" || item.status === "success"
-                      }
+          {/* Uploads List */}
+          <div className="space-y-4">
+            {uploads.length > 0 && (
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 px-4 py-2 border-b text-xs font-semibold text-gray-500 uppercase flex justify-between">
+                  <span>Archivos ({uploads.length})</span>
+                  <span>Acciones</span>
+                </div>
+                <div className="max-h-[600px] overflow-y-auto divide-y">
+                  {uploads.map((item) => (
+                    <div
+                      key={item.id}
                       className={cn(
-                        "px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2",
-                        item.status === "success"
-                          ? "bg-green-600 text-white cursor-default"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90",
+                        "px-4 py-3 text-sm flex justify-between items-start hover:bg-gray-50 transition-colors",
+                        item.status === "success" && "bg-green-50/50",
+                        item.status === "error" && "bg-red-50/50",
+                        item.isDuplicate &&
+                          item.status === "ready" &&
+                          "bg-orange-50/30",
                       )}
                     >
-                      {item.status === "saving" ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />{" "}
-                          Guardando...
-                        </>
-                      ) : item.status === "success" ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" /> Guardado
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" /> Guardar
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+                      <div className="flex flex-col flex-1 gap-2 overflow-hidden">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              "p-1.5 rounded-md flex-shrink-0",
+                              item.status === "success"
+                                ? "bg-green-100 text-green-600"
+                                : "bg-blue-50 text-blue-500",
+                            )}
+                          >
+                            {item.status === "success" ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                              <FileText className="w-4 h-4" />
+                            )}
+                          </div>
 
-          {uploads.length > 0 && (
-            <div className="flex justify-end pt-4">
-              <button
-                onClick={saveAllReady}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Guardar Todo (
-                {uploads.filter((u) => u.status === "ready").length})
-              </button>
-            </div>
-          )}
+                          <div className="flex flex-col min-w-0">
+                            <span
+                              className="font-medium truncate max-w-[300px]"
+                              title={item.file.name}
+                            >
+                              {item.file.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                            </span>
+                          </div>
+
+                          {/* Status Badges */}
+                          {item.status === "processing" && (
+                            <span className="text-blue-600 flex items-center gap-1 text-xs px-2 py-0.5 bg-blue-50 rounded ml-2">
+                              <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                              Procesando
+                            </span>
+                          )}
+                          {item.status === "saving" && (
+                            <span className="text-orange-600 flex items-center gap-1 text-xs px-2 py-0.5 bg-orange-50 rounded ml-2">
+                              <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                              Guardando
+                            </span>
+                          )}
+                          {item.status === "success" && (
+                            <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs flex items-center gap-1 ml-2">
+                              <CheckCircle2 className="w-3 h-3" /> Guardado
+                            </span>
+                          )}
+                          {item.status === "error" && (
+                            <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs flex items-center gap-1 ml-2">
+                              <AlertCircle className="w-3 h-3" /> Error
+                            </span>
+                          )}
+                          {item.isDuplicate && item.status === "ready" && (
+                            <span className="text-orange-600 bg-orange-100 px-2 py-0.5 rounded text-xs flex items-center gap-1 ml-2 border border-orange-200">
+                              <AlertCircle className="w-3 h-3" /> Existe
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Metadata / Editor Row */}
+                        {(item.status === "ready" ||
+                          item.status === "error") && (
+                          <div className="ml-10 mt-1 max-w-4xl">
+                            {item.isDuplicate && (
+                              <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600 flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <p>
+                                  <strong>Advertencia:</strong> Este boletín ya
+                                  existe. Si actualizas, se sobrescribirán los
+                                  datos.
+                                </p>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+                              <div className="flex flex-col">
+                                <input
+                                  placeholder="Número (Ej: 12345)"
+                                  className="border rounded px-2 py-1 h-7 text-xs"
+                                  value={item.data.numero}
+                                  onChange={(e) =>
+                                    updateUploadData(
+                                      item.id,
+                                      "numero",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex flex-col">
+                                <input
+                                  type="date"
+                                  className="border rounded px-2 py-1 h-7 text-xs"
+                                  value={item.data.fecha_publicacion}
+                                  onChange={(e) =>
+                                    updateUploadData(
+                                      item.id,
+                                      "fecha_publicacion",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex flex-col">
+                                <input
+                                  placeholder="Páginas"
+                                  className="border rounded px-2 py-1 h-7 text-xs"
+                                  value={item.data.cantidad_paginas}
+                                  onChange={(e) =>
+                                    updateUploadData(
+                                      item.id,
+                                      "cantidad_paginas",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex flex-col">
+                                <input
+                                  placeholder="Año (e.g. CXX)"
+                                  className="border rounded px-2 py-1 h-7 text-xs"
+                                  value={item.data.año_edicion}
+                                  onChange={(e) =>
+                                    updateUploadData(
+                                      item.id,
+                                      "año_edicion",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Compact Metadata Display (ReadOnly) for Saved Items */}
+                        {(item.status === "success" ||
+                          item.status === "saving") && (
+                          <div className="text-[11px] text-gray-500 ml-10 flex gap-4 mt-1">
+                            <span>
+                              <span className="font-semibold text-gray-700">
+                                N°:
+                              </span>{" "}
+                              {item.data.numero}
+                            </span>
+                            <span className="text-gray-300">|</span>
+                            <span>
+                              <span className="font-semibold text-gray-700">
+                                Fecha:
+                              </span>{" "}
+                              {item.data.fecha_publicacion}
+                            </span>
+                            <span className="text-gray-300">|</span>
+                            <span>
+                              <span className="font-semibold text-gray-700">
+                                Págs:
+                              </span>{" "}
+                              {item.data.cantidad_paginas}
+                            </span>
+                          </div>
+                        )}
+
+                        {item.error && (
+                          <p className="text-[11px] text-red-600 ml-10 mt-1 font-medium bg-red-50 px-2 py-1 rounded inline-block">
+                            {item.error}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-4">
+                        {/* Individual Save Button */}
+                        {item.status === "ready" && (
+                          <button
+                            onClick={() => saveItem(item)}
+                            className={cn(
+                              "px-3 py-1 text-xs rounded border font-medium whitespace-nowrap h-7 flex items-center gap-1",
+                              item.isDuplicate
+                                ? "bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100"
+                                : "bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100",
+                            )}
+                          >
+                            {item.isDuplicate ? (
+                              <>
+                                <RefreshCw className="w-3 h-3" /> Actualizar
+                              </>
+                            ) : (
+                              "Guardar"
+                            )}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => removeUpload(item.id)}
+                          className="p-1 px-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Quitar"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
