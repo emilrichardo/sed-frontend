@@ -58,6 +58,8 @@ export interface Boletin {
   recaudacion_diaria?: number;
   staff_autoridades?: any;
   archivo_binario?: any; // Media object or ID
+  content_type?: string;
+  raw_text?: string;
   contenido_procesado?: string | null;
   status_procesamiento?: ("unprocessed" | "basic" | "ai_enhanced") | null;
   createdAt: string;
@@ -86,6 +88,36 @@ export interface DetalleEspecifico {
   id: string;
   id_entrada: string | EntradaInterna;
   detalles: any[];
+}
+
+// --- Agents & Learning Interfaces ---
+
+export interface Agent {
+  id: string;
+  name: string;
+  systemPrompt?: string;
+  sourceCollection: "boletines";
+  status: "active" | "inactive";
+  modelSettings?: {
+    modelName: string;
+    temperature: number;
+    apiKey?: string;
+  };
+  learningLink?: string; // Relationship to latest learning
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LearningRecord {
+  id: string;
+  agent: string | Agent;
+  previousLearning?: string | LearningRecord;
+  processed_items?: string[] | Boletin[];
+  learningContext?: string;
+  type: "error" | "fact" | "preference" | "analysis";
+  metadata?: any;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export async function getNews(
@@ -333,6 +365,36 @@ export async function createBulletin(
   return res.json();
 }
 
+export async function updateBulletin(
+  id: string,
+  data: Partial<Boletin>,
+): Promise<{ doc: Boletin; message: string }> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null;
+
+  const res = await fetch(`${API_URL}/boletines/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    console.error("API: updateBulletin error:", res.status, res.statusText);
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      "API: updateBulletin error details:",
+      JSON.stringify(errorData, null, 2),
+    );
+    throw new Error(`Failed to update bulletin: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 export async function createEntry(
   data: any,
 ): Promise<{ doc: EntradaInterna; message: string }> {
@@ -400,6 +462,65 @@ export async function createTaxonomy(
       JSON.stringify(errorData, null, 2),
     );
     throw new Error(`Failed to create ${collection}: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// --- Agents & Learning API Functions ---
+
+export async function getAgents(): Promise<Agent[]> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null;
+
+  const res = await fetch(`${API_URL}/agents`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    console.error("API: getAgents error:", res.status, res.statusText);
+    // Return empty array instead of throwing to avoid breaking the UI
+    return [];
+  }
+
+  const data = await res.json();
+  console.log("API: getAgents response docs:", data.docs?.length);
+  return data.docs || [];
+}
+
+export async function createLearningRecord(
+  data: any, // or Partial<LearningRecord>
+): Promise<{ doc: LearningRecord; message: string }> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null;
+
+  const res = await fetch(`${API_URL}/learning`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    console.error(
+      "API: createLearningRecord error:",
+      res.status,
+      res.statusText,
+    );
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      "API: createLearningRecord error details:",
+      JSON.stringify(errorData, null, 2),
+    );
+    throw new Error(`Failed to create learning record: ${res.statusText}`);
   }
   return res.json();
 }

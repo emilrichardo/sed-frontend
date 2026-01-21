@@ -4,16 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import {
-  Menu,
-  X,
-  Database,
-  LogIn,
-  LogOut,
-  User,
-  Edit3,
-  ExternalLink,
-} from "lucide-react";
+import { Menu, X, Database, LogIn, LogOut, User, Edit3 } from "lucide-react";
 
 const navLinks = [
   { name: "Inicio", href: "/" },
@@ -41,7 +32,6 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <div className="flex items-center gap-6   mr-2">
               {navLinks.map((link) => (
@@ -57,6 +47,18 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
+              {user && (
+                <Link
+                  href="/admin/agentes"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    pathname === "/admin/agentes"
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  Agentes
+                </Link>
+              )}
             </div>
 
             {user ? (
@@ -144,6 +146,19 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
+              {user && (
+                <Link
+                  href="/admin/agentes"
+                  onClick={() => setIsOpen(false)}
+                  className={`block px-4 py-2 text-base font-medium rounded-md transition-colors ${
+                    pathname === "/admin/agentes"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-primary"
+                  }`}
+                >
+                  Agentes
+                </Link>
+              )}
             </div>
 
             <div className="pt-4 border-t border-border">
