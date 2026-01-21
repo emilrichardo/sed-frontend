@@ -539,7 +539,10 @@ export default function UploadBulletinPage() {
   };
 
   const saveAllReady = async () => {
-    const readyItems = uploads.filter((u) => u.status === "ready");
+    // Only save NEW items (not duplicates) to avoid unintended bulk overwrites
+    const readyItems = uploads.filter(
+      (u) => u.status === "ready" && !u.isDuplicate,
+    );
     if (readyItems.length === 0) return;
     await Promise.all(readyItems.map((item) => saveItem(item)));
   };
@@ -1031,6 +1034,27 @@ export default function UploadBulletinPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+                {/* Footer with Guardar Todo */}
+                <div className="bg-gray-50 px-4 py-3 border-t flex justify-end">
+                  <button
+                    onClick={saveAllReady}
+                    disabled={
+                      uploads.filter(
+                        (u) => u.status === "ready" && !u.isDuplicate,
+                      ).length === 0
+                    }
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Save className="w-4 h-4" />
+                    Guardar Todo (
+                    {
+                      uploads.filter(
+                        (u) => u.status === "ready" && !u.isDuplicate,
+                      ).length
+                    }
+                    )
+                  </button>
                 </div>
               </div>
             )}
