@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Agent } from "@/lib/api";
+import { Agent, getLearningRecords, LearningRecord, Boletin } from "@/lib/api";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -24,91 +24,59 @@ export default function AgentDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Placeholder Data for EntriesTable
-  const placeholderData = [
-    {
-      id: "101",
-      title: "Boletín Oficial #3452",
-      date: "2024-05-20",
-      status: "Pendiente",
-      size: "2.4 MB",
+  const [learningRecords, setLearningRecords] = useState<LearningRecord[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+  // Compute entries from learning records
+  const entries = learningRecords.reduce(
+    (acc: Record<string, unknown>[], record) => {
+      if (record.processed_items && Array.isArray(record.processed_items)) {
+        record.processed_items.forEach((item) => {
+          const boletin = item as Boletin;
+          if (!acc.find((e) => e.id === boletin.id)) {
+            acc.push({
+              id: boletin.id,
+              title: `Boletín Oficial #${boletin.numero}`,
+              date: boletin.fecha_publicacion,
+              status: "Procesado",
+              size: boletin.cantidad_paginas
+                ? `${boletin.cantidad_paginas} págs`
+                : "N/A",
+              recordType: record.type,
+              timestamp: new Date(record.createdAt).toLocaleString(),
+            });
+          }
+        });
+      }
+      return acc;
     },
-    {
-      id: "102",
-      title: "Decreto Municipal #09/24",
-      date: "2024-05-18",
-      status: "Procesado",
-      size: "1.1 MB",
-    },
-    {
-      id: "103",
-      title: "Resolución Ministerial #441",
-      date: "2024-05-15",
-      status: "Procesado",
-      size: "850 KB",
-    },
-    {
-      id: "104",
-      title: "Anexo Estadístico Q1",
-      date: "2024-05-12",
-      status: "Error",
-      size: "4.7 MB",
-    },
-    {
-      id: "105",
-      title: "Boletín Oficial #3451",
-      date: "2024-05-10",
-      status: "Pendiente",
-      size: "2.3 MB",
-    },
-    {
-      id: "106",
-      title: "Circular Administrativa #02",
-      date: "2024-05-08",
-      status: "Procesado",
-      size: "120 KB",
-    },
-    {
-      id: "107",
-      title: "Informe Técnico #88",
-      date: "2024-05-07",
-      status: "Procesado",
-      size: "1.5 MB",
-    },
-    {
-      id: "108",
-      title: "Acta de Directorio #12",
-      date: "2024-05-06",
-      status: "Pendiente",
-      size: "3.2 MB",
-    },
-  ];
+    [],
+  );
 
   const columns = [
     {
       header: "Documento",
       key: "title",
-      render: (item: Record<string, any>) => (
+      render: (item: Record<string, unknown>) => (
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-neutral-400" />
-          <span className="font-bold">{item.title}</span>
+          <span className="font-bold">{item.title as string}</span>
         </div>
       ),
     },
     {
       header: "Fecha",
       key: "date",
-      render: (item: Record<string, any>) => (
+      render: (item: Record<string, unknown>) => (
         <div className="flex items-center gap-1.5 text-neutral-500">
           <Calendar className="w-3.5 h-3.5" />
-          {item.date}
+          {item.date as string}
         </div>
       ),
     },
     {
       header: "Estado",
       key: "status",
-      render: (item: Record<string, any>) => (
+      render: (item: Record<string, unknown>) => (
         <span
           className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
             item.status === "Procesado"
@@ -118,29 +86,33 @@ export default function AgentDetailsPage() {
                 : "bg-red-50 text-red-700 border-red-100"
           }`}
         >
-          {item.status.toUpperCase()}
+          {(item.status as string).toUpperCase()}
         </span>
       ),
     },
     { header: "Tamaño", key: "size" },
+    { header: "Procesado", key: "timestamp" },
   ];
 
   const actions = [
     {
       label: "Procesar",
       icon: Play,
-      onClick: (item: Record<string, any>) => alert(`Procesando ${item.title}`),
+      onClick: (item: Record<string, unknown>) =>
+        alert(`Procesando ${item.title}`),
       variant: "primary" as const,
     },
     {
       label: "Guardar",
       icon: Save,
-      onClick: (item: Record<string, any>) => alert(`Guardado ${item.title}`),
+      onClick: (item: Record<string, unknown>) =>
+        alert(`Guardado ${item.title}`),
     },
     {
       label: "Eliminar",
       icon: Trash2,
-      onClick: (item: Record<string, any>) => alert(`Eliminado ${item.title}`),
+      onClick: (item: Record<string, unknown>) =>
+        alert(`Eliminado ${item.title}`),
       variant: "danger" as const,
     },
   ];
@@ -148,19 +120,33 @@ export default function AgentDetailsPage() {
   useEffect(() => {
     if (!id) return;
 
-    const token = localStorage.getItem("payload-token");
+    const token = localStorage.getItem("payload-token") || undefined;
+
+    // Fetch Agent
     fetch(`/api/agents/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load");
+        if (!res.ok) throw new Error("Failed to load agent");
         return res.json();
       })
       .then((data) => {
         setAgent(data);
         setLoading(false);
+
+        // Fetch Learning Records (Processing History)
+        setIsDataLoading(true);
+        getLearningRecords(id as string, token)
+          .then((records) => {
+            setLearningRecords(records);
+            setIsDataLoading(false);
+          })
+          .catch((err) => {
+            console.error("Failed to load learning records", err);
+            setIsDataLoading(false);
+          });
       })
       .catch((err) => {
         console.error(err);
@@ -259,12 +245,15 @@ export default function AgentDetailsPage() {
           {/* Entries Table Section */}
           <div className="mt-8">
             <EntriesTable
-              title="Entradas de Documentos"
-              data={placeholderData}
+              title="Historial de Procesamiento"
+              data={entries}
               columns={columns}
               actions={actions}
-              onProcessAll={() =>
-                alert("Procesando todos los documentos en cola...")
+              isLoading={isDataLoading}
+              onProcessAll={
+                agent.status === "active"
+                  ? () => alert("Procesando todos los documentos en cola...")
+                  : undefined
               }
               maxHeight="400px"
             />

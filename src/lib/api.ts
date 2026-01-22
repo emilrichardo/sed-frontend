@@ -87,7 +87,7 @@ export interface EntradaInterna {
 export interface DetalleEspecifico {
   id: string;
   id_entrada: string | EntradaInterna;
-  detalles: any[];
+  detalles: Record<string, unknown>[];
 }
 
 // --- Agents & Learning Interfaces ---
@@ -592,4 +592,37 @@ export async function createLearningRecord(
     throw new Error(`Failed to create learning record: ${res.statusText}`);
   }
   return res.json();
+}
+
+export async function getLearningRecords(
+  agentId: string,
+  authToken?: string,
+): Promise<LearningRecord[]> {
+  const token =
+    authToken ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null);
+
+  const res = await fetch(
+    `${API_URL}/learning?where[agent][equals]=${agentId}&sort=-createdAt&limit=10&depth=2`,
+    {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: "no-store",
+    },
+  );
+
+  if (!res.ok) {
+    console.error(
+      `API: getLearningRecords(${agentId}) error:`,
+      res.status,
+      res.statusText,
+    );
+    return [];
+  }
+
+  const data = await res.json();
+  return data.docs || [];
 }
