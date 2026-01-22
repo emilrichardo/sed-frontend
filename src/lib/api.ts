@@ -1,11 +1,11 @@
 import {} from "next/navigation";
 
-const API_URL = "http://localhost:3000/api";
+export const API_URL = "http://localhost:3000/api";
 
 export interface PayloadBlock {
   blockType: string;
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface NewsItem {
@@ -14,8 +14,8 @@ export interface NewsItem {
   slug: string;
   publishedDate?: string;
   layout?: PayloadBlock[];
-  contenido?: any;
-  [key: string]: any;
+  contenido?: unknown;
+  [key: string]: unknown;
 }
 
 export interface PayloadResponse<T> {
@@ -56,8 +56,8 @@ export interface Boletin {
   año_edicion: string;
   cantidad_paginas: number;
   recaudacion_diaria?: number;
-  staff_autoridades?: any;
-  archivo_binario?: any; // Media object or ID
+  staff_autoridades?: unknown;
+  archivo_binario?: string | { url: string; [key: string]: unknown }; // Media object or ID
   content_type?: string;
   raw_text?: string;
   contenido_procesado?: string | null;
@@ -74,7 +74,7 @@ export interface EntradaInterna {
   tipo_acto: string | TipoActo;
   jurisdiccion: string | Organismo;
   referencia: string;
-  texto_completo: any;
+  texto_completo: unknown;
   es_homologacion?: boolean;
   id_acto_referenciado?: string;
   nivel_opacidad?: "Transparente" | "Parcial" | "Opaco";
@@ -115,7 +115,7 @@ export interface LearningRecord {
   processed_items?: string[] | Boletin[];
   learningContext?: string;
   type: "error" | "fact" | "preference" | "analysis";
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -125,7 +125,7 @@ export async function getNews(
     page?: number;
     limit?: number;
     sort?: string;
-    where?: any;
+    where?: Record<string, unknown>;
   } = {},
 ): Promise<PayloadResponse<NewsItem>> {
   const { page = 1, limit = 10, sort = "-createdAt", where } = params;
@@ -200,7 +200,7 @@ export async function getBulletins(
     page?: number;
     limit?: number;
     sort?: string;
-    where?: any;
+    where?: Record<string, unknown>;
   } = {},
 ): Promise<PayloadResponse<Boletin>> {
   const { page = 1, limit = 10, sort = "-fecha_publicacion", where } = params;
@@ -302,7 +302,7 @@ export async function getEntries(
     page?: number;
     limit?: number;
     sort?: string;
-    where?: any;
+    where?: Record<string, unknown>;
     depth?: number;
   } = {},
 ): Promise<PayloadResponse<EntradaInterna>> {
@@ -366,7 +366,7 @@ export async function getTaxonomy<T>(collection: string): Promise<T[]> {
   return data.docs;
 }
 export async function createBulletin(
-  data: any,
+  data: Partial<Boletin>,
 ): Promise<{ doc: Boletin; message: string }> {
   const token =
     typeof window !== "undefined"
@@ -429,7 +429,7 @@ export async function updateBulletin(
 }
 
 export async function createEntry(
-  data: any,
+  data: Partial<EntradaInterna>,
 ): Promise<{ doc: EntradaInterna; message: string }> {
   const token =
     typeof window !== "undefined"
@@ -462,7 +462,7 @@ export async function createEntry(
 export async function createTaxonomy(
   collection: string,
   data: { nombre: string },
-): Promise<any> {
+): Promise<unknown> {
   const token =
     typeof window !== "undefined"
       ? localStorage.getItem("payload-token")
@@ -526,7 +526,7 @@ export async function getAgents(): Promise<Agent[]> {
 }
 
 export async function createLearningRecord(
-  data: any, // or Partial<LearningRecord>
+  data: Partial<LearningRecord>, // or Partial<LearningRecord>
   authToken?: string,
 ): Promise<{ doc: LearningRecord; message: string }> {
   const token =

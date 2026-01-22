@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAgents } from "@/lib/api";
 
 // Re-use logic or copy-paste helper for simplicity in this specific test route
 async function generateWithAI(

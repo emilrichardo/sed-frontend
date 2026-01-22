@@ -196,10 +196,11 @@ export default function UploadBulletinPage() {
           ),
         );
       }
-    } catch (e: any) {
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : "Error desconocido";
       setScannedFiles((prev) =>
         prev.map((f, idx) =>
-          idx === index ? { ...f, status: "error", error: e.message } : f,
+          idx === index ? { ...f, status: "error", error: errorMessage } : f,
         ),
       );
     }

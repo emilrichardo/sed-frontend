@@ -20,7 +20,7 @@ import {
 
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]); // Generic documents
+  const [documents, setDocuments] = useState<Boletin[]>([]); // Generic documents
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
   const [loadingAgents, setLoadingAgents] = useState(true);
   const [loadingDocs, setLoadingDocs] = useState(false);
@@ -578,7 +578,7 @@ export default function AgentsPage() {
                     {expandedDocId === doc.id && (
                       <tr className="bg-neutral-50/50">
                         <td colSpan={4} className="px-6 py-4">
-                          <div className="bg-neutral-900 rounded-lg p-4 font-mono text-xs text-green-400 shadow-inner max-h-48 overflow-y-auto">
+                          <div className="bg-neutral-950 rounded-lg p-4 font-mono text-xs text-green-400 shadow-inner max-h-48 overflow-y-auto border border-neutral-800">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-wider text-[10px]">
                                 <Database className="w-3 h-3" /> Logs de proceso
@@ -593,11 +593,7 @@ export default function AgentsPage() {
                               logs[doc.id].map((log, i) => (
                                 <div
                                   key={i}
-                                  className="mb-1 last:mb-0 break-words opacity-0 animate-in fade-in slide-in-from-left-1 duration-300"
-                                  style={{
-                                    animationDelay: `${i * 50}ms`,
-                                    animationFillMode: "forwards",
-                                  }}
+                                  className="mb-1 last:mb-0 break-words"
                                 >
                                   {log}
                                 </div>

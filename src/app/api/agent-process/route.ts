@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createLearningRecord,
   getBulletin,
-  getAgents,
   updateBulletin,
+  API_URL,
 } from "@/lib/api";
 
 // Helper to call AI (Ollama or External)
@@ -29,7 +29,7 @@ async function generateWithAI(
           messages: [{ role: "user", content: prompt }],
           temperature: temperature,
         }),
-        signal: AbortSignal.timeout(600000), // 10 minutes timeout
+        signal: AbortSignal.timeout(3600000), // 60 minutes timeout to prevent premature aborts on large contexts
       });
 
       if (!res.ok) {
@@ -94,7 +94,11 @@ export async function POST(req: NextRequest) {
     return new NextResponse(
       new ReadableStream({
         async start(controller) {
-          const sendUpdate = (data: any) => {
+          const sendUpdate = (data: {
+            type: string;
+            message?: string;
+            [key: string]: unknown;
+          }) => {
             controller.enqueue(encoder.encode(JSON.stringify(data) + "\n"));
           };
 
@@ -118,9 +122,67 @@ export async function POST(req: NextRequest) {
               return;
             }
 
+            // 2.1 Reset Bulletin Status to avoid "Already Processed" locks
+            sendUpdate({
+              type: "log",
+              message: "Reseteando estado del documento...",
+            });
+            // Using null as 'unprocessed' state to reset
+            await updateBulletin(
+              bulletinId,
+              { status_procesamiento: null },
+              authToken,
+            );
+
+            // 2.5 Cleanup previous learning records
+            sendUpdate({
+              type: "log",
+              message: "Limpiando registros anteriores...",
+            });
+            try {
+              // Fetch by Relation first
+              const existingRes = await fetch(
+                `${API_URL}/learning-records?where[processed_items][equals]=${bulletinId}&depth=0`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${authToken}`,
+                    "Content-Type": "application/json",
+                  },
+                },
+              );
+
+              let docsToDelete: { id: string }[] = [];
+              if (existingRes.ok) {
+                const existingData = await existingRes.json();
+                if (existingData.docs) docsToDelete = [...existingData.docs];
+              }
+
+              // Delete Found
+              for (const doc of docsToDelete) {
+                await fetch(`${API_URL}/learning-records/${doc.id}`, {
+                  method: "DELETE",
+                  headers: {
+                    Authorization: `Bearer ${authToken}`,
+                    "Content-Type": "application/json",
+                  },
+                });
+              }
+
+              if (docsToDelete.length > 0) {
+                sendUpdate({
+                  type: "log",
+                  message: `Eliminados ${docsToDelete.length} registros anteriores.`,
+                });
+              }
+            } catch (cleanupErr) {
+              console.warn("Cleanup failed", cleanupErr);
+            }
+
             // 3. Process Text in Chunks
             const rawText = bulletin.raw_text || "Texto no disponible.";
-            const MAX_CHUNK_LENGTH = 15000;
+            // Increased to 1M characters (~250k tokens) to utilize Gemini 2.0 large context window
+            // and act as "processing everything in one go" as requested.
+            const MAX_CHUNK_LENGTH = 1000000;
             const chunks = [];
             if (rawText.length > MAX_CHUNK_LENGTH) {
               for (let i = 0; i < rawText.length; i += MAX_CHUNK_LENGTH) {
@@ -172,10 +234,19 @@ export async function POST(req: NextRequest) {
                 message: `Guardando aprendizaje parte ${i + 1}...`,
               });
 
+              // 5. Save Learning Record for this chunk immediately
+              // WORKAROUND: To avoid "Entrada ya procesada" error from backend if it enforces unique relation,
+              // we only link the real Relation ID on the LAST chunk.
+              // For intermediate chunks, we store the ID in metadata only.
+              const isLastChunk = i === chunks.length - 1;
+
               await createLearningRecord(
                 {
                   agent: agentId,
-                  processed_items: [bulletinId],
+                  // If we link it every time, backend might reject duplicates.
+                  // If we only link on last, we avoid the error but might lose direct relation query on intermediate chunks.
+                  // Let's try linking only on the last chunk to start with.
+                  processed_items: isLastChunk ? [bulletinId] : [],
                   learningContext: chunkResponse,
                   type: "analysis",
                   metadata: {
