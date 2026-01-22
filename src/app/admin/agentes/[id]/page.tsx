@@ -3,14 +3,147 @@
 import { useState, useEffect } from "react";
 import { Agent } from "@/lib/api";
 import Link from "next/link";
-import { ArrowLeft, Bot, Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Bot,
+  Eye,
+  EyeOff,
+  Loader2,
+  Play,
+  Save,
+  Trash2,
+  Calendar,
+  FileText,
+} from "lucide-react";
 import { useParams } from "next/navigation";
+import { EntriesTable } from "@/components/ui/EntriesTable";
 
 export default function AgentDetailsPage() {
   const { id } = useParams();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
+
+  // Placeholder Data for EntriesTable
+  const placeholderData = [
+    {
+      id: "101",
+      title: "Boletín Oficial #3452",
+      date: "2024-05-20",
+      status: "Pendiente",
+      size: "2.4 MB",
+    },
+    {
+      id: "102",
+      title: "Decreto Municipal #09/24",
+      date: "2024-05-18",
+      status: "Procesado",
+      size: "1.1 MB",
+    },
+    {
+      id: "103",
+      title: "Resolución Ministerial #441",
+      date: "2024-05-15",
+      status: "Procesado",
+      size: "850 KB",
+    },
+    {
+      id: "104",
+      title: "Anexo Estadístico Q1",
+      date: "2024-05-12",
+      status: "Error",
+      size: "4.7 MB",
+    },
+    {
+      id: "105",
+      title: "Boletín Oficial #3451",
+      date: "2024-05-10",
+      status: "Pendiente",
+      size: "2.3 MB",
+    },
+    {
+      id: "106",
+      title: "Circular Administrativa #02",
+      date: "2024-05-08",
+      status: "Procesado",
+      size: "120 KB",
+    },
+    {
+      id: "107",
+      title: "Informe Técnico #88",
+      date: "2024-05-07",
+      status: "Procesado",
+      size: "1.5 MB",
+    },
+    {
+      id: "108",
+      title: "Acta de Directorio #12",
+      date: "2024-05-06",
+      status: "Pendiente",
+      size: "3.2 MB",
+    },
+  ];
+
+  const columns = [
+    {
+      header: "Documento",
+      key: "title",
+      render: (item: Record<string, any>) => (
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-neutral-400" />
+          <span className="font-bold">{item.title}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Fecha",
+      key: "date",
+      render: (item: Record<string, any>) => (
+        <div className="flex items-center gap-1.5 text-neutral-500">
+          <Calendar className="w-3.5 h-3.5" />
+          {item.date}
+        </div>
+      ),
+    },
+    {
+      header: "Estado",
+      key: "status",
+      render: (item: Record<string, any>) => (
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+            item.status === "Procesado"
+              ? "bg-green-50 text-green-700 border-green-100"
+              : item.status === "Pendiente"
+                ? "bg-amber-50 text-amber-700 border-amber-100"
+                : "bg-red-50 text-red-700 border-red-100"
+          }`}
+        >
+          {item.status.toUpperCase()}
+        </span>
+      ),
+    },
+    { header: "Tamaño", key: "size" },
+  ];
+
+  const actions = [
+    {
+      label: "Procesar",
+      icon: Play,
+      onClick: (item: Record<string, any>) => alert(`Procesando ${item.title}`),
+      variant: "primary" as const,
+    },
+    {
+      label: "Guardar",
+      icon: Save,
+      onClick: (item: Record<string, any>) => alert(`Guardado ${item.title}`),
+    },
+    {
+      label: "Eliminar",
+      icon: Trash2,
+      onClick: (item: Record<string, any>) => alert(`Eliminado ${item.title}`),
+      variant: "danger" as const,
+    },
+  ];
 
   useEffect(() => {
     if (!id) return;
@@ -121,6 +254,20 @@ export default function AgentDetailsPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Entries Table Section */}
+          <div className="mt-8">
+            <EntriesTable
+              title="Entradas de Documentos"
+              data={placeholderData}
+              columns={columns}
+              actions={actions}
+              onProcessAll={() =>
+                alert("Procesando todos los documentos en cola...")
+              }
+              maxHeight="400px"
+            />
           </div>
 
           {/* Toggle Details Section */}
