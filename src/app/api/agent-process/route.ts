@@ -88,82 +88,143 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Get Agent Config (prefer from client to avoid server-side auth issues)
-    // We expect the client to send the full agent object now
-    const agent = body.agentConfig;
+    // Use Streaming Response to provide real-time updates
+    const encoder = new TextEncoder();
 
-    if (!agent) {
-      // Fallback legacy (will likely fail if auth is required)
-      console.warn(
-        "No agentConfig provided, falling back to server-side fetch",
-      );
-      const agents = await getAgents();
-      const found = agents.find((a) => a.id === agentId);
-      if (!found) {
-        return NextResponse.json({ error: "Agent not found" }, { status: 404 });
-      }
-      // Assign found agent to our variable, but we need to ensure type compatibility
-      // For now, allow it as 'any' or just rely on the existing variable scope
-      Object.assign(agent || {}, found);
-      if (!agent)
-        return NextResponse.json({ error: "Agent not found" }, { status: 404 });
-    }
+    return new NextResponse(
+      new ReadableStream({
+        async start(controller) {
+          const sendUpdate = (data: any) => {
+            controller.enqueue(encoder.encode(JSON.stringify(data) + "\n"));
+          };
 
-    // 2. Fetch Bulletin
-    const bulletin = await getBulletin(bulletinId, authToken);
-    if (!bulletin) {
-      return NextResponse.json(
-        { error: "Bulletin not found" },
-        { status: 404 },
-      );
-    }
+          try {
+            // 1. Get Agent Config
+            const agent = body.agentConfig;
 
-    // 3. Construct Prompt
-    const rawText = bulletin.raw_text || "Texto no disponible.";
+            // ... (Same fallback logic if needed, omitted for brevity as client should force send it)
+            if (!agent) {
+              sendUpdate({ type: "error", message: "Agent config missing" });
+              controller.close();
+              return;
+            }
 
-    const prompt = `${agent.systemPrompt || ""}\n\n---\nCONTENIDO DEL BOLETÍN:\n${rawText.substring(0, 5000)}`; // Truncate to avoid context limit
+            // 2. Fetch Bulletin
+            sendUpdate({ type: "log", message: "Obteniendo boletín..." });
+            const bulletin = await getBulletin(bulletinId, authToken);
+            if (!bulletin) {
+              sendUpdate({ type: "error", message: "Bulletin not found" });
+              controller.close();
+              return;
+            }
 
-    // 4. Call AI
-    console.log(
-      `Processing bulletin ${bulletinId} with agent ${agent.name}...`,
-    );
-    const modelName = agent.modelSettings?.modelName || "llama3";
-    const temperature = agent.modelSettings?.temperature ?? 0.7;
-    const apiKey = agent.modelSettings?.apiKey;
+            // 3. Process Text in Chunks
+            const rawText = bulletin.raw_text || "Texto no disponible.";
+            const MAX_CHUNK_LENGTH = 15000;
+            const chunks = [];
+            if (rawText.length > MAX_CHUNK_LENGTH) {
+              for (let i = 0; i < rawText.length; i += MAX_CHUNK_LENGTH) {
+                chunks.push(rawText.substring(i, i + MAX_CHUNK_LENGTH));
+              }
+            } else {
+              chunks.push(rawText);
+            }
 
-    const aiResponse = await generateWithAI(
-      modelName,
-      prompt,
-      temperature,
-      apiKey,
-    );
+            sendUpdate({
+              type: "init",
+              message: `Iniciando análisis. Total chunks: ${chunks.length}`,
+              totalChunks: chunks.length,
+            });
 
-    // 5. Save Learning Record
-    await createLearningRecord(
+            const modelName = agent.modelSettings?.modelName || "llama3";
+            const temperature = agent.modelSettings?.temperature ?? 0.7;
+            const apiKey = agent.modelSettings?.apiKey;
+
+            let fullResponse = "";
+
+            for (let i = 0; i < chunks.length; i++) {
+              const isMultiPart = chunks.length > 1;
+              const chunkContext = isMultiPart
+                ? `\n\n(PARTE ${i + 1} DE ${chunks.length})`
+                : "";
+              const prompt = `${agent.systemPrompt || ""}${chunkContext}\n\n---\nCONTENIDO DEL BOLETÍN:\n${chunks[i]}`;
+
+              sendUpdate({
+                type: "log",
+                message: `Procesando parte ${i + 1} de ${chunks.length} con IA...`,
+              });
+
+              const chunkResponse = await generateWithAI(
+                modelName,
+                prompt,
+                temperature,
+                apiKey,
+              );
+
+              if (isMultiPart) {
+                fullResponse += `\n\n--- RESPUESTA PARTE ${i + 1} ---\n${chunkResponse}`;
+              } else {
+                fullResponse = chunkResponse;
+              }
+
+              sendUpdate({
+                type: "log",
+                message: `Guardando aprendizaje parte ${i + 1}...`,
+              });
+
+              await createLearningRecord(
+                {
+                  agent: agentId,
+                  processed_items: [bulletinId],
+                  learningContext: chunkResponse,
+                  type: "analysis",
+                  metadata: {
+                    source_id: bulletinId,
+                    agent_name: agent.name,
+                    processed_at: new Date().toISOString(),
+                    part: i + 1,
+                    total_parts: chunks.length,
+                  },
+                },
+                authToken,
+              );
+
+              sendUpdate({ type: "chunk_complete", chunkIndex: i + 1 });
+            }
+
+            // 6. Update Bulletin Status
+            sendUpdate({
+              type: "log",
+              message: "Actualizando estado del documento...",
+            });
+            await updateBulletin(
+              bulletinId,
+              { status_procesamiento: "ai_enhanced" },
+              authToken,
+            );
+
+            sendUpdate({
+              type: "done",
+              message: "Procesamiento completado",
+              learningContext: fullResponse,
+              chunksProcessed: chunks.length,
+              totalChunks: chunks.length,
+            });
+            controller.close();
+          } catch (error) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : String(error);
+            sendUpdate({ type: "error", message: msg });
+            controller.close();
+          }
+        },
+      }),
       {
-        agent: agentId,
-        processed_items: [bulletinId],
-        learningContext: aiResponse,
-        type: "analysis",
-        metadata: {
-          source_id: bulletinId,
-          agent_name: agent.name,
-          processed_at: new Date().toISOString(),
+        headers: {
+          "Content-Type": "application/x-ndjson; charset=utf-8",
         },
       },
-      authToken,
     );
-
-    // 6. Update Bulletin Status
-    await updateBulletin(
-      bulletinId,
-      {
-        status_procesamiento: "ai_enhanced",
-      },
-      authToken,
-    );
-
-    return NextResponse.json({ success: true, message: "Processing complete" });
   } catch (error) {
     console.error("Agent processing error:", error);
     return NextResponse.json(

@@ -58,7 +58,7 @@ export default function AgentsPage() {
       try {
         if (agent?.sourceCollection === "boletines") {
           const res = await getBulletins({
-            limit: 20,
+            limit: 1000,
             sort: "-fecha_publicacion",
           });
           setDocuments(res.docs);
@@ -81,6 +81,24 @@ export default function AgentsPage() {
 
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, string[]>>({});
+  const [startTime, setStartTime] = useState<Record<string, number>>({});
+  const [elapsed, setElapsed] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (processingId && startTime[processingId]) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const diff = Math.floor((now - startTime[processingId]) / 1000);
+        const mins = Math.floor(diff / 60)
+          .toString()
+          .padStart(2, "0");
+        const secs = (diff % 60).toString().padStart(2, "0");
+        setElapsed((prev) => ({ ...prev, [processingId]: `${mins}:${secs}` }));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [processingId, startTime]);
 
   const addLog = (docId: string, message: string) => {
     setLogs((prev) => ({
@@ -97,6 +115,8 @@ export default function AgentsPage() {
     setProcessingId(docId);
     setExpandedDocId(docId); // Auto-expand to show progress
     setLogs((prev) => ({ ...prev, [docId]: [] })); // Clear logs
+    setStartTime((prev) => ({ ...prev, [docId]: Date.now() }));
+    setElapsed((prev) => ({ ...prev, [docId]: "00:00" }));
     addLog(docId, "Iniciando proceso de análisis...");
 
     try {
@@ -119,20 +139,73 @@ export default function AgentsPage() {
         );
       }
 
-      addLog(docId, "¡Procesamiento completado con éxito!");
+      if (!res.body) throw new Error("No response body");
 
-      // Optimistic update
-      setDocuments((prev) =>
-        prev.map((d) =>
-          d.id === docId ? { ...d, status_procesamiento: "ai_enhanced" } : d,
-        ),
-      );
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line);
+
+            if (data.type === "error") {
+              throw new Error(data.message);
+            }
+            if (data.type === "log") {
+              addLog(docId, data.message);
+            }
+            if (data.type === "init") {
+              addLog(docId, data.message);
+            }
+            if (data.type === "chunk_complete") {
+              addLog(
+                docId,
+                `[✔] Chunk ${data.chunkIndex} completado y guardado.`,
+              );
+            }
+            if (data.type === "done") {
+              addLog(docId, "¡Procesamiento finalizado!");
+              if (data.learningContext) {
+                addLog(docId, "--- RESULTADO FINAL ---");
+                // Show preview
+                const contextLines = data.learningContext.split("\n");
+                contextLines.slice(0, 15).forEach((l: string) => {
+                  if (l.trim()) addLog(docId, l);
+                });
+              }
+
+              // Optimistic update
+              setDocuments((prev) =>
+                prev.map((d) =>
+                  d.id === docId
+                    ? { ...d, status_procesamiento: "ai_enhanced" }
+                    : d,
+                ),
+              );
+            }
+          } catch (e) {
+            console.error("Error parsing stream line", e);
+          }
+        }
+      }
     } catch (error) {
       console.error(error);
       const msg = error instanceof Error ? error.message : String(error);
       addLog(docId, `ERROR: ${msg}`);
       alert(`Error al procesar: ${msg}`);
     } finally {
+      setStartTime((prev) => {
+        const next = { ...prev };
+        delete next[docId]; // Stop the timer
+        return next;
+      });
       setProcessingId(null);
     }
   };
@@ -163,13 +236,54 @@ export default function AgentsPage() {
             Gestión y orquestación de agentes inteligentes
           </p>
         </div>
-        <Link
-          href="/boletines"
-          className="flex items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={async () => {
+              if (
+                !confirm(
+                  "Esto verificará todos los boletines marcados como 'Completado' y restablecerá su estado si no se encuentran registros de aprendizaje correspondientes. ¿Continuar?",
+                )
+              )
+                return;
+
+              try {
+                const btn = document.getElementById("sync-btn");
+                if (btn) btn.innerHTML = "Sincronizando...";
+
+                const res = await fetch("/api/agent-sync-status", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    authToken: localStorage.getItem("payload-token"),
+                  }),
+                });
+                const data = await res.json();
+                alert(data.message);
+                // Reload docs
+                const current = selectedAgentId;
+                setSelectedAgentId("");
+                setTimeout(() => setSelectedAgentId(current), 10);
+              } catch (e) {
+                alert("Error al sincronizar");
+                console.error(e);
+              } finally {
+                const btn = document.getElementById("sync-btn");
+                if (btn) btn.innerHTML = "Sincronizar Estados";
+              }
+            }}
+            id="sync-btn"
+            className="text-xs font-bold text-neutral-500 hover:text-indigo-600 bg-neutral-100 px-3 py-2 rounded-lg transition-colors"
+          >
+            Sincronizar Estados
+          </button>
+          <Link
+            href="/boletines"
+            className="flex items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver
+          </Link>
+        </div>
       </div>
 
       {/* Agent Selector */}
@@ -428,39 +542,52 @@ export default function AgentsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {doc.status_procesamiento === "ai_enhanced" ? (
-                          <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
-                            Completado
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleProcess(doc.id)}
-                            disabled={
-                              processingId === doc.id || !selectedAgentId
+                        <button
+                          onClick={() => handleProcess(doc.id)}
+                          disabled={processingId === doc.id || !selectedAgentId}
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 border
+                            ${
+                              doc.status_procesamiento === "ai_enhanced"
+                                ? "bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 hover:text-indigo-600 hover:border-indigo-200"
+                                : "bg-neutral-900 text-white border-transparent hover:bg-neutral-800"
                             }
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95 border-0"
-                          >
-                            {processingId === doc.id ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />{" "}
-                                Procesando...
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-3 h-3 fill-current" />{" "}
-                                Procesar
-                              </>
-                            )}
-                          </button>
-                        )}
+                            disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {processingId === doc.id ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                              Procesando...
+                            </>
+                          ) : (
+                            <>
+                              {doc.status_procesamiento === "ai_enhanced" ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3" /> Reprocesar
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3 h-3 fill-current" />{" "}
+                                  Procesar
+                                </>
+                              )}
+                            </>
+                          )}
+                        </button>
                       </td>
                     </tr>
                     {expandedDocId === doc.id && (
                       <tr className="bg-neutral-50/50">
                         <td colSpan={4} className="px-6 py-4">
                           <div className="bg-neutral-900 rounded-lg p-4 font-mono text-xs text-green-400 shadow-inner max-h-48 overflow-y-auto">
-                            <div className="flex items-center gap-2 mb-2 text-neutral-500 font-bold uppercase tracking-wider text-[10px]">
-                              <Database className="w-3 h-3" /> Logs de proceso
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-wider text-[10px]">
+                                <Database className="w-3 h-3" /> Logs de proceso
+                              </div>
+                              {elapsed[doc.id] && (
+                                <div className="text-[10px] font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded">
+                                  Tiempo: {elapsed[doc.id]}
+                                </div>
+                              )}
                             </div>
                             {logs[doc.id]?.length > 0 ? (
                               logs[doc.id].map((log, i) => (
