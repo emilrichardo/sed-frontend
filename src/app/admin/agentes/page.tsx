@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Agent, Boletin, getAgents, getBulletins } from "@/lib/api";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bot,
@@ -19,12 +20,18 @@ import {
 } from "lucide-react";
 
 export default function AgentsPage() {
+  const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [documents, setDocuments] = useState<Boletin[]>([]); // Generic documents
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
   const [loadingAgents, setLoadingAgents] = useState(true);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const logout = () => {
+    localStorage.removeItem("payload-token");
+    router.replace("/login");
+  };
 
   // 1. Fetch Agents on Mount
   useEffect(() => {
@@ -133,6 +140,11 @@ export default function AgentsPage() {
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          addLog(docId, "Error: Sesión no válida. Redirigiendo...");
+          setTimeout(() => logout(), 1000); // Wait a bit to show the logs
+          throw new Error("Sesión expirada");
+        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(
           errData.details || res.statusText || "Error desconocido",

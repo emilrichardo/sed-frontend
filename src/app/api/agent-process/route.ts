@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  createLearningRecord,
-  getBulletin,
-  updateBulletin,
-  API_URL,
-} from "@/lib/api";
+import { createLearningRecord, getBulletin, API_URL } from "@/lib/api";
 
 // Helper to call AI (Ollama or External)
 async function generateWithAI(
@@ -122,17 +117,7 @@ export async function POST(req: NextRequest) {
               return;
             }
 
-            // 2.1 Reset Bulletin Status to avoid "Already Processed" locks
-            sendUpdate({
-              type: "log",
-              message: "Reseteando estado del documento...",
-            });
-            // Using null as 'unprocessed' state to reset
-            await updateBulletin(
-              bulletinId,
-              { status_procesamiento: null },
-              authToken,
-            );
+            // 2.1 (Status reset removed as per request)
 
             // 2.5 Cleanup previous learning records
             sendUpdate({
@@ -238,15 +223,12 @@ export async function POST(req: NextRequest) {
               // WORKAROUND: To avoid "Entrada ya procesada" error from backend if it enforces unique relation,
               // we only link the real Relation ID on the LAST chunk.
               // For intermediate chunks, we store the ID in metadata only.
-              const isLastChunk = i === chunks.length - 1;
 
               await createLearningRecord(
                 {
                   agent: agentId,
-                  // If we link it every time, backend might reject duplicates.
-                  // If we only link on last, we avoid the error but might lose direct relation query on intermediate chunks.
-                  // Let's try linking only on the last chunk to start with.
-                  processed_items: isLastChunk ? [bulletinId] : [],
+                  // Always link the bulletin as per request
+                  processed_items: [bulletinId],
                   learningContext: chunkResponse,
                   type: "analysis",
                   metadata: {
@@ -263,16 +245,7 @@ export async function POST(req: NextRequest) {
               sendUpdate({ type: "chunk_complete", chunkIndex: i + 1 });
             }
 
-            // 6. Update Bulletin Status
-            sendUpdate({
-              type: "log",
-              message: "Actualizando estado del documento...",
-            });
-            await updateBulletin(
-              bulletinId,
-              { status_procesamiento: "ai_enhanced" },
-              authToken,
-            );
+            // 6. (Status update removed as per request)
 
             sendUpdate({
               type: "done",
