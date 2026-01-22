@@ -225,29 +225,41 @@ export async function getBulletins(
   return res.json();
 }
 
-export async function getBulletin(idOrSlug: string): Promise<Boletin> {
+export async function getBulletin(
+  idOrSlug: string,
+  authToken?: string,
+): Promise<Boletin> {
+  if (!idOrSlug) throw new Error("ID or Slug is required");
+  const idStr = String(idOrSlug);
+  const token =
+    authToken ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null);
+
   // 1. Check if it's a numeric string (for 'numero')
-  const isNumber = /^\d+$/.test(idOrSlug);
+  const isNumber = /^\d+$/.test(idStr);
   // 2. Check if it's a slug (contains hyphens)
-  const isSlug = idOrSlug.includes("-");
+  const isSlug = idStr.includes("-");
 
   let query = "";
   let isSearch = false;
 
   if (isNumber) {
-    query = `?where[numero][equals]=${idOrSlug}&sort=-createdAt`;
+    query = `?where[numero][equals]=${idStr}&sort=-createdAt`;
     isSearch = true;
   } else if (isSlug) {
-    query = `?where[slug][equals]=${idOrSlug}`;
+    query = `?where[slug][equals]=${idStr}`;
     isSearch = true;
   } else {
     // Assume internal ID
-    query = `/${idOrSlug}`;
+    query = `/${idStr}`;
   }
 
   const res = await fetch(`${API_URL}/boletines${query}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     next: { revalidate: 3600 },
   });
@@ -258,7 +270,26 @@ export async function getBulletin(idOrSlug: string): Promise<Boletin> {
 
   if (isSearch) {
     if (!data.docs || data.docs.length === 0) {
-      throw new Error("Bulletin not found");
+      // If authenticating, maybe no access or strictly not found
+      // Try fetching as ID if number check failed but it was actually an ID
+      if (isNumber) {
+        // Fallback: Try fetching by ID directly
+        try {
+          const resFallback = await fetch(`${API_URL}/boletines/${idStr}`, {
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            cache: "no-store",
+          });
+          if (resFallback.ok) {
+            return await resFallback.json();
+          }
+        } catch (e) {
+          console.warn("Fallback fetch by ID failed", e);
+        }
+      }
+      throw new Error(`Bulletin not found: ${idStr}`);
     }
     return data.docs[0];
   }
@@ -368,11 +399,13 @@ export async function createBulletin(
 export async function updateBulletin(
   id: string,
   data: Partial<Boletin>,
+  authToken?: string,
 ): Promise<{ doc: Boletin; message: string }> {
   const token =
-    typeof window !== "undefined"
+    authToken ||
+    (typeof window !== "undefined"
       ? localStorage.getItem("payload-token")
-      : null;
+      : null);
 
   const res = await fetch(`${API_URL}/boletines/${id}`, {
     method: "PATCH",
@@ -494,11 +527,13 @@ export async function getAgents(): Promise<Agent[]> {
 
 export async function createLearningRecord(
   data: any, // or Partial<LearningRecord>
+  authToken?: string,
 ): Promise<{ doc: LearningRecord; message: string }> {
   const token =
-    typeof window !== "undefined"
+    authToken ||
+    (typeof window !== "undefined"
       ? localStorage.getItem("payload-token")
-      : null;
+      : null);
 
   const res = await fetch(`${API_URL}/learning`, {
     method: "POST",

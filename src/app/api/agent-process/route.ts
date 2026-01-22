@@ -6,13 +6,47 @@ import {
   updateBulletin,
 } from "@/lib/api";
 
-// Helper to call Ollama
-async function generateWithOllama(
+// Helper to call AI (Ollama or External)
+async function generateWithAI(
   model: string,
   prompt: string,
+  temperature: number = 0.7,
+  apiKey?: string,
 ): Promise<string> {
-  const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+  // 1. External API (e.g. Gemini) if API Key is provided
+  if (apiKey) {
+    const API_URL =
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: temperature,
+        }),
+        signal: AbortSignal.timeout(600000), // 10 minutes timeout
+      });
 
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`External AI API error: ${res.status} - ${errText}`);
+      }
+
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || "";
+    } catch (error) {
+      console.error("External AI generation failed:", error);
+      throw error;
+    }
+  }
+
+  // 2. Local Ollama Fallback
+  const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: "POST",
@@ -21,6 +55,9 @@ async function generateWithOllama(
         model: model,
         prompt: prompt,
         stream: false,
+        options: {
+          temperature: temperature,
+        },
       }),
     });
 
@@ -32,7 +69,6 @@ async function generateWithOllama(
     return data.response;
   } catch (error) {
     console.error("Ollama generation failed:", error);
-    // Build a mock response if Ollama is not available for testing purposes
     if (process.env.NODE_ENV === "development") {
       return `[MOCK RESPONSE] Analysis of bulletin content based on prompt: ${prompt.substring(0, 50)}...`;
     }
@@ -43,7 +79,7 @@ async function generateWithOllama(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { agentId, bulletinId } = body;
+    const { agentId, bulletinId, authToken } = body;
 
     if (!agentId || !bulletinId) {
       return NextResponse.json(
@@ -52,15 +88,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Fetch Agent
-    const agents = await getAgents();
-    const agent = agents.find((a) => a.id === agentId);
+    // 1. Get Agent Config (prefer from client to avoid server-side auth issues)
+    // We expect the client to send the full agent object now
+    const agent = body.agentConfig;
+
     if (!agent) {
-      return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+      // Fallback legacy (will likely fail if auth is required)
+      console.warn(
+        "No agentConfig provided, falling back to server-side fetch",
+      );
+      const agents = await getAgents();
+      const found = agents.find((a) => a.id === agentId);
+      if (!found) {
+        return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+      }
+      // Assign found agent to our variable, but we need to ensure type compatibility
+      // For now, allow it as 'any' or just rely on the existing variable scope
+      Object.assign(agent || {}, found);
+      if (!agent)
+        return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
     // 2. Fetch Bulletin
-    const bulletin = await getBulletin(bulletinId);
+    const bulletin = await getBulletin(bulletinId, authToken);
     if (!bulletin) {
       return NextResponse.json(
         { error: "Bulletin not found" },
@@ -78,25 +128,40 @@ export async function POST(req: NextRequest) {
       `Processing bulletin ${bulletinId} with agent ${agent.name}...`,
     );
     const modelName = agent.modelSettings?.modelName || "llama3";
-    const aiResponse = await generateWithOllama(modelName, prompt);
+    const temperature = agent.modelSettings?.temperature ?? 0.7;
+    const apiKey = agent.modelSettings?.apiKey;
+
+    const aiResponse = await generateWithAI(
+      modelName,
+      prompt,
+      temperature,
+      apiKey,
+    );
 
     // 5. Save Learning Record
-    await createLearningRecord({
-      agent: agentId,
-      processed_items: [bulletinId],
-      learningContext: aiResponse,
-      type: "analysis",
-      metadata: {
-        source_id: bulletinId,
-        agent_name: agent.name,
-        processed_at: new Date().toISOString(),
+    await createLearningRecord(
+      {
+        agent: agentId,
+        processed_items: [bulletinId],
+        learningContext: aiResponse,
+        type: "analysis",
+        metadata: {
+          source_id: bulletinId,
+          agent_name: agent.name,
+          processed_at: new Date().toISOString(),
+        },
       },
-    });
+      authToken,
+    );
 
     // 6. Update Bulletin Status
-    await updateBulletin(bulletinId, {
-      status_procesamiento: "ai_enhanced",
-    });
+    await updateBulletin(
+      bulletinId,
+      {
+        status_procesamiento: "ai_enhanced",
+      },
+      authToken,
+    );
 
     return NextResponse.json({ success: true, message: "Processing complete" });
   } catch (error) {

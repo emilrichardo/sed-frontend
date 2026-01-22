@@ -14,6 +14,8 @@ import {
   RefreshCw,
   Database,
   Search,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 
 export default function AgentsPage() {
@@ -77,16 +79,47 @@ export default function AgentsPage() {
     loadDocuments();
   }, [selectedAgentId, agents]);
 
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Record<string, string[]>>({});
+
+  const addLog = (docId: string, message: string) => {
+    setLogs((prev) => ({
+      ...prev,
+      [docId]: [
+        ...(prev[docId] || []),
+        `[${new Date().toLocaleTimeString()}] ${message}`,
+      ],
+    }));
+  };
+
   const handleProcess = async (docId: string) => {
     if (!selectedAgentId) return;
     setProcessingId(docId);
+    setExpandedDocId(docId); // Auto-expand to show progress
+    setLogs((prev) => ({ ...prev, [docId]: [] })); // Clear logs
+    addLog(docId, "Iniciando proceso de análisis...");
+
     try {
+      addLog(docId, "Conectando con el agente...");
       const res = await fetch("/api/agent-process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: selectedAgentId, bulletinId: docId }),
+        body: JSON.stringify({
+          agentId: selectedAgentId,
+          bulletinId: docId,
+          agentConfig: selectedAgent,
+          authToken: localStorage.getItem("payload-token"),
+        }),
       });
-      if (!res.ok) throw new Error("Failed");
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(
+          errData.details || res.statusText || "Error desconocido",
+        );
+      }
+
+      addLog(docId, "¡Procesamiento completado con éxito!");
 
       // Optimistic update
       setDocuments((prev) =>
@@ -96,10 +129,16 @@ export default function AgentsPage() {
       );
     } catch (error) {
       console.error(error);
-      alert("Error al procesar el documento.");
+      const msg = error instanceof Error ? error.message : String(error);
+      addLog(docId, `ERROR: ${msg}`);
+      alert(`Error al procesar: ${msg}`);
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const toggleExpand = (docId: string) => {
+    setExpandedDocId(expandedDocId === docId ? null : docId);
   };
 
   const selectedAgent = agents.find((a) => a.id === selectedAgentId);
@@ -201,6 +240,87 @@ export default function AgentsPage() {
         )}
       </div>
 
+      {selectedAgent && (
+        <div className="bg-white border border-neutral-200 rounded-xl p-6 mb-8 shadow-sm">
+          <div className="mb-4">
+            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              Prueba Rápida de Modelo
+            </h3>
+            <p className="text-xs text-neutral-400 mt-1">
+              Envía un mensaje directo al modelo configurado para verificar su
+              respuesta.
+            </p>
+          </div>
+
+          <div className="flex gap-4 relative">
+            <input
+              id="test-chat-input"
+              type="text"
+              placeholder="Escribe 'Hola' para probar..."
+              className="w-full pl-4 pr-20 py-3 border border-neutral-200 rounded-lg text-sm bg-neutral-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-neutral-700 placeholder:text-neutral-400"
+              onKeyDown={async (e) => {
+                if (e.key === "Enter") {
+                  const input = e.currentTarget;
+                  const prompt = input.value.trim();
+                  if (!prompt) return;
+
+                  const btn = document.getElementById("send-test-btn");
+                  if (btn)
+                    btn.innerHTML =
+                      '<span class="animate-spin inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full"></span>';
+                  input.disabled = true;
+
+                  try {
+                    const res = await fetch("/api/test-agent", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        modelConfig: selectedAgent.modelSettings,
+                        prompt,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (data.response) {
+                      alert(
+                        `RESPUESTA DEL MODELO (${selectedAgent.modelSettings?.modelName}):\n\n${data.response}`,
+                      );
+                    } else {
+                      alert(`Error: ${data.error}`);
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert("Error de conexión con el servidor");
+                  } finally {
+                    input.value = "";
+                    input.disabled = false;
+                    if (btn) btn.innerHTML = "Enviar";
+                    input.focus();
+                  }
+                }
+              }}
+            />
+            <button
+              id="send-test-btn"
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-white border border-neutral-200 rounded-md text-xs font-bold text-neutral-600 hover:text-indigo-600 hover:border-indigo-200 transition-colors shadow-sm"
+              onClick={() => {
+                const input = document.getElementById(
+                  "test-chat-input",
+                ) as HTMLInputElement;
+                input?.dispatchEvent(
+                  new KeyboardEvent("keydown", {
+                    key: "Enter",
+                    bubbles: true,
+                    cancelable: true,
+                  }),
+                );
+              }}
+            >
+              Enviar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Documents Table */}
       <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm min-h-[300px]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
@@ -248,79 +368,123 @@ export default function AgentsPage() {
               </thead>
               <tbody className="divide-y divide-neutral-50">
                 {documents.map((doc) => (
-                  <tr
-                    key={doc.id}
-                    className="group hover:bg-neutral-50/80 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 group-hover:bg-white group-hover:shadow-sm transition-all">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="font-bold text-neutral-900">
-                            {selectedAgent?.sourceCollection === "boletines"
-                              ? `Boletín Oficial ${doc.numero}`
-                              : `Documento ${doc.id.substring(0, 8)}`}
-                          </div>
-                          <div className="text-xs text-neutral-400 font-mono mt-0.5">
-                            ID: {doc.id}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-neutral-600">
-                      {selectedAgent?.sourceCollection === "boletines" ? (
-                        <span className="flex flex-col">
-                          <span>
-                            {new Date(doc.fecha_publicacion).toLocaleDateString(
-                              "es-AR",
+                  <>
+                    <tr
+                      key={doc.id}
+                      className="group hover:bg-neutral-50/80 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => toggleExpand(doc.id)}
+                            className="p-1 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                          >
+                            {expandedDocId === doc.id ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
                             )}
+                          </button>
+                          <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-neutral-900">
+                              {selectedAgent?.sourceCollection === "boletines"
+                                ? `Boletín Oficial ${doc.numero}`
+                                : `Documento ${doc.id.substring(0, 8)}`}
+                            </div>
+                            <div className="text-xs text-neutral-400 font-mono mt-0.5">
+                              ID: {doc.id}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-neutral-600">
+                        {selectedAgent?.sourceCollection === "boletines" ? (
+                          <span className="flex flex-col">
+                            <span>
+                              {new Date(
+                                doc.fecha_publicacion,
+                              ).toLocaleDateString("es-AR")}
+                            </span>
+                            <span className="text-xs text-neutral-400">
+                              Edición {doc.año_edicion}
+                            </span>
                           </span>
-                          <span className="text-xs text-neutral-400">
-                            Edición {doc.año_edicion}
+                        ) : (
+                          <span className="text-neutral-400 italic">--</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {doc.status_procesamiento === "ai_enhanced" ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
+                            <CheckCircle className="w-3.5 h-3.5" /> IA ENHANCED
                           </span>
-                        </span>
-                      ) : (
-                        <span className="text-neutral-400 italic">--</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {doc.status_procesamiento === "ai_enhanced" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
-                          <CheckCircle className="w-3.5 h-3.5" /> IA ENHANCED
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-500 border border-neutral-200">
-                          <Clock className="w-3.5 h-3.5" /> PENDIENTE
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {doc.status_procesamiento === "ai_enhanced" ? (
-                        <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
-                          Completado
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleProcess(doc.id)}
-                          disabled={processingId === doc.id || !selectedAgentId}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
-                        >
-                          {processingId === doc.id ? (
-                            <>
-                              <Loader2 className="w-3 h-3 animate-spin" />{" "}
-                              Procesando...
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-3 h-3 fill-current" /> Procesar
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-500 border border-neutral-200">
+                            <Clock className="w-3.5 h-3.5" /> PENDIENTE
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {doc.status_procesamiento === "ai_enhanced" ? (
+                          <span className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+                            Completado
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleProcess(doc.id)}
+                            disabled={
+                              processingId === doc.id || !selectedAgentId
+                            }
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95 border-0"
+                          >
+                            {processingId === doc.id ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                                Procesando...
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3 h-3 fill-current" />{" "}
+                                Procesar
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {expandedDocId === doc.id && (
+                      <tr className="bg-neutral-50/50">
+                        <td colSpan={4} className="px-6 py-4">
+                          <div className="bg-neutral-900 rounded-lg p-4 font-mono text-xs text-green-400 shadow-inner max-h-48 overflow-y-auto">
+                            <div className="flex items-center gap-2 mb-2 text-neutral-500 font-bold uppercase tracking-wider text-[10px]">
+                              <Database className="w-3 h-3" /> Logs de proceso
+                            </div>
+                            {logs[doc.id]?.length > 0 ? (
+                              logs[doc.id].map((log, i) => (
+                                <div
+                                  key={i}
+                                  className="mb-1 last:mb-0 break-words opacity-0 animate-in fade-in slide-in-from-left-1 duration-300"
+                                  style={{
+                                    animationDelay: `${i * 50}ms`,
+                                    animationFillMode: "forwards",
+                                  }}
+                                >
+                                  {log}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-neutral-600 italic">
+                                Esperando inicio del proceso...
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
             </table>
