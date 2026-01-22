@@ -508,11 +508,12 @@ export async function createTaxonomy(
 
 // --- Agents & Learning API Functions ---
 
-export async function getAgents(): Promise<Agent[]> {
+export async function getAgents(authToken?: string): Promise<Agent[]> {
   const token =
-    typeof window !== "undefined"
+    authToken ||
+    (typeof window !== "undefined"
       ? localStorage.getItem("payload-token")
-      : null;
+      : null);
 
   const res = await fetch(`${API_URL}/agents`, {
     headers: {
