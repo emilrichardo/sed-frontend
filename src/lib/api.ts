@@ -533,6 +533,32 @@ export async function getAgents(authToken?: string): Promise<Agent[]> {
   return data.docs || [];
 }
 
+export async function getAgent(
+  id: string,
+  authToken?: string,
+): Promise<Agent | null> {
+  const token =
+    authToken ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null);
+
+  const res = await fetch(`${API_URL}/agents/${id}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    console.error(`API: getAgent(${id}) error:`, res.status, res.statusText);
+    return null;
+  }
+
+  const data = await res.json();
+  return data;
+}
+
 export async function createLearningRecord(
   data: Partial<LearningRecord>, // or Partial<LearningRecord>
   authToken?: string,
