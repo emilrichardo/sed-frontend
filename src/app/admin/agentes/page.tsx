@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Agent, Boletin, getAgents, getBulletins } from "@/lib/api";
+import {
+  Agent,
+  Boletin,
+  NewsItem,
+  getAgents,
+  getBulletins,
+  getNews,
+} from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,7 +29,7 @@ import {
 export default function AgentsPage() {
   const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [documents, setDocuments] = useState<Boletin[]>([]); // Generic documents
+  const [documents, setDocuments] = useState<(Boletin | NewsItem | any)[]>([]); // Generic documents
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
   const [loadingAgents, setLoadingAgents] = useState(true);
   const [loadingDocs, setLoadingDocs] = useState(false);
@@ -62,20 +69,37 @@ export default function AgentsPage() {
     async function loadDocuments() {
       setLoadingDocs(true);
       setDocuments([]); // Clear previous
+
+      const sources =
+        agent?.sources && agent.sources.length > 0
+          ? agent.sources
+          : agent?.sourceCollection
+            ? [agent.sourceCollection]
+            : [];
+
       try {
-        if (agent?.sourceCollection === "boletines") {
-          const res = await getBulletins({
-            limit: 1000,
-            sort: "-fecha_publicacion",
-          });
-          setDocuments(res.docs);
-        } else {
-          // Placeholder for other collections if implemented
-          console.warn(
-            `Collection ${agent?.sourceCollection} not implemented yet.`,
-          );
-          setDocuments([]);
+        const allDocs: any[] = []; // Using any to mix types
+
+        for (const source of sources) {
+          if (source === "boletines") {
+            const res = await getBulletins({
+              limit: 500,
+              sort: "-fecha_publicacion",
+            });
+            allDocs.push(
+              ...res.docs.map((d: any) => ({ ...d, _collection: "boletines" })),
+            );
+          } else if (source === "noticias") {
+            const res = await getNews({ limit: 500, sort: "-createdAt" });
+            allDocs.push(
+              ...res.docs.map((d: any) => ({ ...d, _collection: "noticias" })),
+            );
+          } else {
+            console.warn(`Source ${source} not implemented yet.`);
+          }
         }
+
+        setDocuments(allDocs);
       } catch (error) {
         console.error("Failed to fetch documents", error);
       } finally {
@@ -128,12 +152,17 @@ export default function AgentsPage() {
 
     try {
       addLog(docId, "Conectando con el agente...");
+      const doc = documents.find((d) => d.id === docId);
+      const collection =
+        doc?._collection || selectedAgent?.sourceCollection || "boletines";
+
       const res = await fetch("/api/agent-process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: selectedAgentId,
           bulletinId: docId,
+          collection, // Pass collection
           agentConfig: selectedAgent,
           authToken: localStorage.getItem("payload-token"),
         }),
@@ -194,12 +223,24 @@ export default function AgentsPage() {
               }
 
               // Optimistic update
+              // Optimistic verification update
               setDocuments((prev) =>
-                prev.map((d) =>
-                  d.id === docId
-                    ? { ...d, status_procesamiento: "ai_enhanced" }
-                    : d,
-                ),
+                prev.map((d) => {
+                  if (d.id === docId) {
+                    // Update status based on agent type
+                    if (
+                      selectedAgent?.type === "extraction" &&
+                      selectedAgent.outputConfig?.statusField
+                    ) {
+                      return {
+                        ...d,
+                        [selectedAgent.outputConfig.statusField]: true,
+                      };
+                    }
+                    return { ...d, status_procesamiento: "ai_enhanced" };
+                  }
+                  return d;
+                }),
               );
             }
           } catch (e) {
@@ -224,6 +265,30 @@ export default function AgentsPage() {
 
   const toggleExpand = (docId: string) => {
     setExpandedDocId(expandedDocId === docId ? null : docId);
+  };
+
+  // Helper to determine status
+  const getDocStatus = (doc: any) => {
+    // If Extraction agent, check dynamic status field
+    if (
+      selectedAgent?.type === "extraction" &&
+      selectedAgent.outputConfig?.statusField
+    ) {
+      return doc[selectedAgent.outputConfig.statusField]
+        ? "processed"
+        : "pending";
+    }
+    return doc.status_procesamiento === "ai_enhanced" ? "processed" : "pending";
+  };
+
+  const getDocDisplayDate = (doc: any) => {
+    if (doc._collection === "boletines" && doc.fecha_publicacion)
+      return new Date(doc.fecha_publicacion).toLocaleDateString("es-AR");
+    if (doc.publishedDate)
+      return new Date(doc.publishedDate).toLocaleDateString("es-AR");
+    if (doc.createdAt)
+      return new Date(doc.createdAt).toLocaleDateString("es-AR");
+    return "--";
   };
 
   const selectedAgent = agents.find((a) => a.id === selectedAgentId);
@@ -452,7 +517,11 @@ export default function AgentsPage() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-neutral-50/50">
           <div className="flex items-center gap-3">
             <h2 className="font-bold text-neutral-900 text-sm uppercase tracking-wide">
-              Archivos Pendientes ({selectedAgent?.sourceCollection || "..."})
+              Archivos (
+              {selectedAgent?.sources?.join(", ") ||
+                selectedAgent?.sourceCollection ||
+                "..."}
+              )
             </h2>
             {loadingDocs && (
               <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
@@ -487,140 +556,129 @@ export default function AgentsPage() {
               <thead className="bg-white text-neutral-400 text-[10px] font-bold uppercase tracking-wider border-b border-neutral-100">
                 <tr>
                   <th className="px-6 py-4 text-left">Documento</th>
-                  <th className="px-6 py-4 text-left">Referencia</th>
+                  <th className="px-6 py-4 text-left">Fecha</th>
                   <th className="px-6 py-4 text-left">Estado</th>
                   <th className="px-6 py-4 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
-                {documents.map((doc) => (
-                  <>
-                    <tr
-                      key={doc.id}
-                      className="group hover:bg-neutral-50/80 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
+                {documents.map((doc) => {
+                  const status = getDocStatus(doc);
+                  const isProcessed = status === "processed";
+
+                  return (
+                    <div key={doc.id} style={{ display: "contents" }}>
+                      <tr className="group hover:bg-neutral-50/80 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() => toggleExpand(doc.id)}
+                              className="p-1 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                            >
+                              {expandedDocId === doc.id ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </button>
+                            <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                              <FileText className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-neutral-900">
+                                {doc.titulo ||
+                                  (doc.numero
+                                    ? `Boletín Oficial ${doc.numero}`
+                                    : `Documento ${doc.id.substring(0, 8)}`)}
+                              </div>
+                              <div className="text-xs text-neutral-400 font-mono mt-0.5 capitalize">
+                                {doc._collection} • ID: {doc.id}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-neutral-600">
+                          {getDocDisplayDate(doc)}
+                        </td>
+                        <td className="px-6 py-4">
+                          {isProcessed ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
+                              <CheckCircle className="w-3.5 h-3.5" /> PROCESADO
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-500 border border-neutral-200">
+                              <Clock className="w-3.5 h-3.5" /> PENDIENTE
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right">
                           <button
-                            onClick={() => toggleExpand(doc.id)}
-                            className="p-1 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                          >
-                            {expandedDocId === doc.id ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4" />
-                            )}
-                          </button>
-                          <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-500 group-hover:bg-white group-hover:shadow-sm transition-all">
-                            <FileText className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="font-bold text-neutral-900">
-                              {selectedAgent?.sourceCollection === "boletines"
-                                ? `Boletín Oficial ${doc.numero}`
-                                : `Documento ${doc.id.substring(0, 8)}`}
-                            </div>
-                            <div className="text-xs text-neutral-400 font-mono mt-0.5">
-                              ID: {doc.id}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-neutral-600">
-                        {selectedAgent?.sourceCollection === "boletines" ? (
-                          <span className="flex flex-col">
-                            <span>
-                              {new Date(
-                                doc.fecha_publicacion,
-                              ).toLocaleDateString("es-AR")}
-                            </span>
-                            <span className="text-xs text-neutral-400">
-                              Edición {doc.año_edicion}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-neutral-400 italic">--</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {doc.status_procesamiento === "ai_enhanced" ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
-                            <CheckCircle className="w-3.5 h-3.5" /> IA ENHANCED
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-500 border border-neutral-200">
-                            <Clock className="w-3.5 h-3.5" /> PENDIENTE
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleProcess(doc.id)}
-                          disabled={processingId === doc.id || !selectedAgentId}
-                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 border
+                            onClick={() => handleProcess(doc.id)}
+                            disabled={
+                              processingId === doc.id || !selectedAgentId
+                            }
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95 border
                             ${
-                              doc.status_procesamiento === "ai_enhanced"
+                              isProcessed
                                 ? "bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 hover:text-indigo-600 hover:border-indigo-200"
                                 : "bg-neutral-900 text-white border-transparent hover:bg-neutral-800"
                             }
                             disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {processingId === doc.id ? (
-                            <>
-                              <Loader2 className="w-3 h-3 animate-spin" />{" "}
-                              Procesando...
-                            </>
-                          ) : (
-                            <>
-                              {doc.status_procesamiento === "ai_enhanced" ? (
-                                <>
-                                  <RefreshCw className="w-3 h-3" /> Reprocesar
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="w-3 h-3 fill-current" />{" "}
-                                  Procesar
-                                </>
-                              )}
-                            </>
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedDocId === doc.id && (
-                      <tr className="bg-neutral-50/50">
-                        <td colSpan={4} className="px-6 py-4">
-                          <div className="bg-neutral-950 rounded-lg p-4 font-mono text-xs text-green-400 shadow-inner max-h-48 overflow-y-auto border border-neutral-800">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-wider text-[10px]">
-                                <Database className="w-3 h-3" /> Logs de proceso
+                          >
+                            {processingId === doc.id ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                                Procesando...
+                              </>
+                            ) : (
+                              <>
+                                {isProcessed ? (
+                                  <>
+                                    <RefreshCw className="w-3 h-3" /> Reprocesar
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-3 h-3 fill-current" />{" "}
+                                    Procesar
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedDocId === doc.id && (
+                        <tr className="bg-neutral-50/50">
+                          <td colSpan={4} className="px-6 py-4">
+                            <div className="bg-neutral-950 rounded-lg p-4 font-mono text-xs text-green-400 shadow-inner max-h-48 overflow-y-auto border border-neutral-800">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-wider text-[10px]">
+                                  <Database className="w-3 h-3" /> Logs de
+                                  proceso
+                                </div>
+                                {elapsed[doc.id] && (
+                                  <div className="text-[10px] font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded">
+                                    Tiempo: {elapsed[doc.id]}
+                                  </div>
+                                )}
                               </div>
-                              {elapsed[doc.id] && (
-                                <div className="text-[10px] font-bold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded">
-                                  Tiempo: {elapsed[doc.id]}
+                              {logs[doc.id]?.map((log, i) => (
+                                <div key={i} className="mb-1 font-mono">
+                                  {log}
+                                </div>
+                              ))}
+                              {logs[doc.id]?.length === 0 && (
+                                <div className="text-neutral-600 italic">
+                                  Espera...
                                 </div>
                               )}
                             </div>
-                            {logs[doc.id]?.length > 0 ? (
-                              logs[doc.id].map((log, i) => (
-                                <div
-                                  key={i}
-                                  className="mb-1 last:mb-0 break-words"
-                                >
-                                  {log}
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-neutral-600 italic">
-                                Esperando inicio del proceso...
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                ))}
+                          </td>
+                        </tr>
+                      )}
+                    </div>
+                  );
+                })}
               </tbody>
             </table>
           </div>

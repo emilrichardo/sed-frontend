@@ -74,7 +74,7 @@ async function generateWithAI(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { agentId, bulletinId, authToken } = body;
+    const { agentId, bulletinId, authToken, collection } = body;
 
     if (!agentId || !bulletinId) {
       return NextResponse.json(
@@ -108,63 +108,96 @@ export async function POST(req: NextRequest) {
               return;
             }
 
-            // 2. Fetch Bulletin
-            sendUpdate({ type: "log", message: "Obteniendo boletín..." });
-            const bulletin = await getBulletin(bulletinId, authToken);
-            if (!bulletin) {
-              sendUpdate({ type: "error", message: "Bulletin not found" });
+            // 2. Fetch Document (Generic or Specific)
+            sendUpdate({
+              type: "log",
+              message: `Obteniendo documento (${collection || "boletines"})...`,
+            });
+
+            let doc;
+            if (collection && collection !== "boletines") {
+              try {
+                const res = await fetch(
+                  `${API_URL}/${collection}/${bulletinId}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${authToken}`,
+                      "Content-Type": "application/json",
+                    },
+                  },
+                );
+                if (res.ok) {
+                  doc = await res.json();
+                }
+              } catch (e) {
+                console.error("Fetch error", e);
+              }
+            } else {
+              doc = await getBulletin(bulletinId, authToken);
+            }
+
+            if (!doc) {
+              sendUpdate({ type: "error", message: "Document not found" });
               controller.close();
               return;
             }
 
-            // 2.1 (Status reset removed as per request)
+            const isExtraction = agent.type === "extraction";
 
-            // 2.5 Cleanup previous learning records
-            sendUpdate({
-              type: "log",
-              message: "Limpiando registros anteriores...",
-            });
-            try {
-              // Fetch by Relation first
-              const existingRes = await fetch(
-                `${API_URL}/learning-records?where[processed_items][equals]=${bulletinId}&depth=0`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${authToken}`,
-                    "Content-Type": "application/json",
+            // 2.5 Cleanup previous learning records (ONLY for learning agents)
+            if (!isExtraction) {
+              sendUpdate({
+                type: "log",
+                message: "Limpiando registros anteriores...",
+              });
+              try {
+                // Fetch by Relation first
+                const existingRes = await fetch(
+                  `${API_URL}/learning-records?where[processed_items][equals]=${bulletinId}&depth=0`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${authToken}`,
+                      "Content-Type": "application/json",
+                    },
                   },
-                },
-              );
+                );
 
-              let docsToDelete: { id: string }[] = [];
-              if (existingRes.ok) {
-                const existingData = await existingRes.json();
-                if (existingData.docs) docsToDelete = [...existingData.docs];
-              }
+                let docsToDelete: { id: string }[] = [];
+                if (existingRes.ok) {
+                  const existingData = await existingRes.json();
+                  if (existingData.docs) docsToDelete = [...existingData.docs];
+                }
 
-              // Delete Found
-              for (const doc of docsToDelete) {
-                await fetch(`${API_URL}/learning-records/${doc.id}`, {
-                  method: "DELETE",
-                  headers: {
-                    Authorization: `Bearer ${authToken}`,
-                    "Content-Type": "application/json",
-                  },
-                });
-              }
+                // Delete Found
+                for (const d of docsToDelete) {
+                  await fetch(`${API_URL}/learning-records/${d.id}`, {
+                    method: "DELETE",
+                    headers: {
+                      Authorization: `Bearer ${authToken}`,
+                      "Content-Type": "application/json",
+                    },
+                  });
+                }
 
-              if (docsToDelete.length > 0) {
-                sendUpdate({
-                  type: "log",
-                  message: `Eliminados ${docsToDelete.length} registros anteriores.`,
-                });
+                if (docsToDelete.length > 0) {
+                  sendUpdate({
+                    type: "log",
+                    message: `Eliminados ${docsToDelete.length} registros anteriores.`,
+                  });
+                }
+              } catch (cleanupErr) {
+                console.warn("Cleanup failed", cleanupErr);
               }
-            } catch (cleanupErr) {
-              console.warn("Cleanup failed", cleanupErr);
             }
 
-            // 3. Process Text in Chunks
-            const rawText = bulletin.raw_text || "Texto no disponible.";
+            // 3. Process Text
+            const d = doc as any;
+            const rawText =
+              d.raw_text ||
+              d.content ||
+              d.body ||
+              d.text ||
+              JSON.stringify(doc);
             // Increased to 1M characters (~250k tokens) to utilize Gemini 2.0 large context window
             // and act as "processing everything in one go" as requested.
             const MAX_CHUNK_LENGTH = 1000000;
@@ -214,35 +247,107 @@ export async function POST(req: NextRequest) {
                 fullResponse = chunkResponse;
               }
 
-              sendUpdate({
-                type: "log",
-                message: `Guardando aprendizaje parte ${i + 1}...`,
-              });
+              // Save Logic (Only for Learning Agents)
+              if (!isExtraction) {
+                sendUpdate({
+                  type: "log",
+                  message: `Guardando aprendizaje parte ${i + 1}...`,
+                });
 
-              // 5. Save Learning Record for this chunk immediately
-              // WORKAROUND: To avoid "Entrada ya procesada" error from backend if it enforces unique relation,
-              // we only link the real Relation ID on the LAST chunk.
-              // For intermediate chunks, we store the ID in metadata only.
-
-              await createLearningRecord(
-                {
-                  agent: agentId,
-                  // Always link the bulletin as per request
-                  processed_items: [bulletinId],
-                  learningContext: chunkResponse,
-                  type: "analysis",
-                  metadata: {
-                    source_id: bulletinId,
-                    agent_name: agent.name,
-                    processed_at: new Date().toISOString(),
-                    part: i + 1,
-                    total_parts: chunks.length,
+                await createLearningRecord(
+                  {
+                    agent: agentId,
+                    processed_items: [bulletinId],
+                    learningContext: chunkResponse,
+                    type: "analysis",
+                    metadata: {
+                      source_id: bulletinId,
+                      agent_name: agent.name,
+                      processed_at: new Date().toISOString(),
+                      part: i + 1,
+                      total_parts: chunks.length,
+                    },
                   },
-                },
-                authToken,
-              );
+                  authToken,
+                );
+              }
 
               sendUpdate({ type: "chunk_complete", chunkIndex: i + 1 });
+            }
+
+            // Extraction Post-Processing (PATCH)
+            if (isExtraction) {
+              sendUpdate({
+                type: "log",
+                message: "Aplicando cambios extraídos al documento...",
+              });
+              try {
+                // 1. Clean JSON response
+                let jsonStr = fullResponse.trim();
+                jsonStr = jsonStr
+                  .replace(/^```json\s*/, "")
+                  .replace(/```$/, "")
+                  .trim();
+
+                let extractedData = {};
+                try {
+                  extractedData = JSON.parse(jsonStr);
+                } catch (e) {
+                  console.warn("Failed to parse JSON directly", e);
+                  const match = jsonStr.match(/\{[\s\S]*\}/);
+                  if (match) {
+                    extractedData = JSON.parse(match[0]);
+                  } else {
+                    throw new Error(
+                      "La respuesta del modelo no es un JSON válido.",
+                    );
+                  }
+                }
+
+                const payload: any = { ...extractedData };
+
+                // Add status field if configured
+                if (agent.outputConfig?.statusField) {
+                  payload[agent.outputConfig.statusField] = true;
+                }
+
+                // Destination: Default to original document
+                const targetCollection =
+                  agent.outputConfig?.destinationCollection ||
+                  collection ||
+                  "boletines";
+
+                const patchRes = await fetch(
+                  `${API_URL}/${targetCollection}/${bulletinId}`,
+                  {
+                    method: "PATCH",
+                    headers: {
+                      Authorization: `Bearer ${authToken}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                  },
+                );
+
+                if (!patchRes.ok) {
+                  const err = await patchRes.text();
+                  console.error("Patch Error Body:", err);
+                  throw new Error(
+                    `Error actualizando documento: ${patchRes.statusText}`,
+                  );
+                }
+
+                sendUpdate({
+                  type: "log",
+                  message: "Documento actualizado correctamente.",
+                });
+              } catch (err: any) {
+                console.error("Extraction Patch Error", err);
+                sendUpdate({
+                  type: "error",
+                  message: `Error guardando extracción: ${err.message}`,
+                });
+              }
             }
 
             // 6. (Status update removed as per request)

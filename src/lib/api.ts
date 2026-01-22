@@ -96,7 +96,14 @@ export interface Agent {
   id: string;
   name: string;
   systemPrompt?: string;
-  sourceCollection: "boletines";
+  type?: "learning" | "extraction";
+  sources?: string[]; // Array of collection slugs e.g. ["boletines", "noticias"]
+  outputConfig?: {
+    destinationCollection?: string;
+    statusField?: string; // Field to check/update status in the doc
+  };
+  // Deprecated/Legacy
+  sourceCollection?: string;
   status: "active" | "inactive";
   modelSettings?: {
     modelName: string;
