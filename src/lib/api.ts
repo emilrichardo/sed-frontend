@@ -5,6 +5,12 @@ export const API_URL = "http://localhost:3000/api";
 export interface PayloadBlock {
   blockType: string;
   id: string;
+  media?: { url?: string; alt?: string; caption?: string };
+  url?: string;
+  alt?: string;
+  caption?: string;
+  richText?: unknown;
+  content?: unknown;
   [key: string]: unknown;
 }
 
@@ -13,8 +19,13 @@ export interface NewsItem {
   titulo: string;
   slug: string;
   publishedDate?: string;
+  createdAt?: string;
   layout?: PayloadBlock[];
-  contenido?: unknown;
+  contenido?: {
+    root?: {
+      children?: Array<{ type?: string; children?: Array<{ text?: string }> }>;
+    };
+  } | null;
   [key: string]: unknown;
 }
 
@@ -74,7 +85,17 @@ export interface EntradaInterna {
   tipo_acto: string | TipoActo;
   jurisdiccion: string | Organismo;
   referencia: string;
-  texto_completo: unknown;
+  texto_completo:
+    | string
+    | {
+        root?: {
+          children?: Array<{
+            type?: string;
+            children?: Array<{ text?: string }>;
+          }>;
+        };
+      }
+    | null;
   es_homologacion?: boolean;
   id_acto_referenciado?: string;
   nivel_opacidad?: "Transparente" | "Parcial" | "Opaco";
@@ -632,11 +653,12 @@ export async function getLearningRecords(
 export interface Procesamiento {
   id: string;
   nombre: string;
-  estado: "queued" | "processing" | "completed" | "error";
+  status: "en_cola" | "procesando" | "completado" | "error";
   documento_relacionado: {
     relationTo: "boletines" | "noticias";
     value: string | number | Boletin | NewsItem;
   };
+  agente?: string | number | Agent;
   resultado?: any;
   createdAt: string;
   updatedAt: string;

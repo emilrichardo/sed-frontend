@@ -5,23 +5,37 @@ import { Button } from "./ui/button";
 import {
   createProcesamiento,
   getProcesamiento,
+  getAgents,
   Procesamiento,
+  Agent,
 } from "@/lib/api";
-import { Loader2, CheckCircle, AlertCircle, Play } from "lucide-react";
-import { cn } from "@/lib/utils"; // Assuming utils exists for cn, typical in shadcn
+import {
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Play,
+  ChevronDown,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProcessingButtonProps {
   relationTo: "boletines" | "noticias" | null;
   relatedId: string | number | null;
-  initialStatus?:
-    | "unprocessed"
-    | "queued"
-    | "processing"
-    | "completed"
-    | "error"
-    | "ai_enhanced"
-    | "basic";
-  onComplete?: (result: any) => void;
+  existingProcessingId?: string | number | null;
+  onComplete?: (result: unknown) => void;
+  onStatusChange?: (status: string) => void;
   className?: string;
   pollingInterval?: number;
 }
@@ -29,20 +43,78 @@ interface ProcessingButtonProps {
 export function ProcessingButton({
   relationTo,
   relatedId,
-  initialStatus,
+  existingProcessingId,
   onComplete,
+  onStatusChange,
   className,
   pollingInterval = 2000,
 }: ProcessingButtonProps) {
   const [status, setStatus] = useState<
     "idle" | "creating" | "queued" | "processing" | "completed" | "error"
-  >(initialStatus === "ai_enhanced" ? "completed" : "idle");
+  >("idle");
   const [procId, setProcId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // We remove the useEffect that was syncing initialStatus for simplicity and to avoid the lint error.
-  // Ideally, if initialStatus changes later, we might want to sync, but for this use case, initialization is enough.
+  // Agent selection state
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("");
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // Fetch agents when popover opens
+  const fetchAgents = useCallback(async () => {
+    if (agents.length > 0) return; // Already loaded
+    setAgentsLoading(true);
+    try {
+      const agentList = await getAgents();
+      setAgents(agentList);
+      if (agentList.length > 0) {
+        setSelectedAgentId(agentList[0].id);
+      }
+    } catch (err) {
+      console.error("Error fetching agents:", err);
+    } finally {
+      setAgentsLoading(false);
+    }
+  }, [agents.length]);
+
+  // On mount, check if there's an existing processing and fetch its status
+  useEffect(() => {
+    const fetchExistingStatus = async () => {
+      if (existingProcessingId) {
+        try {
+          const proc = await getProcesamiento(String(existingProcessingId));
+          setProcId(proc.id);
+          if (proc.status === "completado") {
+            setStatus("completed");
+            onStatusChange?.("completado");
+            if (onComplete && proc.resultado) {
+              onComplete(proc.resultado);
+            }
+          } else if (proc.status === "error") {
+            setStatus("error");
+            onStatusChange?.("error");
+          } else if (proc.status === "procesando") {
+            setStatus("processing");
+            onStatusChange?.("procesando");
+          } else if (proc.status === "en_cola") {
+            setStatus("queued");
+            onStatusChange?.("en_cola");
+          }
+        } catch (err) {
+          console.log("No existing processing found or error fetching:", err);
+          setStatus("idle");
+          onStatusChange?.("sin_procesar");
+        }
+      } else {
+        onStatusChange?.("sin_procesar");
+      }
+      setIsInitialized(true);
+    };
+    fetchExistingStatus();
+  }, [existingProcessingId]);
 
   const stopPolling = useCallback(() => {
     if (pollTimerRef.current) {
@@ -52,31 +124,41 @@ export function ProcessingButton({
   }, []);
 
   const startPolling = useCallback(() => {
-    if (pollTimerRef.current) return; // Already polling
-    if (!procId) return; // Need an ID to poll
+    if (pollTimerRef.current) return;
+    if (!procId) return;
 
     pollTimerRef.current = setInterval(async () => {
       try {
         const proc = await getProcesamiento(procId);
         console.log("Polling processing:", proc);
 
-        if (proc.estado === "completed") {
+        if (proc.status === "completado") {
           setStatus("completed");
+          onStatusChange?.("completado");
           if (onComplete && proc.resultado) {
             onComplete(proc.resultado);
           }
-        } else if (proc.estado === "error") {
+          stopPolling();
+        } else if (proc.status === "error") {
           setStatus("error");
+          onStatusChange?.("error");
           setErrorMessage("Error en el procesamiento");
+          stopPolling();
         } else {
-          // Update status if changed (e.g. queued -> processing)
-          setStatus(proc.estado);
+          if (proc.status === "procesando") {
+            setStatus("processing");
+            onStatusChange?.("procesando");
+          }
+          if (proc.status === "en_cola") {
+            setStatus("queued");
+            onStatusChange?.("en_cola");
+          }
         }
       } catch (err) {
         console.error("Polling error:", err);
       }
     }, pollingInterval);
-  }, [procId, onComplete, pollingInterval]);
+  }, [procId, onComplete, onStatusChange, pollingInterval, stopPolling]);
 
   useEffect(() => {
     if (status === "queued" || status === "processing") {
@@ -89,30 +171,39 @@ export function ProcessingButton({
   }, [status, startPolling, stopPolling]);
 
   const handleStart = async () => {
+    setPopoverOpen(false);
     setStatus("creating");
     setErrorMessage(null);
 
-    // Sanitize ID: standard Payload IDs are usually numeric for SQL, but string for Mono.
-    // If it looks like a number, send as number.
     const rawId = relatedId;
+    let finalId: string | number | null = rawId;
 
-    // Send ID as string to avoid potential backend casting issues or mismatched expectations.
-    // If the backend expects a number, Payload/Postgres should handle the string '123' -> 123 cast generally better
-    // than if strict typing assumes one or the other.
-    const finalId = String(rawId);
+    if (typeof rawId === "string" && /^\d+$/.test(rawId)) {
+      finalId = parseInt(rawId, 10);
+    }
+
+    let finalAgentId: string | number | undefined = selectedAgentId;
+    if (selectedAgentId && /^\d+$/.test(selectedAgentId)) {
+      finalAgentId = parseInt(selectedAgentId, 10);
+    }
 
     console.log("ProcessingButton: Starting...", {
       relationTo,
-      relatedId: rawId,
       finalId,
-      type: typeof finalId,
+      finalAgentId,
     });
 
     try {
-      // 1. Create Processing
+      if (!relationTo || !finalId) throw new Error("Missing relation info");
+
       const payload: Partial<Procesamiento> = {
-        nombre: `Procesamiento ${relationTo} ${finalId.substring(0, 8)}`,
-        estado: "queued",
+        nombre: `Procesamiento ${relationTo} ${String(finalId).substring(0, 8)}`,
+        status: "en_cola",
+        ...(finalAgentId ? { agente: finalAgentId } : {}),
+        documento_relacionado: {
+          relationTo: relationTo,
+          value: finalId,
+        },
       };
 
       console.log("Sending payload:", JSON.stringify(payload));
@@ -120,23 +211,26 @@ export function ProcessingButton({
       const { doc } = await createProcesamiento(payload);
       console.log("Processing created:", doc);
       setProcId(doc.id);
-      setStatus("queued"); // This triggers polling
+      setStatus("queued");
+      onStatusChange?.("en_cola");
     } catch (err) {
       console.error("Failed to create processing:", err);
       setStatus("error");
+      onStatusChange?.("error");
       setErrorMessage(
         "No se pudo iniciar el procesamiento. Revise la consola.",
       );
     }
   };
 
-  const renderContent = () => {
+  const renderButtonContent = () => {
     switch (status) {
       case "idle":
         return (
           <>
             <Play className="mr-2 h-4 w-4" />
             Procesar con IA
+            <ChevronDown className="ml-2 h-4 w-4" />
           </>
         );
       case "creating":
@@ -164,38 +258,127 @@ export function ProcessingButton({
         return (
           <>
             <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-            Completado
+            Reprocesar
+            <ChevronDown className="ml-2 h-4 w-4" />
           </>
         );
       case "error":
         return (
           <>
             <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
-            Error
+            Reintentar
+            <ChevronDown className="ml-2 h-4 w-4" />
           </>
         );
     }
   };
 
-  // Determine variant based on status for visual feedback
   const getVariant = () => {
     if (status === "error") return "destructive";
-    if (status === "completed") return "outline"; // or secondary
+    if (status === "completed") return "outline";
     return "default";
   };
 
+  const canOpenPopover =
+    status === "idle" || status === "error" || status === "completed";
+
+  if (!isInitialized) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <Button
+          variant="outline"
+          disabled
+          className={cn("w-full md:w-auto", className)}
+        >
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Cargando...
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-start gap-2">
-      <Button
-        variant={getVariant()}
-        onClick={handleStart}
-        disabled={
-          status !== "idle" && status !== "error" && status !== "completed"
-        } // Allow retry on error/completed?
-        className={cn("w-full md:w-auto transition-all", className)}
+      <Popover
+        open={popoverOpen}
+        onOpenChange={(open) => {
+          setPopoverOpen(open);
+          if (open) fetchAgents();
+        }}
       >
-        {renderContent()}
-      </Button>
+        <PopoverTrigger asChild>
+          <Button
+            variant={getVariant()}
+            disabled={!canOpenPopover}
+            className={cn("w-full md:w-auto transition-all", className)}
+          >
+            {renderButtonContent()}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80" align="end">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h4 className="font-medium text-sm">Seleccionar Agente</h4>
+              <p className="text-xs text-muted-foreground">
+                Elige el agente de IA que procesará este documento.
+              </p>
+            </div>
+
+            {agentsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : agents.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-4 text-center">
+                No hay agentes disponibles.
+                <br />
+                <span className="text-xs">
+                  Crea uno desde el panel de administración.
+                </span>
+              </div>
+            ) : (
+              <Select
+                value={selectedAgentId}
+                onValueChange={setSelectedAgentId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar agente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name}
+                      {agent.modelSettings?.modelName && (
+                        <span className="text-muted-foreground ml-1">
+                          ({agent.modelSettings.modelName})
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPopoverOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleStart}
+                disabled={!selectedAgentId || agents.length === 0}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Iniciar
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
       {errorMessage && (
         <span className="text-xs text-red-500">{errorMessage}</span>
       )}

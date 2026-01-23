@@ -90,9 +90,19 @@ export default async function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {news.docs.map((item) => {
             // Extract a brief description from the content if available
+            const contenido = item.contenido as
+              | {
+                  root?: {
+                    children?: Array<{
+                      type?: string;
+                      children?: Array<{ text?: string }>;
+                    }>;
+                  };
+                }
+              | undefined;
             const description =
-              item.contenido?.root?.children?.find(
-                (child: any) =>
+              contenido?.root?.children?.find(
+                (child) =>
                   child.type === "paragraph" || child.type === "heading",
               )?.children?.[0]?.text || "Sin descripción";
 
