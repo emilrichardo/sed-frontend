@@ -115,6 +115,7 @@ export interface Boletin {
   raw_text?: string;
   contenido_procesado?: string | null;
   status_procesamiento?: ("unprocessed" | "basic" | "ai_enhanced") | null;
+  procesamiento_asociado?: string | Procesamiento | null;
   createdAt: string;
   updatedAt: string;
 }

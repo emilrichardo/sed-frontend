@@ -7,9 +7,9 @@ import EntriesList from "./EntriesList";
 import { FileText, ListFilter } from "lucide-react";
 
 export default function BulletinArchiveContainer() {
-  const [filters, setFilters] = useState<any>({});
+  const [filters, setFilters] = useState<Record<string, unknown>>({});
   const [activeTab, setActiveTab] = useState<"bulletins" | "entries">(
-    "bulletins"
+    "bulletins",
   );
 
   return (

@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Boletin, getBulletins, PayloadResponse } from "@/lib/api";
+import {
+  Boletin,
+  getBulletins,
+  PayloadResponse,
+  Procesamiento,
+} from "@/lib/api";
 import Link from "next/link";
 import {
   Search,
@@ -10,10 +15,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
+  Play,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { ProcessingButton } from "@/components/ProcessingButton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface BulletinArchiveProps {
-  filters?: any;
+  filters?: Record<string, unknown>;
 }
 
 export default function BulletinArchive({ filters }: BulletinArchiveProps) {
@@ -24,6 +35,11 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
   const [viewMode, setViewMode] = useState<"table" | "list">("table");
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const { isEditing } = useAuth();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [localStatuses, setLocalStatuses] = useState<Record<string, string>>(
+    {},
+  );
 
   useEffect(() => {
     async function loadBulletins() {
@@ -46,6 +62,31 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
     }
     loadBulletins();
   }, [page, filters, searchQuery]);
+
+  // Select all by default when bulletins load
+  useEffect(() => {
+    if (bulletins?.docs) {
+      setSelectedIds(new Set(bulletins.docs.map((b) => b.id)));
+    }
+  }, [bulletins?.docs]);
+
+  const toggleSelectAll = () => {
+    if (bulletins?.docs && selectedIds.size === bulletins.docs.length) {
+      setSelectedIds(new Set());
+    } else if (bulletins?.docs) {
+      setSelectedIds(new Set(bulletins.docs.map((b) => b.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-AR", {
@@ -111,6 +152,42 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
         </div>
       </div>
 
+      {isEditing && (
+        <div className="bg-muted/30 p-4 rounded-lg flex items-center justify-between border">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={
+                  (bulletins?.docs?.length ?? 0) > 0 &&
+                  selectedIds.size === bulletins?.docs?.length
+                }
+                onCheckedChange={toggleSelectAll}
+              />
+              <span className="text-sm font-medium">
+                {selectedIds.size} seleccionados
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {selectedIds.size > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  alert(
+                    `Iniciando procesamiento de ${selectedIds.size} elementos...`,
+                  );
+                }}
+                className="flex items-center gap-2 bg-primary dark:bg-primary"
+              >
+                <Play className="h-4 w-4 fill-current" />
+                Procesar {selectedIds.size} en lote
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -122,35 +199,94 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
                   <tr>
+                    {isEditing && (
+                      <th className="px-4 py-3 w-10">
+                        <Checkbox
+                          checked={
+                            (bulletins?.docs?.length ?? 0) > 0 &&
+                            selectedIds.size === bulletins?.docs?.length
+                          }
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </th>
+                    )}
                     <th className="px-4 py-3">Número</th>
                     <th className="px-4 py-3">Fecha</th>
                     <th className="px-4 py-3">Año Edición</th>
                     <th className="px-4 py-3">Páginas</th>
+                    {isEditing && <th className="px-4 py-3">Procesamiento</th>}
                     <th className="px-4 py-3 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {bulletins?.docs.map((b) => (
-                    <tr
-                      key={b.id}
-                      className="hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="px-4 py-3 font-medium">{b.numero}</td>
-                      <td className="px-4 py-3">
-                        {formatDate(b.fecha_publicacion)}
-                      </td>
-                      <td className="px-4 py-3">{b.año_edicion}</td>
-                      <td className="px-4 py-3">{b.cantidad_paginas}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/boletines/${b.slug}`}
-                          className="text-primary hover:underline font-medium"
-                        >
-                          Ver Detalle
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                  {bulletins?.docs.map((b) => {
+                    const proc = b.procesamiento_asociado as
+                      | Procesamiento
+                      | undefined;
+                    const initialStatus = proc?.status;
+                    const currentStatus = localStatuses[b.id] || initialStatus;
+
+                    return (
+                      <tr
+                        key={b.id}
+                        className={cn(
+                          "hover:bg-muted/30 transition-colors",
+                          currentStatus === "completado" &&
+                            "bg-green-50/50 dark:bg-green-950/20",
+                          currentStatus === "procesando" &&
+                            "bg-blue-50/50 dark:bg-blue-950/20",
+                          currentStatus === "en_cola" &&
+                            "bg-amber-50/50 dark:bg-amber-950/20",
+                          currentStatus === "error" &&
+                            "bg-red-50/50 dark:bg-red-950/20",
+                        )}
+                      >
+                        {isEditing && (
+                          <td className="px-4 py-3">
+                            <Checkbox
+                              checked={selectedIds.has(b.id)}
+                              onCheckedChange={() => toggleSelect(b.id)}
+                            />
+                          </td>
+                        )}
+                        <td className="px-4 py-3 font-medium">{b.numero}</td>
+                        <td className="px-4 py-3">
+                          {formatDate(b.fecha_publicacion)}
+                        </td>
+                        <td className="px-4 py-3">{b.año_edicion}</td>
+                        <td className="px-4 py-3">{b.cantidad_paginas}</td>
+                        {isEditing && (
+                          <td className="px-4 py-3">
+                            <ProcessingButton
+                              relationTo="boletines"
+                              relatedId={b.id}
+                              existingProcessingId={
+                                typeof b.procesamiento_asociado === "string"
+                                  ? b.procesamiento_asociado
+                                  : b.procesamiento_asociado?.id
+                              }
+                              onStatusChange={(status) => {
+                                setLocalStatuses((prev) => ({
+                                  ...prev,
+                                  [b.id]: status,
+                                }));
+                              }}
+                              className="scale-90 origin-left"
+                            />
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-right">
+                          <Link
+                            href={`/boletines/${b.slug}`}
+                            className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                          >
+                            Ver Detalle
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

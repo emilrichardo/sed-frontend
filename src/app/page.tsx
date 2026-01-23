@@ -16,7 +16,7 @@ export default async function Home() {
   const latestBulletin = bulletins.docs[0];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold flex items-center gap-2">
