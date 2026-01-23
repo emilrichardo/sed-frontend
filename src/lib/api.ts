@@ -626,3 +626,77 @@ export async function getLearningRecords(
   const data = await res.json();
   return data.docs || [];
 }
+
+// --- Procesamientos API Functions ---
+
+export interface Procesamiento {
+  id: string;
+  nombre: string;
+  estado: "queued" | "processing" | "completed" | "error";
+  documento_relacionado: {
+    relationTo: "boletines" | "noticias";
+    value: string | number | Boletin | NewsItem;
+  };
+  resultado?: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function createProcesamiento(
+  data: Partial<Procesamiento>,
+  authToken?: string,
+): Promise<{ doc: Procesamiento; message: string }> {
+  const token =
+    authToken ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null);
+
+  const res = await fetch(`${API_URL}/procesamientos`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    console.error(
+      "API: createProcesamiento error:",
+      res.status,
+      res.statusText,
+    );
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      "API: createProcesamiento error details:",
+      JSON.stringify(errorData, null, 2),
+    );
+    throw new Error(`Failed to create processing: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function getProcesamiento(
+  id: string,
+  authToken?: string,
+): Promise<Procesamiento> {
+  const token =
+    authToken ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("payload-token")
+      : null);
+
+  const res = await fetch(`${API_URL}/procesamientos/${id}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch processing ${id}`);
+  }
+
+  return res.json();
+}
