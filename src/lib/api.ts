@@ -1,6 +1,48 @@
-import {} from "next/navigation";
-
 export const API_URL = "http://localhost:3000/api";
+
+/**
+ * Shared fetch wrapper to handle auth tokens and 401 redirects
+ */
+async function apiFetch(
+  endpoint: string,
+  options: RequestInit = {},
+  authToken?: string,
+) {
+  const isClient = typeof window !== "undefined";
+  const token =
+    authToken || (isClient ? localStorage.getItem("payload-token") : null);
+
+  const headers = {
+    ...options.headers,
+    ...(token ? { Authorization: `JWT ${token}` } : {}),
+  } as any;
+
+  if (
+    options.body &&
+    !headers["Content-Type"] &&
+    !(options.body instanceof FormData)
+  ) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const url = endpoint.startsWith("http") ? endpoint : `${API_URL}${endpoint}`;
+  const res = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (res.status === 401 && isClient) {
+    console.warn("Unauthorized - session might be expired");
+    localStorage.removeItem("payload-token");
+    localStorage.removeItem("payload-user");
+    // Only redirect if on client and not already on login page
+    if (!window.location.pathname.includes("/login")) {
+      window.location.href = `/login?expired=true`;
+    }
+  }
+
+  return res;
+}
 
 export interface PayloadBlock {
   blockType: string;
@@ -429,20 +471,14 @@ export async function updateBulletin(
   data: Partial<Boletin>,
   authToken?: string,
 ): Promise<{ doc: Boletin; message: string }> {
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
-
-  const res = await fetch(`${API_URL}/boletines/${id}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  const res = await apiFetch(
+    `/boletines/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
     },
-    body: JSON.stringify(data),
-  });
+    authToken,
+  );
 
   if (!res.ok) {
     console.error("API: updateBulletin error:", res.status, res.statusText);
@@ -459,19 +495,8 @@ export async function updateBulletin(
 export async function createEntry(
   data: Partial<EntradaInterna>,
 ): Promise<{ doc: EntradaInterna; message: string }> {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null;
-
-  console.log("API: createEntry - Token exists:", !!token);
-
-  const res = await fetch(`${API_URL}/entradas-internas`, {
+  const res = await apiFetch("/entradas-internas", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
     body: JSON.stringify(data),
   });
 
@@ -491,23 +516,8 @@ export async function createTaxonomy(
   collection: string,
   data: { nombre: string },
 ): Promise<unknown> {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null;
-
-  console.log(
-    `API: createTaxonomy (${collection}) - Token exists:`,
-    !!token,
-    token ? `(starts with: ${token.substring(0, 10)}...)` : "",
-  );
-
-  const res = await fetch(`${API_URL}/${collection}`, {
+  const res = await apiFetch(`/${collection}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
     body: JSON.stringify(data),
   });
 
@@ -530,27 +540,14 @@ export async function createTaxonomy(
 // --- Agents & Learning API Functions ---
 
 export async function getAgents(authToken?: string): Promise<Agent[]> {
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
-
-  const res = await fetch(`${API_URL}/agents`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    cache: "no-store",
-  });
+  const res = await apiFetch("/agents", { cache: "no-store" }, authToken);
 
   if (!res.ok) {
     console.error("API: getAgents error:", res.status, res.statusText);
-    // Return empty array instead of throwing to avoid breaking the UI
     return [];
   }
 
   const data = await res.json();
-  console.log("API: getAgents response docs:", data.docs?.length);
   return data.docs || [];
 }
 
@@ -558,46 +555,28 @@ export async function getAgent(
   id: string,
   authToken?: string,
 ): Promise<Agent | null> {
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
-
-  const res = await fetch(`${API_URL}/agents/${id}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    cache: "no-store",
-  });
+  const res = await apiFetch(`/agents/${id}`, { cache: "no-store" }, authToken);
 
   if (!res.ok) {
     console.error(`API: getAgent(${id}) error:`, res.status, res.statusText);
     return null;
   }
 
-  const data = await res.json();
-  return data;
+  return res.json();
 }
 
 export async function createLearningRecord(
-  data: Partial<LearningRecord>, // or Partial<LearningRecord>
+  data: Partial<LearningRecord>,
   authToken?: string,
 ): Promise<{ doc: LearningRecord; message: string }> {
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
-
-  const res = await fetch(`${API_URL}/learning`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  const res = await apiFetch(
+    "/learning",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
     },
-    body: JSON.stringify(data),
-  });
+    authToken,
+  );
 
   if (!res.ok) {
     console.error(
@@ -619,20 +598,10 @@ export async function getLearningRecords(
   agentId: string,
   authToken?: string,
 ): Promise<LearningRecord[]> {
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
-
-  const res = await fetch(
-    `${API_URL}/learning?where[agent][equals]=${agentId}&sort=-createdAt&limit=10&depth=2`,
-    {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      cache: "no-store",
-    },
+  const res = await apiFetch(
+    `/learning?where[agent][equals]=${agentId}&sort=-createdAt&limit=10&depth=2`,
+    { cache: "no-store" },
+    authToken,
   );
 
   if (!res.ok) {
@@ -668,20 +637,14 @@ export async function createProcesamiento(
   data: Partial<Procesamiento>,
   authToken?: string,
 ): Promise<{ doc: Procesamiento; message: string }> {
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
-
-  const res = await fetch(`${API_URL}/procesamientos`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  const res = await apiFetch(
+    "/procesamientos",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
     },
-    body: JSON.stringify(data),
-  });
+    authToken,
+  );
 
   if (!res.ok) {
     console.error(
@@ -703,18 +666,11 @@ export async function getProcesamiento(
   id: string,
   authToken?: string,
 ): Promise<Procesamiento> {
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
-
-  const res = await fetch(`${API_URL}/procesamientos/${id}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    cache: "no-store",
-  });
+  const res = await apiFetch(
+    `/procesamientos/${id}`,
+    { cache: "no-store" },
+    authToken,
+  );
 
   if (!res.ok) {
     throw new Error(`Failed to fetch processing ${id}`);

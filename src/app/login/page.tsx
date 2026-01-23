@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const isExpired = searchParams.get("expired") === "true";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,7 +21,6 @@ export default function LoginPage() {
 
     try {
       // Assuming standard Payload CMS login endpoint for 'users' collection
-      // Adjust collection name if it's 'admins' or something else
       const res = await fetch("http://localhost:3000/api/users/login", {
         method: "POST",
         headers: {
@@ -48,11 +51,17 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-md p-8 border border-border rounded-lg bg-card">
+      <div className="w-full max-w-md p-8 border border-border rounded-lg bg-card shadow-sm">
         <h1 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h1>
 
+        {isExpired && !error && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 p-3 rounded mb-4 text-sm text-center">
+            Su sesión ha expirado. Por favor, ingrese de nuevo.
+          </div>
+        )}
+
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded mb-4 text-sm">
+          <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded mb-4 text-sm text-center">
             {error}
           </div>
         )}
@@ -68,6 +77,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="admin@ejemplo.com"
               required
             />
           </div>
@@ -75,6 +85,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
+              name="password"
               className="block text-sm font-medium mb-1"
             >
               Contraseña
@@ -85,6 +96,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-2 rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="••••••••"
               required
             />
           </div>
@@ -99,5 +111,19 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[60vh]">
+          Cargando...
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

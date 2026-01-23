@@ -118,7 +118,7 @@ export default function TestProcesamientoPage() {
                     </div>
 
                     {results[String(b.id)] !== undefined && (
-                      <div className="mt-4 pt-4 border-t">
+                      <div className="mt-4 pt-4 border-t max-w-[400px]">
                         <p className="text-xs font-semibold mb-2 text-green-600">
                           Resultado del Procesamiento Reciente:
                         </p>
