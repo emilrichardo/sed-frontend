@@ -115,7 +115,7 @@ export interface Boletin {
   raw_text?: string;
   contenido_procesado?: string | null;
   status_procesamiento?: ("unprocessed" | "basic" | "ai_enhanced") | null;
-  procesamiento_asociado?: string | Procesamiento | null;
+  procesamiento_asociado?: (string | Procesamiento)[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -275,7 +275,7 @@ export async function getBulletins(
   } = {},
 ): Promise<PayloadResponse<Boletin>> {
   const { page = 1, limit = 10, sort = "-fecha_publicacion", where } = params;
-  let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}`;
+  let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}&depth=2`;
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
@@ -291,7 +291,7 @@ export async function getBulletins(
     });
   }
 
-  const res = await fetch(url, { next: { revalidate: 60 } });
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch bulletins");
   return res.json();
 }
@@ -430,7 +430,7 @@ export async function getEntryDetails(
 
 export async function getTaxonomy<T>(collection: string): Promise<T[]> {
   const res = await fetch(`${API_URL}/${collection}?limit=100`, {
-    next: { revalidate: 3600 },
+    cache: "no-store",
   });
   if (!res.ok) throw new Error(`Failed to fetch ${collection}`);
   const data = await res.json();

@@ -24,18 +24,29 @@ export default function BulletinFilters({
 
   useEffect(() => {
     async function loadTaxonomies() {
-      try {
-        const [s, t, o] = await Promise.all([
-          getTaxonomy<Seccion>("secciones"),
-          getTaxonomy<TipoActo>("tipos-de-acto"),
-          getTaxonomy<Organismo>("organismos"),
-        ]);
-        setSecciones(s);
-        setTiposActo(t);
-        setOrganismos(o);
-      } catch (error) {
-        console.error("Error loading taxonomies:", error);
-      }
+      const endpoints = [
+        { key: "secciones", url: "secciones", setter: setSecciones },
+        { key: "tipos-de-acto", url: "tipos-de-acto", setter: setTiposActo },
+        { key: "organismos", url: "organismos", setter: setOrganismos }, // Try 'organismos'
+      ];
+
+      const results = await Promise.allSettled(
+        endpoints.map((endpoint) =>
+          getTaxonomy<any>(endpoint.url).then((data) => ({
+            key: endpoint.key,
+            data,
+            setter: endpoint.setter,
+          })),
+        ),
+      );
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          result.value.setter(result.value.data);
+        } else {
+          console.warn(`Failed to load taxonomy:`, result.reason);
+        }
+      });
     }
     loadTaxonomies();
   }, []);
