@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { LoginModal } from "@/components/LoginModal";
 
 interface User {
   id: string;
@@ -16,6 +17,10 @@ interface AuthContextType {
   isLoading: boolean;
   isEditing: boolean;
   toggleEditMode: () => void;
+  isLoginModalOpen: boolean;
+  setIsLoginModalOpen: (isOpen: boolean) => void;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,7 +29,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const router = useRouter();
+
+  const openLoginModal = () => setIsLoginModalOpen(true);
+  const closeLoginModal = () => setIsLoginModalOpen(false);
+
+  // Listen for unauthorized events from apiFetch
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.warn("Unauthorized event received. Clearing session.");
+      localStorage.removeItem("payload-token");
+      localStorage.removeItem("payload-user");
+      setUser(null);
+      setIsEditing(false);
+      setIsLoginModalOpen(true);
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => {
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    };
+  }, []);
 
   useEffect(() => {
     // Check for existing session
@@ -62,7 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           // Token invalid/expired
-          console.warn("Session expired, logging out.");
+          console.warn(
+            "Session expired (validation check), logging out locally.",
+          );
           localStorage.removeItem("payload-token");
           localStorage.removeItem("payload-user");
           setUser(null);
@@ -71,10 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {
         console.error("Auth validation error", e);
-        // On network error we might not want to logout immediately,
-        // but for safety/simplicity let's keep the user logged in locally
-        // until a definite 401.
-        // However, if we can't validate, we accept the local storage state.
         if (storedUser) {
           setUser(JSON.parse(storedUser));
           setIsEditing(true);
@@ -92,7 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("payload-user", JSON.stringify(userData));
     setUser(userData);
     setIsEditing(true);
-    router.push("/");
+    // Remove redirect so modal login stays on page
+    // router.push("/");
     router.refresh();
   };
 
@@ -111,9 +135,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, isLoading, isEditing, toggleEditMode }}
+      value={{
+        user,
+        login,
+        logout,
+        isLoading,
+        isEditing,
+        toggleEditMode,
+        isLoginModalOpen,
+        setIsLoginModalOpen,
+        openLoginModal,
+        closeLoginModal,
+      }}
     >
       {children}
+      <LoginModal />
     </AuthContext.Provider>
   );
 }

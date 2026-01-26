@@ -44,18 +44,6 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              {user && (
-                <Link
-                  href="/admin/agentes"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    pathname === "/admin/agentes"
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  Agentes
-                </Link>
-              )}
             </div>
 
             {user ? (
@@ -143,19 +131,6 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              {user && (
-                <Link
-                  href="/admin/agentes"
-                  onClick={() => setIsOpen(false)}
-                  className={`block px-4 py-2 text-base font-medium rounded-md transition-colors ${
-                    pathname === "/admin/agentes"
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-primary"
-                  }`}
-                >
-                  Agentes
-                </Link>
-              )}
             </div>
 
             <div className="pt-4 border-t border-border">
