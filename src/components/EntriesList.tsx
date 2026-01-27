@@ -68,7 +68,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                     className="space-y-2 flex-1 cursor-pointer"
                     onClick={() =>
                       setExpandedEntryId(
-                        expandedEntryId === entry.id ? null : entry.id
+                        expandedEntryId === entry.id ? null : entry.id,
                       )
                     }
                   >
@@ -124,7 +124,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                           <span>
                             {entry.paginas
                               .map((p: any) =>
-                                typeof p === "object" ? p.numero : p
+                                typeof p === "object" ? p.numero : p,
                               )
                               .join(", ")}
                           </span>
@@ -135,7 +135,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                   <button
                     onClick={() =>
                       setExpandedEntryId(
-                        expandedEntryId === entry.id ? null : entry.id
+                        expandedEntryId === entry.id ? null : entry.id,
                       )
                     }
                     className="flex items-center gap-1 text-sm font-medium text-primary hover:underline self-start"
@@ -160,7 +160,8 @@ export default function EntriesList({ filters }: EntriesListProps) {
             {entries?.docs.length === 0 && (
               <div className="text-center py-12 border rounded-lg border-dashed">
                 <p className="text-muted-foreground">
-                  No se encontraron entradas con los filtros seleccionados.
+                  No se encontraron actos administrativos con los filtros
+                  seleccionados.
                 </p>
               </div>
             )}
@@ -169,7 +170,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4">
             <p className="text-sm text-muted-foreground">
-              Mostrando {entries?.docs.length} de {entries?.totalDocs} entradas
+              Mostrando {entries?.docs.length} de {entries?.totalDocs} actos
             </p>
             <div className="flex gap-2">
               <button

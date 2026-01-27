@@ -384,7 +384,7 @@ export async function getEntries(
     where,
     depth = 1,
   } = params;
-  let url = `${API_URL}/entradas-internas?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}`;
+  let url = `${API_URL}/actos-administrativos?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}`;
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
@@ -409,7 +409,7 @@ export async function getEntries(
 }
 
 export async function getEntry(id: string): Promise<EntradaInterna> {
-  const res = await fetch(`${API_URL}/entradas-internas/${id}?depth=2`, {
+  const res = await fetch(`${API_URL}/actos-administrativos/${id}?depth=2`, {
     next: { revalidate: 60 },
   });
   if (!res.ok) throw new Error("Failed to fetch entry");
