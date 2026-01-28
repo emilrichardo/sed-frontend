@@ -21,13 +21,19 @@ export default function BulletinEntriesBySection({
     {} as Record<string, ActoAdministrativo[]>,
   );
 
-  const sections = Object.keys(groupedEntries);
-  const [activeSection, setActiveSection] = useState<string>(sections[0] || "");
+  const allSectionsLabel = "Todas";
+  const sections = [allSectionsLabel, ...Object.keys(groupedEntries)];
+  const [activeSection, setActiveSection] = useState<string>(allSectionsLabel);
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedEntryId(expandedEntryId === id ? null : id);
   };
+
+  const displayedEntries =
+    activeSection === allSectionsLabel
+      ? entries
+      : groupedEntries[activeSection] || [];
 
   return (
     <div className="space-y-6">
@@ -46,9 +52,13 @@ export default function BulletinEntriesBySection({
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
-            {section}
+            {section === allSectionsLabel ? "Todas las secciones" : section}
             <span className="ml-2 opacity-60 text-xs">
-              ({groupedEntries[section].length})
+              (
+              {section === allSectionsLabel
+                ? entries.length
+                : groupedEntries[section]?.length}
+              )
             </span>
           </button>
         ))}
@@ -56,65 +66,70 @@ export default function BulletinEntriesBySection({
 
       {/* Entries for Active Section */}
       <div className="grid gap-4">
-        {activeSection &&
-          groupedEntries[activeSection]?.map((entry) => (
-            <div
-              key={entry.id}
-              className={`p-4 border rounded-lg transition-all ${
-                expandedEntryId === entry.id
-                  ? "border-primary ring-1 ring-primary/20 bg-card shadow-md"
-                  : "border-border bg-card hover:border-primary/50"
-              }`}
-            >
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div
-                  className="space-y-2 flex-1 cursor-pointer"
-                  onClick={() => toggleExpand(entry.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {entry.tipo_de_acto &&
-                      typeof entry.tipo_de_acto === "object"
-                        ? entry.tipo_de_acto.nombre
-                        : "Acto"}
+        {displayedEntries.map((entry) => (
+          <div
+            key={entry.id}
+            className={`p-4 border rounded-lg transition-all ${
+              expandedEntryId === entry.id
+                ? "border-primary ring-1 ring-primary/20 bg-card shadow-md"
+                : "border-border bg-card hover:border-primary/50"
+            }`}
+          >
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div
+                className="space-y-2 flex-1 cursor-pointer"
+                onClick={() => toggleExpand(entry.id)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {entry.tipo_de_acto &&
+                    typeof entry.tipo_de_acto === "object"
+                      ? entry.tipo_de_acto.nombre
+                      : "Acto"}
+                  </span>
+                  {/* Show section tag if viewing all */}
+                  {activeSection === allSectionsLabel && (
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground uppercase">
+                      {entry.seccion || "Sección"}
                     </span>
-                  </div>
-                  <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
-                    {entry.identificador_de_acto}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {entry.titulo}
-                  </p>
-                  {entry.jurisdiccion && (
-                    <div className="text-xs text-muted-foreground">
-                      Jurisdicción:{" "}
-                      {typeof entry.jurisdiccion === "object"
-                        ? entry.jurisdiccion.nombre
-                        : entry.jurisdiccion}
-                    </div>
                   )}
                 </div>
-                <button
-                  onClick={() => toggleExpand(entry.id)}
-                  className="flex items-center gap-1 text-sm font-medium text-primary hover:underline self-start"
-                >
-                  {expandedEntryId === entry.id ? (
-                    <>
-                      Contraer <ChevronUp className="h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      Expandir <ChevronDown className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
+                <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
+                  {entry.identificador_de_acto}
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {entry.titulo}
+                </p>
+                {entry.jurisdiccion && (
+                  <div className="text-xs text-muted-foreground">
+                    Jurisdicción:{" "}
+                    {typeof entry.jurisdiccion === "object"
+                      ? entry.jurisdiccion.nombre
+                      : entry.jurisdiccion}
+                  </div>
+                )}
               </div>
-
-              {expandedEntryId === entry.id && (
-                <EntryExpandedContent entry={entry} />
-              )}
+              <button
+                onClick={() => toggleExpand(entry.id)}
+                className="flex items-center gap-1 text-sm font-medium text-primary hover:underline self-start"
+              >
+                {expandedEntryId === entry.id ? (
+                  <>
+                    Contraer <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Expandir <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </button>
             </div>
-          ))}
+
+            {expandedEntryId === entry.id && (
+              <EntryExpandedContent entry={entry} />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

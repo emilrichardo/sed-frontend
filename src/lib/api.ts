@@ -14,7 +14,7 @@ async function apiFetch(
 
   const headers = {
     ...options.headers,
-    ...(token ? { Authorization: `JWT ${token}` } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   } as any;
 
   if (
@@ -26,18 +26,36 @@ async function apiFetch(
   }
 
   const url = endpoint.startsWith("http") ? endpoint : `${API_URL}${endpoint}`;
-  const res = await fetch(url, {
+  let res = await fetch(url, {
     ...options,
     headers,
   });
 
-  if (res.status === 401 && isClient) {
-    console.warn("Unauthorized - session might be expired");
+  // Handle Auth Errors (401/403)
+  if ((res.status === 401 || res.status === 403) && isClient && token) {
+    console.warn(
+      `Unauthorized/Forbidden (${res.status}) - potentially stale token. clearing and retrying as guest.`,
+    );
+    // 1. Clear bad token
     localStorage.removeItem("payload-token");
     localStorage.removeItem("payload-user");
-    // Only redirect if on client and not already on login page
-    if (!window.location.pathname.includes("/login")) {
-      window.location.href = `/login?expired=true`;
+
+    // 2. Retry without token
+    const { Authorization, ...retryHeaders } = headers;
+    const retryRes = await fetch(url, {
+      ...options,
+      headers: retryHeaders,
+    });
+
+    if (retryRes.ok) {
+      // 3a. Retry succeeded (resource was public) -> Return success
+      return retryRes;
+    } else {
+      // 3b. Retry failed (resource is private) -> Redirect to login
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = `/login?expired=true`;
+      }
+      return retryRes;
     }
   }
 
