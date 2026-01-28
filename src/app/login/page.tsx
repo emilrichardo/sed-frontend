@@ -37,6 +37,17 @@ function LoginContent() {
 
       if (data.token && data.user) {
         login(data.token, data.user);
+
+        // Handle redirect
+        const returnUrl = searchParams.get("returnUrl");
+        if (returnUrl) {
+          window.location.href = decodeURIComponent(returnUrl);
+        } else {
+          // If already on login page without returnUrl, go home
+          // But login function in AuthContext might only refresh.
+          // Let's force navigation to be sure.
+          window.location.href = "/";
+        }
       } else {
         throw new Error("Respuesta inválida del servidor");
       }
@@ -85,7 +96,6 @@ function LoginContent() {
           <div>
             <label
               htmlFor="password"
-              name="password"
               className="block text-sm font-medium mb-1"
             >
               Contraseña
