@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 
 interface ProcessingButtonProps {
-  relationTo: "boletines" | "noticias" | null;
+  relationTo: "boletines" | "noticias" | "actos-administrativos" | null;
   relatedId: string | number | null;
   existingProcessingId?: string | number | null;
   onComplete?: (result: unknown) => void;

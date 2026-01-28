@@ -155,6 +155,7 @@ export interface ActoAdministrativo {
   lugar_fecha?: string;
   resolucion?: string;
   paginas?: string;
+  procesamiento_asociado?: (string | Procesamiento)[] | null;
 }
 
 export interface DetalleEspecifico {
@@ -632,8 +633,8 @@ export interface Procesamiento {
   nombre: string;
   status: "en_cola" | "procesando" | "completado" | "error";
   documento_relacionado: {
-    relationTo: "boletines" | "noticias";
-    value: string | number | Boletin | NewsItem;
+    relationTo: "boletines" | "noticias" | "actos-administrativos";
+    value: string | number | Boletin | NewsItem | ActoAdministrativo;
   };
   agente?: string | number | Agent;
   resultado?: any;
