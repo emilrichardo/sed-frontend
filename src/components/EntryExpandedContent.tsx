@@ -110,9 +110,17 @@ export default function EntryExpandedContent({
           <FileText className="h-3 w-3" />
           Cuerpo / Texto Completo
         </h4>
-        <div className="bg-card p-6 border rounded-lg font-serif text-sm leading-relaxed whitespace-pre-wrap shadow-inner">
+        <div className="bg-card p-6 border rounded-lg font-serif text-sm leading-relaxed shadow-inner">
           {entry.cuerpo ? (
-            entry.cuerpo
+            <div className="whitespace-pre-line">
+              {(() => {
+                // Fix line breaks: replace single newlines with space, keep double newlines
+                // This handles text that was hard-wrapped in OCR/PDF extraction
+                const text = entry.cuerpo;
+                // Replace single \n that are NOT preceded or followed by another \n
+                return text.replace(/(?<!\n)\n(?!\n)/g, " ");
+              })()}
+            </div>
           ) : (
             <span className="text-muted-foreground italic">
               Sin contenido de texto completo.

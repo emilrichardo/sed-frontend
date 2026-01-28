@@ -75,7 +75,7 @@ export default function BulletinFlipbook({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[40%] md:w-[35%] lg:w-[30%] bg-zinc-900 border-l border-zinc-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-y-0 right-0 w-screen max-w-none md:w-[45%] lg:w-[30%] bg-zinc-900 border-l border-zinc-800 shadow-2xl z-[100] flex flex-col animate-in slide-in-from-right duration-300">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900 z-10 shrink-0">
         <h3 className="text-white font-medium text-sm flex items-center gap-2">

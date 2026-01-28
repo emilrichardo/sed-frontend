@@ -10,63 +10,17 @@ export default function BulletinEntriesBySection({
 }: {
   entries: ActoAdministrativo[];
 }) {
-  // Group entries by section
-  const groupedEntries = entries.reduce(
-    (acc, entry) => {
-      const sectionName = entry.seccion || "Otras Secciones";
-      if (!acc[sectionName]) acc[sectionName] = [];
-      acc[sectionName].push(entry);
-      return acc;
-    },
-    {} as Record<string, ActoAdministrativo[]>,
-  );
-
-  const allSectionsLabel = "Todas";
-  const sections = [allSectionsLabel, ...Object.keys(groupedEntries)];
-  const [activeSection, setActiveSection] = useState<string>(allSectionsLabel);
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedEntryId(expandedEntryId === id ? null : id);
   };
 
-  const displayedEntries =
-    activeSection === allSectionsLabel
-      ? entries
-      : groupedEntries[activeSection] || [];
-
   return (
     <div className="space-y-6">
-      {/* Section Tabs */}
-      <div className="flex flex-wrap gap-2 border-b pb-4">
-        {sections.map((section) => (
-          <button
-            key={section}
-            onClick={() => {
-              setActiveSection(section);
-              setExpandedEntryId(null);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeSection === section
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
-            {section === allSectionsLabel ? "Todas las secciones" : section}
-            <span className="ml-2 opacity-60 text-xs">
-              (
-              {section === allSectionsLabel
-                ? entries.length
-                : groupedEntries[section]?.length}
-              )
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Entries for Active Section */}
+      {/* Entries List */}
       <div className="grid gap-4">
-        {displayedEntries.map((entry) => (
+        {entries.map((entry) => (
           <div
             key={entry.id}
             className={`p-4 border rounded-lg transition-all ${
@@ -87,12 +41,9 @@ export default function BulletinEntriesBySection({
                       ? entry.tipo_de_acto.nombre
                       : "Acto"}
                   </span>
-                  {/* Show section tag if viewing all */}
-                  {activeSection === allSectionsLabel && (
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground uppercase">
-                      {entry.seccion || "Sección"}
-                    </span>
-                  )}
+                  <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground uppercase">
+                    {entry.seccion || "Sección"}
+                  </span>
                 </div>
                 <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
                   {entry.identificador_de_acto}
