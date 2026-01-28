@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import {
   createProcesamiento,
   getProcesamiento,
+  updateProcesamiento,
   getAgents,
   Procesamiento,
   Agent,
@@ -15,7 +16,10 @@ import {
   AlertCircle,
   Play,
   ChevronDown,
+  X,
 } from "lucide-react";
+// ... (rest of imports)
+
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -223,6 +227,21 @@ export function ProcessingButton({
     }
   };
 
+  const handleCancel = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!procId) return;
+
+    try {
+      await updateProcesamiento(procId, { status: "cancelado" });
+      setStatus("error");
+      setErrorMessage("Procesamiento cancelado por el usuario");
+      onStatusChange?.("cancelado");
+      stopPolling();
+    } catch (err) {
+      console.error("Error clicking cancel:", err);
+    }
+  };
+
   const renderButtonContent = () => {
     switch (status) {
       case "idle":
@@ -242,17 +261,37 @@ export function ProcessingButton({
         );
       case "queued":
         return (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin text-yellow-500" />
-            En Cola...
-          </>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-yellow-500" />
+              En Cola...
+            </div>
+            <div
+              role="button"
+              onClick={handleCancel}
+              className="p-0.5 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors z-50 cursor-pointer pointer-events-auto"
+              title="Cancelar"
+            >
+              <X className="h-4 w-4" />
+            </div>
+          </div>
         );
       case "processing":
         return (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-500" />
-            Procesando...
-          </>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-500" />
+              Procesando...
+            </div>
+            <div
+              role="button"
+              onClick={handleCancel}
+              className="p-0.5 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors z-50 cursor-pointer pointer-events-auto"
+              title="Cancelar"
+            >
+              <X className="h-4 w-4" />
+            </div>
+          </div>
         );
       case "completed":
         return (

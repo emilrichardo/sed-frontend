@@ -120,37 +120,28 @@ export interface Boletin {
   updatedAt: string;
 }
 
-export interface EntradaInterna {
+export interface ActoAdministrativo {
   id: string;
-  id_boletin: string | Boletin;
-  identificador_acto: string;
-  seccion: string | Seccion;
-  tipo_acto: string | TipoActo;
-  jurisdiccion: string | Organismo;
-  referencia: string;
-  texto_completo:
-    | string
-    | {
-        root?: {
-          children?: Array<{
-            type?: string;
-            children?: Array<{ text?: string }>;
-          }>;
-        };
-      }
-    | null;
+  boletin: string | Boletin;
+  identificador_de_acto: string;
+  seccion: string;
+  tipo_de_acto: string | TipoActo;
+  jurisdiccion?: string | Organismo;
+  titulo: string;
+  resumen?: string;
+  cuerpo: string;
   es_homologacion?: boolean;
   id_acto_referenciado?: string;
   nivel_opacidad?: "Transparente" | "Parcial" | "Opaco";
-  parent_id?: string | EntradaInterna;
+  parent_id?: string | ActoAdministrativo;
   lugar_fecha?: string;
   resolucion?: string;
-  paginas?: number[];
+  paginas?: string;
 }
 
 export interface DetalleEspecifico {
   id: string;
-  id_entrada: string | EntradaInterna;
+  id_entrada: string | ActoAdministrativo;
   detalles: Record<string, unknown>[];
 }
 
@@ -302,125 +293,123 @@ export async function getBulletin(
 ): Promise<Boletin> {
   if (!idOrSlug) throw new Error("ID or Slug is required");
   const idStr = String(idOrSlug);
-  const token =
-    authToken ||
-    (typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null);
+  console.log(`fetching bulletin: ${idStr}`);
 
-  // 1. Check if it's a numeric string (for 'numero')
-  const isNumber = /^\d+$/.test(idStr);
-  // 2. Check if it's a slug (contains hyphens)
-  const isSlug = idStr.includes("-");
+  // 1. Try direct ID fetch first
+  try {
+    const res = await apiFetch(
+      `/boletines/${idStr}`,
+      {
+        next: { revalidate: 3600 },
+      },
+      authToken,
+    );
 
-  let query = "";
-  let isSearch = false;
-
-  if (isNumber) {
-    query = `?where[numero][equals]=${idStr}&sort=-createdAt`;
-    isSearch = true;
-  } else if (isSlug) {
-    query = `?where[slug][equals]=${idStr}`;
-    isSearch = true;
-  } else {
-    // Assume internal ID
-    query = `/${idStr}`;
+    if (res.ok) {
+      console.log(`bulletin found as direct ID: ${idStr}`);
+      return await res.json();
+    }
+  } catch (e) {
+    console.log(`direct ID fetch failed for ${idStr}, trying slug search...`);
   }
 
-  const res = await fetch(`${API_URL}/boletines${query}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    next: { revalidate: 3600 },
-  });
+  // 2. Fallback: Search by slug or numero
+  const isNumber = /^\d+$/.test(idStr);
+  const query = isNumber
+    ? `?where[numero][equals]=${idStr}&sort=-createdAt`
+    : `?where[slug][equals]=${idStr}`;
 
-  if (!res.ok) throw new Error("Failed to fetch bulletin");
+  const res = await apiFetch(
+    `/boletines${query}`,
+    {
+      next: { revalidate: 3600 },
+    },
+    authToken,
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch bulletin (search): ${res.status}`);
+  }
 
   const data = await res.json();
-
-  if (isSearch) {
-    if (!data.docs || data.docs.length === 0) {
-      // If authenticating, maybe no access or strictly not found
-      // Try fetching as ID if number check failed but it was actually an ID
-      if (isNumber) {
-        // Fallback: Try fetching by ID directly
-        try {
-          const resFallback = await fetch(`${API_URL}/boletines/${idStr}`, {
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            cache: "no-store",
-          });
-          if (resFallback.ok) {
-            return await resFallback.json();
-          }
-        } catch (e) {
-          console.warn("Fallback fetch by ID failed", e);
-        }
-      }
-      throw new Error(`Bulletin not found: ${idStr}`);
-    }
+  if (data.docs && data.docs.length > 0) {
+    console.log(`bulletin found via search: ${idStr}`);
     return data.docs[0];
   }
 
-  return data;
+  throw new Error(`Bulletin not found: ${idStr}`);
 }
 
-export async function getEntries(
+export async function getActosAdministrativos(
   params: {
     page?: number;
     limit?: number;
     sort?: string;
     where?: Record<string, unknown>;
     depth?: number;
+    authToken?: string;
   } = {},
-): Promise<PayloadResponse<EntradaInterna>> {
+): Promise<PayloadResponse<ActoAdministrativo>> {
   const {
     page = 1,
     limit = 20,
-    sort = "-id_boletin.fecha_publicacion",
+    sort = "-boletin.fecha_publicacion",
     where,
     depth = 1,
+    authToken,
   } = params;
-  let url = `${API_URL}/actos-administrativos?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}`;
+  let queryString = `?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}`;
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
         if (key === "search") {
-          url += `&where[or][0][identificador_acto][contains]=${value}`;
-          url += `&where[or][1][referencia][contains]=${value}`;
+          queryString += `&where[or][0][identificador_de_acto][contains]=${value}`;
+          queryString += `&where[or][1][titulo][contains]=${value}`;
         } else if (key === "fecha_desde") {
-          url += `&where[id_boletin.fecha_publicacion][greater_than_equal]=${value}`;
+          queryString += `&where[boletin.fecha_publicacion][greater_than_equal]=${value}`;
         } else if (key === "fecha_hasta") {
-          url += `&where[id_boletin.fecha_publicacion][less_than_equal]=${value}`;
+          queryString += `&where[boletin.fecha_publicacion][less_than_equal]=${value}`;
         } else {
-          url += `&where[${key}][equals]=${value}`;
+          // Map some old field names to new ones for compatibility
+          let apiKey = key;
+          if (key === "identificador_acto") apiKey = "identificador_de_acto";
+          if (key === "tipo_acto") apiKey = "tipo_de_acto";
+          if (key === "referencia") apiKey = "titulo";
+
+          queryString += `&where[${apiKey}][equals]=${value}`;
         }
       }
     });
   }
 
-  const res = await fetch(url, { next: { revalidate: 60 } });
-  if (!res.ok) throw new Error("Failed to fetch entries");
+  const res = await apiFetch(
+    `/actos-administrativos${queryString}`,
+    {
+      next: { revalidate: 60 },
+    },
+    authToken,
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch actos administrativos");
   return res.json();
 }
 
-export async function getEntry(id: string): Promise<EntradaInterna> {
-  const res = await fetch(`${API_URL}/actos-administrativos/${id}?depth=2`, {
+export async function getActoAdministrativo(
+  id: string,
+): Promise<ActoAdministrativo> {
+  const res = await apiFetch(`/actos-administrativos/${id}?depth=2`, {
     next: { revalidate: 60 },
   });
-  if (!res.ok) throw new Error("Failed to fetch entry");
+  if (!res.ok) throw new Error("Failed to fetch acto administrativo");
   return res.json();
 }
 
 export async function getEntryDetails(
   entryId: string,
 ): Promise<DetalleEspecifico[]> {
-  const res = await fetch(
-    `${API_URL}/detalles-especificos?where[id_entrada][equals]=${entryId}&depth=2`,
+  const res = await apiFetch(
+    `/detalles-especificos?where[id_entrada][equals]=${entryId}&depth=2`,
     { next: { revalidate: 60 } },
   );
   if (!res.ok) throw new Error("Failed to fetch entry details");
@@ -493,10 +482,10 @@ export async function updateBulletin(
   return res.json();
 }
 
-export async function createEntry(
-  data: Partial<EntradaInterna>,
-): Promise<{ doc: EntradaInterna; message: string }> {
-  const res = await apiFetch("/entradas-internas", {
+export async function createActoAdministrativo(
+  data: Partial<ActoAdministrativo>,
+): Promise<{ doc: ActoAdministrativo; message: string }> {
+  const res = await apiFetch("/actos-administrativos", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -632,6 +621,26 @@ export interface Procesamiento {
   resultado?: any;
   createdAt: string;
   updatedAt: string;
+}
+
+export async function updateProcesamiento(
+  id: string,
+  data: Partial<Procesamiento>,
+): Promise<{ doc: Procesamiento; message: string }> {
+  const res = await apiFetch(`/procesamientos/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    console.error(
+      "API: updateProcesamiento error:",
+      res.status,
+      res.statusText,
+    );
+    throw new Error(`Failed to update procesamiento: ${res.statusText}`);
+  }
+  return res.json();
 }
 
 export async function createProcesamiento(

@@ -1,9 +1,9 @@
 import React from "react";
-import { getBulletin, getEntries, Boletin, EntradaInterna } from "@/lib/api";
+import { getBulletin, Boletin } from "@/lib/api";
 import Link from "next/link";
 import { ChevronLeft, FileText } from "lucide-react";
-import BulletinEntriesBySection from "@/components/BulletinEntriesBySection";
 import BulletinActions from "@/components/BulletinActions";
+import BulletinEntriesLoader from "@/components/BulletinEntriesLoader";
 
 export default async function BulletinDetailPage({
   params,
@@ -13,21 +13,16 @@ export default async function BulletinDetailPage({
   const { id: bulletinId } = await params;
 
   let bulletin: Boletin;
-  let entries: EntradaInterna[] = [];
 
   try {
     bulletin = await getBulletin(bulletinId);
-    const entriesData = await getEntries({
-      where: { id_boletin: bulletin.id },
-      limit: 100,
-    });
-    entries = entriesData.docs;
-  } catch (err) {
+  } catch (err: any) {
+    console.error("Error loading bulletin:", err);
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-bold">Error al cargar el boletín</h1>
         <p className="text-muted-foreground mt-2">
-          No se pudo encontrar el boletín solicitado.
+          {err.message || "No se pudo encontrar el boletín solicitado."}
         </p>
         <Link
           href="/boletines"
@@ -80,15 +75,8 @@ export default async function BulletinDetailPage({
           Actos Administrativos en esta edición
         </h2>
 
-        {entries.length > 0 ? (
-          <BulletinEntriesBySection entries={entries} />
-        ) : (
-          <div className="text-center py-12 border rounded-lg border-dashed">
-            <p className="text-muted-foreground">
-              No hay actos registrados para este boletín.
-            </p>
-          </div>
-        )}
+        {/* Fetch entries on the client because they may require auth token from localStorage */}
+        <BulletinEntriesLoader bulletinId={bulletin.id} />
       </div>
     </main>
   );

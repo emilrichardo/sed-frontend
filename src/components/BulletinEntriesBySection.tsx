@@ -1,25 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { EntradaInterna } from "@/lib/api";
+import { ActoAdministrativo } from "@/lib/api";
 import EntryExpandedContent from "./EntryExpandedContent";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function BulletinEntriesBySection({
   entries,
 }: {
-  entries: EntradaInterna[];
+  entries: ActoAdministrativo[];
 }) {
   // Group entries by section
-  const groupedEntries = entries.reduce((acc, entry) => {
-    const sectionName =
-      typeof entry.seccion === "object"
-        ? entry.seccion.nombre
-        : "Otras Secciones";
-    if (!acc[sectionName]) acc[sectionName] = [];
-    acc[sectionName].push(entry);
-    return acc;
-  }, {} as Record<string, EntradaInterna[]>);
+  const groupedEntries = entries.reduce(
+    (acc, entry) => {
+      const sectionName = entry.seccion || "Otras Secciones";
+      if (!acc[sectionName]) acc[sectionName] = [];
+      acc[sectionName].push(entry);
+      return acc;
+    },
+    {} as Record<string, ActoAdministrativo[]>,
+  );
 
   const sections = Object.keys(groupedEntries);
   const [activeSection, setActiveSection] = useState<string>(sections[0] || "");
@@ -73,24 +73,26 @@ export default function BulletinEntriesBySection({
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground">
-                      {entry.tipo_acto && typeof entry.tipo_acto === "object"
-                        ? entry.tipo_acto.nombre
+                      {entry.tipo_de_acto &&
+                      typeof entry.tipo_de_acto === "object"
+                        ? entry.tipo_de_acto.nombre
                         : "Acto"}
                     </span>
                   </div>
                   <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
-                    {entry.identificador_acto}
+                    {entry.identificador_de_acto}
                   </h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {entry.referencia}
+                    {entry.titulo}
                   </p>
-                  <div className="text-xs text-muted-foreground">
-                    Jurisdicción:{" "}
-                    {entry.jurisdiccion &&
-                    typeof entry.jurisdiccion === "object"
-                      ? entry.jurisdiccion.nombre
-                      : "N/A"}
-                  </div>
+                  {entry.jurisdiccion && (
+                    <div className="text-xs text-muted-foreground">
+                      Jurisdicción:{" "}
+                      {typeof entry.jurisdiccion === "object"
+                        ? entry.jurisdiccion.nombre
+                        : entry.jurisdiccion}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => toggleExpand(entry.id)}

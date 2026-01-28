@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { EntradaInterna, getEntries, PayloadResponse } from "@/lib/api";
+import {
+  ActoAdministrativo,
+  getActosAdministrativos,
+  PayloadResponse,
+} from "@/lib/api";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,7 +20,7 @@ interface EntriesListProps {
 
 export default function EntriesList({ filters }: EntriesListProps) {
   const [entries, setEntries] =
-    useState<PayloadResponse<EntradaInterna> | null>(null);
+    useState<PayloadResponse<ActoAdministrativo> | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
@@ -25,7 +29,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
     async function loadEntries() {
       setLoading(true);
       try {
-        const data = await getEntries({
+        const data = await getActosAdministrativos({
           page,
           limit: 20,
           where: filters,
@@ -74,40 +78,42 @@ export default function EntriesList({ filters }: EntriesListProps) {
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                        {entry.seccion && typeof entry.seccion === "object"
-                          ? entry.seccion.nombre
-                          : "Sección"}
+                        {entry.seccion || "Sección"}
                       </span>
                       <span className="text-xs text-muted-foreground">•</span>
                       <span className="text-xs font-medium text-muted-foreground">
-                        {entry.tipo_acto && typeof entry.tipo_acto === "object"
-                          ? entry.tipo_acto.nombre
+                        {entry.tipo_de_acto &&
+                        typeof entry.tipo_de_acto === "object"
+                          ? entry.tipo_de_acto.nombre
                           : "Acto"}
                       </span>
                       <span className="text-xs text-muted-foreground">•</span>
                       <span className="text-xs text-muted-foreground">
                         Boletín Nº{" "}
-                        {typeof entry.id_boletin === "object"
-                          ? entry.id_boletin.numero
+                        {entry.boletin && typeof entry.boletin === "object"
+                          ? entry.boletin.numero
                           : "N/A"}
                       </span>
                     </div>
                     <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
-                      {entry.identificador_acto}
+                      {entry.identificador_de_acto}
                     </h3>
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {entry.referencia}
+                      {entry.titulo}
                     </p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-                      {entry.jurisdiccion &&
-                        typeof entry.jurisdiccion === "object" && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-bold text-foreground/70">
-                              Jurisdicción:
-                            </span>
-                            <span>{entry.jurisdiccion.nombre}</span>
-                          </div>
-                        )}
+                      {entry.jurisdiccion && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-foreground/70">
+                            Jurisdicción:
+                          </span>
+                          <span>
+                            {typeof entry.jurisdiccion === "object"
+                              ? entry.jurisdiccion.nombre
+                              : entry.jurisdiccion}
+                          </span>
+                        </div>
+                      )}
                       {entry.lugar_fecha && (
                         <div className="flex items-center gap-1">
                           <span className="font-bold text-foreground/70">
@@ -116,18 +122,12 @@ export default function EntriesList({ filters }: EntriesListProps) {
                           <span className="italic">{entry.lugar_fecha}</span>
                         </div>
                       )}
-                      {entry.paginas && entry.paginas.length > 0 && (
+                      {entry.paginas && (
                         <div className="flex items-center gap-1">
                           <span className="font-bold text-foreground/70">
                             Páginas:
                           </span>
-                          <span>
-                            {entry.paginas
-                              .map((p: any) =>
-                                typeof p === "object" ? p.numero : p,
-                              )
-                              .join(", ")}
-                          </span>
+                          <span>{entry.paginas}</span>
                         </div>
                       )}
                     </div>
