@@ -150,12 +150,15 @@ export interface ActoAdministrativo {
   cuerpo: string;
   es_homologacion?: boolean;
   id_acto_referenciado?: string;
-  nivel_opacidad?: "Transparente" | "Parcial" | "Opaco";
+  nivel_opacidad?: "Transparente" | "Parcial" | "Opaco" | number;
   parent_id?: string | ActoAdministrativo;
   lugar_fecha?: string;
   resolucion?: string;
   paginas?: string;
   procesamiento_asociado?: (string | Procesamiento)[] | null;
+  titulo_periodistico?: string;
+  nota_periodistica?: string;
+  status_procesamiento?: string;
 }
 
 export interface DetalleEspecifico {

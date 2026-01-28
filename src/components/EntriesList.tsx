@@ -459,11 +459,27 @@ export default function EntriesList({ filters }: EntriesListProps) {
                             : "Acto"}
                         </span>
                       </div>
-                      <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
-                        {entry.identificador_de_acto}
+                      <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors mt-1">
+                        {entry.titulo_periodistico ||
+                          entry.identificador_de_acto}
                       </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {entry.titulo}
+                      {entry.titulo_periodistico && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 uppercase tracking-wide">
+                            Periodístico
+                          </span>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            Referencia Original:{" "}
+                            <span className="italic">
+                              {entry.identificador_de_acto}
+                            </span>
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        {entry.resumen ||
+                          entry.nota_periodistica ||
+                          entry.titulo}
                       </p>
                     </div>
                     <button

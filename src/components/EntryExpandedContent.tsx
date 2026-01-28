@@ -28,6 +28,27 @@ export default function EntryExpandedContent({
 
   return (
     <div className="mt-4 pt-4 border-t space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+      {/* Journalistic Content Highlighting */}
+      {(entry.titulo_periodistico || entry.nota_periodistica) && (
+        <div className="bg-blue-50/50 dark:bg-blue-900/10 p-5 rounded-lg border border-blue-100 dark:border-blue-900/20 space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 uppercase tracking-wide">
+              Análisis Periodístico
+            </span>
+          </div>
+          {entry.titulo_periodistico && (
+            <h3 className="text-xl font-bold leading-tight text-blue-950 dark:text-blue-100">
+              {entry.titulo_periodistico}
+            </h3>
+          )}
+          {entry.nota_periodistica && (
+            <div className="prose prose-sm prose-blue dark:prose-invert max-w-none text-muted-foreground">
+              <p>{entry.nota_periodistica}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Metadata Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
@@ -84,7 +105,7 @@ export default function EntryExpandedContent({
             </span>
           </div>
         )}
-        {entry.nivel_opacidad && (
+        {entry.nivel_opacidad !== undefined && (
           <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
               Opacidad
@@ -95,10 +116,15 @@ export default function EntryExpandedContent({
                   ? "text-green-600"
                   : entry.nivel_opacidad === "Parcial"
                     ? "text-yellow-600"
-                    : "text-red-600"
+                    : typeof entry.nivel_opacidad === "number" &&
+                        entry.nivel_opacidad < 5
+                      ? "text-green-600"
+                      : "text-red-600"
               }`}
             >
-              {entry.nivel_opacidad}
+              {typeof entry.nivel_opacidad === "number"
+                ? `Nivel ${entry.nivel_opacidad}`
+                : entry.nivel_opacidad}
             </span>
           </div>
         )}
