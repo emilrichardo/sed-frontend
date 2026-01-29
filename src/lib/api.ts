@@ -159,6 +159,7 @@ export interface ActoAdministrativo {
   titulo_periodistico?: string;
   nota_periodistica?: string;
   status_procesamiento?: string;
+  destacado?: boolean;
 }
 
 export interface DetalleEspecifico {
@@ -413,8 +414,65 @@ export async function getActosAdministrativos(
     authToken,
   );
 
-  if (!res.ok) throw new Error("Failed to fetch actos administrativos");
+  if (!res.ok) {
+    console.error(
+      `getActosAdministrativos failed: ${res.status} ${res.statusText} - URL: ${queryString}`,
+    );
+    const text = await res.text();
+    console.error("Response body:", text);
+    throw new Error(`Failed to fetch actos administrativos: ${res.statusText}`);
+  }
   return res.json();
+}
+
+export async function getActoByIdentifier(
+  identifier: string,
+): Promise<ActoAdministrativo> {
+  console.log(`getActoByIdentifier: searching for "${identifier}"`);
+
+  // Search by identificador_de_acto
+  const encodedId = encodeURIComponent(identifier);
+  const res = await apiFetch(
+    `/actos-administrativos?where[identificador_de_acto][equals]=${encodedId}&depth=2`,
+    { next: { revalidate: 60 } },
+  );
+
+  if (!res.ok) {
+    console.error(`getActoByIdentifier failed status: ${res.status}`);
+    throw new Error("Failed to fetch acto by identifier");
+  }
+
+  const data: PayloadResponse<ActoAdministrativo> = await res.json();
+
+  if (data.docs.length > 0) {
+    console.log(`getActoByIdentifier: found exact match for "${identifier}"`);
+    return data.docs[0];
+  }
+
+  console.log(
+    `getActoByIdentifier: no exact match for "${identifier}", trying fallback...`,
+  );
+
+  // Fallback: Try by ID if identifier looks like an ID (numeric)
+  if (/^\d+$/.test(identifier)) {
+    return getActoAdministrativo(identifier);
+  }
+
+  // Fallback 2: Try "like" search if it failed (sometimes encoding issues)
+  // Only if identifier is long enough to be specific
+  if (identifier.length > 5) {
+    const resLike = await apiFetch(
+      `/actos-administrativos?where[identificador_de_acto][like]=${encodedId}&depth=2`,
+      { next: { revalidate: 60 } },
+    );
+    const dataLike = await resLike.json();
+    if (dataLike.docs && dataLike.docs.length > 0) {
+      console.log(`getActoByIdentifier: found like match for "${identifier}"`);
+      return dataLike.docs[0];
+    }
+  }
+
+  throw new Error(`Acto not found: ${identifier}`);
 }
 
 export async function getActoAdministrativo(
@@ -520,6 +578,32 @@ export async function createActoAdministrativo(
       JSON.stringify(errorData, null, 2),
     );
     throw new Error(`Failed to create entry: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function updateActoAdministrativo(
+  id: string,
+  data: Partial<ActoAdministrativo>,
+  authToken?: string,
+): Promise<{ doc: ActoAdministrativo; message: string }> {
+  const res = await apiFetch(
+    `/actos-administrativos/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    },
+    authToken,
+  );
+
+  if (!res.ok) {
+    console.error("API: updateActo error:", res.status, res.statusText);
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      "API: updateActo error details:",
+      JSON.stringify(errorData, null, 2),
+    );
+    throw new Error(`Failed to update acto: ${res.statusText}`);
   }
   return res.json();
 }

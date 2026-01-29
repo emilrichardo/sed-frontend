@@ -8,6 +8,7 @@ import {
   getAgents,
   Agent,
   createProcesamiento,
+  updateActoAdministrativo,
 } from "@/lib/api";
 import {
   ChevronLeft,
@@ -18,6 +19,7 @@ import {
   List as ListIcon,
   Play,
   Check,
+  Star,
 } from "lucide-react";
 import EntryExpandedContent from "./EntryExpandedContent";
 import { useAuth } from "@/context/AuthContext";
@@ -309,7 +311,14 @@ export default function EntriesList({ filters }: EntriesListProps) {
                     <th className="px-4 py-3">Sección</th>
                     <th className="px-4 py-3">Tipo</th>
                     <th className="px-4 py-3">Boletín</th>
-                    {isEditing && <th className="px-4 py-3">Procesamiento</th>}
+                    {isEditing && (
+                      <>
+                        <th className="px-4 py-3">Procesamiento</th>
+                        <th className="px-4 py-3 text-center">
+                          <Star className="h-4 w-4 mx-auto" />
+                        </th>
+                      </>
+                    )}
                     <th className="px-4 py-3 text-right">Acciones</th>
                   </tr>
                 </thead>
@@ -402,6 +411,105 @@ export default function EntriesList({ filters }: EntriesListProps) {
                                 className="scale-90 origin-left"
                               />
                             </div>
+                          </td>
+                        )}
+                        {isEditing && (
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const newStatus = !entry.destacado;
+                                  // Optimistic update
+                                  setEntries((prev) => {
+                                    if (!prev) return null;
+                                    const newDocs = prev.docs.map((d) =>
+                                      d.id === entry.id
+                                        ? { ...d, destacado: newStatus }
+                                        : d,
+                                    );
+                                    return { ...prev, docs: newDocs };
+                                  });
+
+                                  // API call
+                                  await updateActoAdministrativo(entry.id, {
+                                    destacado: newStatus,
+                                  });
+                                } catch (err) {
+                                  console.error(
+                                    "Failed to toggle destacado",
+                                    err,
+                                  );
+                                }
+                              }}
+                              className={cn(
+                                "p-1 rounded-full hover:bg-muted transition-colors",
+                                entry.destacado
+                                  ? "text-yellow-500"
+                                  : "text-muted-foreground/30",
+                              )}
+                              title={
+                                entry.destacado
+                                  ? "Quitar destacado"
+                                  : "Destacar"
+                              }
+                            >
+                              <Star
+                                className={cn(
+                                  "h-5 w-5",
+                                  entry.destacado && "fill-current",
+                                )}
+                              />
+                            </button>
+                          </td>
+                        )}
+                        {isEditing && (
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const newStatus = !entry.destacado;
+                                  // Optimistic update
+                                  setEntries((prev) => {
+                                    if (!prev) return null;
+                                    const newDocs = prev.docs.map((d) =>
+                                      d.id === entry.id
+                                        ? { ...d, destacado: newStatus }
+                                        : d,
+                                    );
+                                    return { ...prev, docs: newDocs };
+                                  });
+
+                                  // API call
+                                  await updateActoAdministrativo(entry.id, {
+                                    destacado: newStatus,
+                                  });
+                                } catch (err) {
+                                  console.error(
+                                    "Failed to toggle destacado",
+                                    err,
+                                  );
+                                  // Revert on error could be implemented here
+                                }
+                              }}
+                              className={cn(
+                                "p-1 rounded-full hover:bg-muted transition-colors",
+                                entry.destacado
+                                  ? "text-yellow-500"
+                                  : "text-muted-foreground/30",
+                              )}
+                              title={
+                                entry.destacado
+                                  ? "Quitar destacado"
+                                  : "Destacar"
+                              }
+                            >
+                              <Star
+                                className={cn(
+                                  "h-5 w-5",
+                                  entry.destacado && "fill-current",
+                                )}
+                              />
+                            </button>
                           </td>
                         )}
                         <td className="px-4 py-3 text-right">

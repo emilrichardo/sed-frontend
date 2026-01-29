@@ -8,14 +8,14 @@ import BulletinEntriesLoader from "@/components/BulletinEntriesLoader";
 export default async function BulletinDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id: bulletinId } = await params;
+  const { slug } = await params;
 
   let bulletin: Boletin;
 
   try {
-    bulletin = await getBulletin(bulletinId);
+    bulletin = await getBulletin(slug);
   } catch (err: any) {
     console.error("Error loading bulletin:", err);
     return (

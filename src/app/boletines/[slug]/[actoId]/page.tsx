@@ -1,32 +1,34 @@
-import { getActoAdministrativo, ActoAdministrativo } from "@/lib/api";
+import { getActoByIdentifier, ActoAdministrativo } from "@/lib/api";
 import Link from "next/link";
 import { ChevronLeft, Calendar, Building2, FileTextIcon } from "lucide-react";
 
-export default async function EntryDetailPage({
+export default async function ActoDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; actoId: string }>;
 }) {
-  const { id: entryId } = await params;
+  const { slug, actoId } = await params;
 
   let entry: ActoAdministrativo;
 
   try {
-    entry = await getActoAdministrativo(entryId);
+    // Try to fetch by identifier (actoId)
+    // Note: We currently don't strictly validate that the act belongs to the bulletin 'slug' in the URL
+    // to avoid extra round trips, but we could enforce it if needed.
+    entry = await getActoByIdentifier(decodeURIComponent(actoId));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error desconocido";
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-bold">Error al cargar el acto</h1>
         <p className="text-muted-foreground mt-2">
-          {message || "No se pudo encontrar el acto administrativo solicitado."}{" "}
-          ({entryId})
+          {message || "No se pudo encontrar el acto administrativo solicitado."}
         </p>
         <Link
-          href="/boletines"
+          href={`/boletines/${slug}`}
           className="text-primary hover:underline mt-4 inline-block"
         >
-          Volver al archivo
+          Volver al boletín
         </Link>
       </div>
     );

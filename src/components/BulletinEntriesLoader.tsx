@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getActosAdministrativos, ActoAdministrativo } from "@/lib/api";
 import BulletinEntriesBySection from "./BulletinEntriesBySection";
+import BulletinHighlightsSlider from "./BulletinHighlightsSlider";
 import { Loader2, AlertCircle } from "lucide-react";
 
 interface BulletinEntriesLoaderProps {
@@ -21,9 +22,14 @@ export default function BulletinEntriesLoader({
       setLoading(true);
       setError(null);
       try {
+        console.log(
+          "BulletinEntriesLoader: Loading entries for bulletin ID:",
+          bulletinId,
+        );
         const data = await getActosAdministrativos({
           where: { boletin: bulletinId },
           limit: 100,
+          sort: "-createdAt", // Use simple sort to avoid potential deep-sort issues
         });
         setEntries(data.docs.reverse());
       } catch (err: unknown) {
@@ -72,5 +78,23 @@ export default function BulletinEntriesLoader({
     );
   }
 
-  return <BulletinEntriesBySection entries={entries} />;
+  // Filter acts for highlights slider:
+  // 1. Manually highlighted (destacado: true)
+  // 2. Automatically highlighted (has journalist title AND summary/note)
+  const manualHighlights = entries.filter((act) => act.destacado);
+  const autoHighlights = entries.filter(
+    (act) =>
+      !act.destacado && // Avoid duplicates
+      act.titulo_periodistico &&
+      (act.resumen || act.nota_periodistica),
+  );
+
+  const highlights = [...manualHighlights, ...autoHighlights];
+
+  return (
+    <div className="space-y-8">
+      {highlights.length > 0 && <BulletinHighlightsSlider acts={highlights} />}
+      <BulletinEntriesBySection entries={entries} />
+    </div>
+  );
 }
