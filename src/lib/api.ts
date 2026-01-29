@@ -1,5 +1,8 @@
-export const API_URL =
-  (process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000") + "/api";
+const IS_SERVER = typeof window === "undefined";
+export const API_URL = IS_SERVER
+  ? (process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000") +
+    "/api"
+  : "/api-proxy";
 
 /**
  * Shared fetch wrapper to handle auth tokens and 401 redirects

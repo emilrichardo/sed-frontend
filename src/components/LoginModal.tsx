@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, login } = useAuth();
@@ -27,10 +28,7 @@ export function LoginModal() {
 
     try {
       // Assuming Next.js route or direct Payload API
-      const API_URL =
-        process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
-
-      const res = await fetch(`${API_URL}/api/users/login`, {
+      const res = await fetch(`${API_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Paylaod CMS login expects 'email' and 'password' normally
