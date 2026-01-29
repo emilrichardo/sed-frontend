@@ -65,6 +65,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
           limit: 20,
           where: filters,
           depth: 1,
+          sort: "-createdAt",
         });
         setEntries(data);
       } catch (error) {
@@ -420,93 +421,162 @@ export default function EntriesList({ filters }: EntriesListProps) {
             </div>
           ) : (
             <div className="grid gap-4">
-              {entries?.docs.map((entry) => (
-                <div
-                  key={entry.id}
-                  className={`p-4 border rounded-lg transition-all ${
-                    expandedEntryId === entry.id
-                      ? "border-primary ring-1 ring-primary/20 bg-card shadow-md"
-                      : "border-border bg-card hover:border-primary/50"
-                  }`}
-                >
-                  {/* List View Content (Simplified from original for brevity, keeping main struct) */}
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div
-                      className="space-y-2 flex-1 cursor-pointer"
-                      onClick={() =>
-                        setExpandedEntryId(
-                          expandedEntryId === entry.id ? null : entry.id,
-                        )
-                      }
-                    >
-                      <div className="flex items-center gap-2">
-                        {isEditing && (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={selectedIds.has(entry.id)}
-                              onCheckedChange={() => toggleSelect(entry.id)}
-                            />
-                          </div>
-                        )}
-                        <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                          {entry.seccion || "Sección"}
-                        </span>
-                        {/* ... existing metadata ... */}
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {entry.tipo_de_acto &&
-                          typeof entry.tipo_de_acto === "object"
-                            ? entry.tipo_de_acto.nombre
-                            : "Acto"}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors mt-1">
-                        {entry.titulo_periodistico ||
-                          entry.identificador_de_acto}
-                      </h3>
-                      {entry.titulo_periodistico && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 uppercase tracking-wide">
-                            Periodístico
+              {entries?.docs.map((entry) => {
+                // Status handling logic for List View
+                const procs = Array.isArray(entry.procesamiento_asociado)
+                  ? entry.procesamiento_asociado
+                  : entry.procesamiento_asociado
+                    ? [entry.procesamiento_asociado]
+                    : [];
+
+                const validProcs = procs.filter(
+                  (p) => typeof p !== "string",
+                ) as any[];
+
+                const latestProc =
+                  validProcs.length > 0
+                    ? validProcs.sort(
+                        (a, b) =>
+                          new Date(b.createdAt).getTime() -
+                          new Date(a.createdAt).getTime(),
+                      )[0]
+                    : undefined;
+
+                const initialStatus = latestProc?.status;
+                const currentStatus = localStatuses[entry.id] || initialStatus;
+
+                return (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      "p-4 border rounded-lg transition-all",
+                      expandedEntryId === entry.id
+                        ? "border-primary ring-1 ring-primary/20 bg-card shadow-md"
+                        : "bg-card hover:border-primary/50",
+                      // Status styles
+                      currentStatus === "completado" &&
+                        "border-green-200 bg-green-50/10 dark:border-green-800 dark:bg-green-950/10",
+                      currentStatus === "procesando" &&
+                        "border-blue-200 bg-blue-50/10 dark:border-blue-800 dark:bg-blue-950/10",
+                      currentStatus === "error" &&
+                        "border-red-200 bg-red-50/10 dark:border-red-800 dark:bg-red-950/10",
+                      !currentStatus && "border-border",
+                    )}
+                  >
+                    {/* List View Content (Simplified from original for brevity, keeping main struct) */}
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div
+                        className="space-y-2 flex-1 cursor-pointer"
+                        onClick={() =>
+                          setExpandedEntryId(
+                            expandedEntryId === entry.id ? null : entry.id,
+                          )
+                        }
+                      >
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          {isEditing && (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedIds.has(entry.id)}
+                                onCheckedChange={() => toggleSelect(entry.id)}
+                              />
+                            </div>
+                          )}
+                          <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                            {entry.seccion || "Sección"}
                           </span>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            Referencia Original:{" "}
-                            <span className="italic">
-                              {entry.identificador_de_acto}
-                            </span>
+                          <span className="text-muted-foreground text-[10px]">
+                            •
+                          </span>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {entry.tipo_de_acto &&
+                            typeof entry.tipo_de_acto === "object"
+                              ? entry.tipo_de_acto.nombre
+                              : "Acto"}
+                          </span>
+
+                          {entry.nivel_opacidad !== undefined && (
+                            <>
+                              <span className="text-muted-foreground text-[10px]">
+                                •
+                              </span>
+                              <span
+                                className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${
+                                  entry.nivel_opacidad === "Transparente" ||
+                                  (typeof entry.nivel_opacidad === "number" &&
+                                    entry.nivel_opacidad < 5)
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : entry.nivel_opacidad === "Parcial"
+                                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                      : "bg-red-50 text-red-700 border-red-200"
+                                }`}
+                              >
+                                {typeof entry.nivel_opacidad === "number"
+                                  ? `Nivel ${entry.nivel_opacidad}`
+                                  : entry.nivel_opacidad}
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors mb-1">
+                          {entry.titulo_periodistico ||
+                            entry.titulo ||
+                            entry.identificador_de_acto}
+                        </h3>
+
+                        {/* Subtitle / Metadata Context */}
+                        <div className="flex flex-col gap-1 mb-2">
+                          {entry.titulo_periodistico && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 uppercase tracking-wide">
+                                Periodístico
+                              </span>
+                              {entry.titulo && (
+                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                  {entry.titulo}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          <p className="text-xs font-mono text-muted-foreground/70">
+                            {entry.identificador_de_acto}
                           </p>
                         </div>
-                      )}
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {entry.resumen ||
-                          entry.nota_periodistica ||
-                          entry.titulo}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setExpandedEntryId(
-                          expandedEntryId === entry.id ? null : entry.id,
-                        )
-                      }
-                      className="flex items-center gap-1 text-sm font-medium text-primary hover:underline self-start"
-                    >
-                      {expandedEntryId === entry.id ? (
-                        <>
-                          Contraer <ChevronUp className="h-4 w-4" />
-                        </>
-                      ) : (
-                        <>
-                          Expandir <ChevronDown className="h-4 w-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
 
-                  {expandedEntryId === entry.id && (
-                    <EntryExpandedContent entry={entry} />
-                  )}
-                </div>
-              ))}
+                        <div className="text-sm text-foreground/80 line-clamp-3">
+                          {entry.nota_periodistica ||
+                            entry.resumen ||
+                            "Sin resumen disponible."}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setExpandedEntryId(
+                            expandedEntryId === entry.id ? null : entry.id,
+                          )
+                        }
+                        className="flex items-center gap-1 text-sm font-medium text-primary hover:underline self-start"
+                      >
+                        {expandedEntryId === entry.id ? (
+                          <>
+                            Contraer <ChevronUp className="h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            Expandir <ChevronDown className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {expandedEntryId === entry.id && (
+                      <EntryExpandedContent entry={entry} />
+                    )}
+                  </div>
+                );
+              })}
               {entries?.docs.length === 0 && (
                 <div className="text-center py-12 border rounded-lg border-dashed">
                   <p className="text-muted-foreground">

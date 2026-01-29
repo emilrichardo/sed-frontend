@@ -4,6 +4,8 @@ import { ActoAdministrativo } from "@/lib/api";
 import { FileText, Info, Share2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
+import { ProcessingButton } from "./ProcessingButton";
+
 interface EntryExpandedContentProps {
   entry: ActoAdministrativo;
 }
@@ -24,6 +26,25 @@ export default function EntryExpandedContent({
       navigator.clipboard.writeText(shareUrl);
       alert("Enlace copiado al portapapeles");
     }
+  };
+
+  const getExistingProcessingId = () => {
+    if (
+      !entry.procesamiento_asociado ||
+      !Array.isArray(entry.procesamiento_asociado)
+    )
+      return null;
+
+    const reversed = [...entry.procesamiento_asociado].reverse();
+    for (const p of reversed) {
+      if (typeof p === "object" && p !== null && "agente" in p) {
+        const agentId = typeof p.agente === "object" ? p.agente?.id : p.agente;
+        if (String(agentId) === "6") {
+          return p.id;
+        }
+      }
+    }
+    return null;
   };
 
   return (
@@ -156,21 +177,32 @@ export default function EntryExpandedContent({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t">
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-        >
-          <Share2 className="h-4 w-4" />
-          Compartir esta entrada
-        </button>
-        <Link
-          href={`/boletines/entrada/${entry.id}`}
-          className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-        >
-          Ver página dedicada
-          <ExternalLink className="h-3 w-3" />
-        </Link>
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t">
+        <div className="flex items-center gap-2">
+          <ProcessingButton
+            relationTo="actos-administrativos"
+            relatedId={entry.id}
+            existingProcessingId={getExistingProcessingId()}
+            requiredAgentId="6"
+            className="h-9 px-3 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Share2 className="h-4 w-4" />
+            Compartir
+          </button>
+          <Link
+            href={`/boletines/entrada/${entry.id}`}
+            className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            Ver página dedicada
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        </div>
       </div>
     </div>
   );

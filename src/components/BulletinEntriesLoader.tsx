@@ -25,10 +25,14 @@ export default function BulletinEntriesLoader({
           where: { boletin: bulletinId },
           limit: 100,
         });
-        setEntries(data.docs);
-      } catch (err: any) {
+        setEntries(data.docs.reverse());
+      } catch (err: unknown) {
         console.error("Error loading entries for bulletin:", err);
-        setError(err.message || "Error al cargar los actos administrativos");
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Error al cargar los actos administrativos";
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

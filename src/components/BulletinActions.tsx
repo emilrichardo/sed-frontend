@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Boletin } from "@/lib/api";
 import BulletinFlipbook from "./BulletinFlipbook";
 import { Eye, BookOpen } from "lucide-react";
+import { ProcessingButton } from "./ProcessingButton";
 
 export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
   const { user } = useAuth();
@@ -41,9 +42,37 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
     }
   };
 
+  // Find existing processing for Agent 5 (Boletín Extractor)
+  const getExistingProcessingId = () => {
+    if (
+      !bulletin.procesamiento_asociado ||
+      !Array.isArray(bulletin.procesamiento_asociado)
+    )
+      return null;
+
+    // Look for the most recent processing by Agent 5
+    const reversed = [...bulletin.procesamiento_asociado].reverse();
+    for (const p of reversed) {
+      if (typeof p === "object" && p !== null && "agente" in p) {
+        const agentId = typeof p.agente === "object" ? p.agente?.id : p.agente;
+        if (String(agentId) === "5") {
+          return p.id;
+        }
+      }
+    }
+    return null;
+  };
+
   return (
     <>
-      <div className="flex gap-2 mt-4">
+      <div className="flex flex-wrap gap-2 mt-4">
+        <ProcessingButton
+          relationTo="boletines"
+          relatedId={bulletin.id}
+          existingProcessingId={getExistingProcessingId()}
+          requiredAgentId="5"
+          className="bg-zinc-800 text-white hover:bg-zinc-700"
+        />
         <button
           onClick={handleOpenOriginal}
           className="flex items-center gap-2 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors"

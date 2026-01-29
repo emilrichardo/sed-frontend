@@ -634,13 +634,14 @@ export async function getLearningRecords(
 export interface Procesamiento {
   id: string;
   nombre: string;
-  status: "en_cola" | "procesando" | "completado" | "error";
+  status: "en_cola" | "procesando" | "completado" | "error" | "cancelado";
   documento_relacionado: {
     relationTo: "boletines" | "noticias" | "actos-administrativos";
     value: string | number | Boletin | NewsItem | ActoAdministrativo;
   };
   agente?: string | number | Agent;
   resultado?: any;
+  info_progreso?: any;
   createdAt: string;
   updatedAt: string;
 }

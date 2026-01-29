@@ -42,6 +42,16 @@ interface ProcessingButtonProps {
   onStatusChange?: (status: string) => void;
   className?: string;
   pollingInterval?: number;
+  requiredAgentId?: string | number;
+}
+
+interface ProgressItem {
+  id: string;
+  filename: string;
+  totalPages: number;
+  processedPages: number;
+  status: string;
+  startTime: string;
 }
 
 export function ProcessingButton({
@@ -52,12 +62,14 @@ export function ProcessingButton({
   onStatusChange,
   className,
   pollingInterval = 2000,
+  requiredAgentId,
 }: ProcessingButtonProps) {
   const [status, setStatus] = useState<
     "idle" | "creating" | "queued" | "processing" | "completed" | "error"
   >("idle");
   const [procId, setProcId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [progressInfo, setProgressInfo] = useState<ProgressItem[] | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -72,7 +84,14 @@ export function ProcessingButton({
     if (agents.length > 0) return; // Already loaded
     setAgentsLoading(true);
     try {
-      const agentList = await getAgents();
+      let agentList = await getAgents();
+
+      if (requiredAgentId) {
+        agentList = agentList.filter(
+          (a) => String(a.id) === String(requiredAgentId),
+        );
+      }
+
       setAgents(agentList);
       if (agentList.length > 0) {
         setSelectedAgentId(agentList[0].id);
@@ -82,7 +101,7 @@ export function ProcessingButton({
     } finally {
       setAgentsLoading(false);
     }
-  }, [agents.length]);
+  }, [agents.length, requiredAgentId]);
 
   // On mount, check if there's an existing processing and fetch its status
   useEffect(() => {
@@ -103,6 +122,19 @@ export function ProcessingButton({
           } else if (proc.status === "procesando") {
             setStatus("processing");
             onStatusChange?.("procesando");
+            if (proc.info_progreso) {
+              let info = proc.info_progreso;
+              if (typeof info === "string") {
+                try {
+                  info = JSON.parse(info);
+                } catch {
+                  // ignore error on initial load
+                }
+              }
+              if (Array.isArray(info)) {
+                setProgressInfo(info);
+              }
+            }
           } else if (proc.status === "en_cola") {
             setStatus("queued");
             onStatusChange?.("en_cola");
@@ -134,7 +166,9 @@ export function ProcessingButton({
     pollTimerRef.current = setInterval(async () => {
       try {
         const proc = await getProcesamiento(procId);
-        console.log("Polling processing:", proc);
+        if (proc.status === "procesando") {
+          // console.log("Processing update debug:", proc.id, proc.status, proc.info_progreso);
+        }
 
         if (proc.status === "completado") {
           setStatus("completed");
@@ -152,10 +186,26 @@ export function ProcessingButton({
           if (proc.status === "procesando") {
             setStatus("processing");
             onStatusChange?.("procesando");
+            if (proc.info_progreso) {
+              let info = proc.info_progreso;
+              if (typeof info === "string") {
+                try {
+                  info = JSON.parse(info);
+                } catch (e) {
+                  console.error("Failed to parse progress info:", e);
+                  info = null;
+                }
+              }
+              if (Array.isArray(info)) {
+                console.log("Setting progress info:", info);
+                setProgressInfo(info);
+              }
+            }
           }
           if (proc.status === "en_cola") {
             setStatus("queued");
             onStatusChange?.("en_cola");
+            setProgressInfo(null);
           }
         }
       } catch (err) {
@@ -420,6 +470,35 @@ export function ProcessingButton({
       </Popover>
       {errorMessage && (
         <span className="text-xs text-red-500">{errorMessage}</span>
+      )}
+      {status === "processing" && progressInfo && progressInfo.length > 0 && (
+        <div className="w-full min-w-[160px] space-y-1 animate-in fade-in slide-in-from-top-1 duration-300 relative z-10 pt-1">
+          {progressInfo.map((info, idx) => {
+            const percentage =
+              info.totalPages > 0
+                ? Math.round((info.processedPages / info.totalPages) * 100)
+                : 0;
+            return (
+              <div
+                key={info.id || idx}
+                className="space-y-1 bg-background/50 backdrop-blur-sm p-1 rounded-md border border-border/50 shadow-sm"
+              >
+                <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+                  <span>
+                    Páginas: {info.processedPages} / {info.totalPages}
+                  </span>
+                  <span>{percentage}%</span>
+                </div>
+                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
