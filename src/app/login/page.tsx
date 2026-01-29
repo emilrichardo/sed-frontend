@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { API_URL } from "@/lib/api";
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -21,7 +22,7 @@ function LoginContent() {
 
     try {
       // Assuming standard Payload CMS login endpoint for 'users' collection
-      const res = await fetch("http://localhost:3000/api/users/login", {
+      const res = await fetch(`${API_URL}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
