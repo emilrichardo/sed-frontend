@@ -1,4 +1,5 @@
-export const API_URL = "http://localhost:3000/api";
+export const API_URL =
+  (process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000") + "/api";
 
 /**
  * Shared fetch wrapper to handle auth tokens and 401 redirects

@@ -114,14 +114,12 @@ export default function BulletinEntriesLoader({
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {journalistActs.map((act) => {
-              const slug =
-                typeof act.boletin === "object" &&
-                act.boletin &&
-                "slug" in act.boletin
-                  ? (act.boletin as any).slug
-                  : typeof act.boletin === "object"
-                    ? act.boletin.id
-                    : act.boletin;
+              let slug = "";
+              if (typeof act.boletin === "string") {
+                slug = act.boletin;
+              } else if (act.boletin && typeof act.boletin === "object") {
+                slug = act.boletin.slug || act.boletin.id;
+              }
 
               return (
                 <Link
