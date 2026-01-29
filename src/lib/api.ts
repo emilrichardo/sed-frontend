@@ -433,7 +433,7 @@ export async function getActoByIdentifier(
   // Search by identificador_de_acto
   const encodedId = encodeURIComponent(identifier);
   const res = await apiFetch(
-    `/actos-administrativos?where[identificador_de_acto][equals]=${encodedId}&depth=2`,
+    `/actos-administrativos?where[identificador_de_acto][equals]=${encodedId}&depth=1`,
     { next: { revalidate: 60 } },
   );
 
@@ -462,7 +462,7 @@ export async function getActoByIdentifier(
   // Only if identifier is long enough to be specific
   if (identifier.length > 5) {
     const resLike = await apiFetch(
-      `/actos-administrativos?where[identificador_de_acto][like]=${encodedId}&depth=2`,
+      `/actos-administrativos?where[identificador_de_acto][like]=${encodedId}&depth=1`,
       { next: { revalidate: 60 } },
     );
     const dataLike = await resLike.json();
