@@ -176,8 +176,8 @@ export default function BulletinEntriesLoader({
       </div>
 
       {/* Right Column: Official List (40% on Desktop) */}
-      <div className="w-full lg:w-[40%] space-y-8 lg:border-l lg:pl-8 lg:min-h-screen">
-        <div className="flex items-center gap-2 pb-4 border-b">
+      <aside className="w-full lg:w-[40%] space-y-8 lg:border-l lg:pl-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto custom-scrollbar">
+        <div className="flex items-center gap-2 pb-4 border-b sticky top-0 bg-background/95 backdrop-blur z-10 pt-2">
           <FileText className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-xl font-bold tracking-tight">Lista Oficial</h2>
         </div>
@@ -185,7 +185,7 @@ export default function BulletinEntriesLoader({
         <div className="bg-muted/10 rounded-xl p-1">
           <BulletinEntriesBySection entries={entries} />
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

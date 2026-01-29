@@ -161,6 +161,18 @@ export interface ActoAdministrativo {
   nota_periodistica?: string;
   status_procesamiento?: string;
   destacado?: boolean;
+  entidades_relacionadas?: {
+    id: number | string;
+    nombre: string;
+    tipo: string;
+    [key: string]: unknown;
+  }[];
+  referencias_relacionadas?: {
+    id: number | string;
+    tipo: string;
+    valor: string;
+    [key: string]: unknown;
+  }[];
 }
 
 export interface DetalleEspecifico {
@@ -434,8 +446,8 @@ export async function getActoByIdentifier(
   // Search by identificador_de_acto
   const encodedId = encodeURIComponent(identifier);
   const res = await apiFetch(
-    `/actos-administrativos?where[identificador_de_acto][equals]=${encodedId}&depth=1`,
-    { next: { revalidate: 60 } },
+    `/actos-administrativos?where[identificador_de_acto][equals]=${encodedId}&depth=2`,
+    { next: { revalidate: 10 } },
   );
 
   if (!res.ok) {
@@ -463,7 +475,7 @@ export async function getActoByIdentifier(
   // Only if identifier is long enough to be specific
   if (identifier.length > 5) {
     const resLike = await apiFetch(
-      `/actos-administrativos?where[identificador_de_acto][like]=${encodedId}&depth=1`,
+      `/actos-administrativos?where[identificador_de_acto][like]=${encodedId}&depth=2`,
       { next: { revalidate: 60 } },
     );
     const dataLike = await resLike.json();
