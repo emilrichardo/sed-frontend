@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { getActosAdministrativos, ActoAdministrativo } from "@/lib/api";
 import BulletinEntriesBySection from "./BulletinEntriesBySection";
 import { Loader2, AlertCircle, FileText, Newspaper } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -86,54 +85,47 @@ export default function BulletinEntriesLoader({
     );
   }
 
-  // Filter for "Journalistic Version" tab
+  // Filter for Journalistic Version
   // Show acts that have journalistic content OR are destacado
   const journalistActs = entries.filter(
     (act) => act.destacado || act.titulo_periodistico || act.resumen,
   );
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="periodistica" className="w-full">
-        <div className="flex justify-center mb-8">
-          <TabsList className="grid w-[400px] grid-cols-2">
-            <TabsTrigger
-              value="periodistica"
-              className="flex items-center gap-2"
-            >
-              <Newspaper className="h-4 w-4" />
-              Versión Periodística
-            </TabsTrigger>
-            <TabsTrigger value="oficial" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Lista Oficial
-            </TabsTrigger>
-          </TabsList>
+    <div className="flex flex-col lg:flex-row gap-8 items-start">
+      {/* Left Column: Journalistic Version */}
+      <div className="w-full lg:flex-1 space-y-8">
+        <div className="flex items-center gap-2 pb-4 border-b">
+          <Newspaper className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-2xl font-bold tracking-tight">
+            Versión Periodística
+          </h2>
         </div>
 
-        <TabsContent
-          value="periodistica"
-          className="space-y-8 animate-in fade-in-50 duration-500"
-        >
-          {journalistActs.length === 0 ? (
-            <div className="text-center py-16 px-4 bg-muted/20 rounded-lg border border-dashed">
-              <h3 className="text-lg font-medium text-muted-foreground">
-                No hay análisis periodísticos disponibles aun.
-              </h3>
-              <p className="text-sm text-muted-foreground/70 mt-2">
-                Visita la pestaña &quot;Lista Oficial&quot; para ver todos los
-                actos.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
-              {journalistActs.map((act) => (
+        {journalistActs.length === 0 ? (
+          <div className="text-center py-12 px-4 bg-muted/20 rounded-lg border border-dashed">
+            <h3 className="text-lg font-medium text-muted-foreground">
+              No hay análisis periodísticos disponibles.
+            </h3>
+            <p className="text-sm text-muted-foreground/70 mt-2">
+              Revisa la lista oficial para ver todos los actos.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {journalistActs.map((act) => {
+              const slug =
+                typeof act.boletin === "object" &&
+                act.boletin &&
+                "slug" in act.boletin
+                  ? (act.boletin as any).slug
+                  : typeof act.boletin === "object"
+                    ? act.boletin.id
+                    : act.boletin;
+
+              return (
                 <Link
-                  href={
-                    typeof act.boletin === "object"
-                      ? `/boletines/${(act.boletin as any).slug || act.boletin.id}/${act.identificador_de_acto}`
-                      : "#"
-                  }
+                  href={`/boletines/${slug}/${act.identificador_de_acto}`}
                   key={act.id}
                   className="group block"
                 >
@@ -145,7 +137,7 @@ export default function BulletinEntriesLoader({
                     )}
                   >
                     <div className="space-y-4">
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-normal text-muted-foreground">
                         {act.destacado && (
                           <span className="bg-black text-white px-2 py-0.5 rounded-sm flex items-center gap-1">
                             DESTACADO
@@ -156,7 +148,7 @@ export default function BulletinEntriesLoader({
                         </span>
                       </div>
 
-                      <h2 className="text-2xl md:text-3xl font-bold leading-tight group-hover:text-primary transition-colors font-serif">
+                      <h2 className="text-2xl md:text-3xl font-bold leading-tight group-hover:text-primary transition-colors">
                         {act.titulo_periodistico || act.identificador_de_acto}
                       </h2>
 
@@ -179,18 +171,23 @@ export default function BulletinEntriesLoader({
                     </div>
                   </article>
                 </Link>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-        <TabsContent
-          value="oficial"
-          className="animate-in fade-in-50 duration-500"
-        >
+      {/* Right Column: Official List (40% on Desktop) */}
+      <div className="w-full lg:w-[40%] space-y-8 lg:border-l lg:pl-8 lg:min-h-screen">
+        <div className="flex items-center gap-2 pb-4 border-b">
+          <FileText className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-bold tracking-tight">Lista Oficial</h2>
+        </div>
+
+        <div className="bg-muted/10 rounded-xl p-1">
           <BulletinEntriesBySection entries={entries} />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }
