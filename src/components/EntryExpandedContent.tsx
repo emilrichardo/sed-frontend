@@ -13,7 +13,14 @@ interface EntryExpandedContentProps {
 export default function EntryExpandedContent({
   entry,
 }: EntryExpandedContentProps) {
-  const shareUrl = `${window.location.origin}/boletines/entrada/${entry.id}`;
+  // Build correct URL: /boletines/[boletinSlug]/[identificador_de_acto]
+  const getBoletinSlug = () => {
+    if (typeof entry.boletin === "object" && entry.boletin) {
+      return entry.boletin.slug || entry.boletin.id;
+    }
+    return entry.boletin || "";
+  };
+  const shareUrl = `${window.location.origin}/boletines/${getBoletinSlug()}/${entry.identificador_de_acto}`;
 
   const handleShare = () => {
     if (navigator.share) {
@@ -196,7 +203,7 @@ export default function EntryExpandedContent({
             Compartir
           </button>
           <Link
-            href={`/boletines/entrada/${entry.id}`}
+            href={`/boletines/${getBoletinSlug()}/${entry.identificador_de_acto}`}
             className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
           >
             Ver página dedicada

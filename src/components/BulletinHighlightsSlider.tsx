@@ -179,7 +179,7 @@ export default function BulletinHighlightsSlider({
                         act.boletin &&
                         "slug" in act.boletin
                           ? `/boletines/${(act.boletin as { slug: string }).slug}/${encodeURIComponent(act.identificador_de_acto)}`
-                          : `/boletines/entrada/${act.id}`
+                          : `/boletines/${act.boletin}/${encodeURIComponent(act.identificador_de_acto)}`
                       }
                       className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group/btn"
                     >
