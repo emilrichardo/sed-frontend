@@ -511,7 +511,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                                         {ref.tipo}
                                       </span>
                                     </div>
-                                    {ref.descripcion && (
+                                    {typeof ref.descripcion === "string" && (
                                       <div>
                                         <span className="text-muted-foreground block">
                                           Descripción:
