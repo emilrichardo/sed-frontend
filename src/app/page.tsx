@@ -1,6 +1,7 @@
 import { getNews, getBulletins } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { CreateNewsButton } from "@/components/CreateNewsButton";
+import { Stats } from "@/components/Stats";
 
 import Link from "next/link";
 import { FileText, ArrowRight } from "lucide-react";
@@ -17,6 +18,7 @@ export default async function Home() {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <Stats />
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold flex items-center gap-2">

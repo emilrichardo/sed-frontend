@@ -5,7 +5,7 @@
 
 :root {
   /* Brutalist Theme Base Colors */
-  --background: oklch(0.96 0 0); /* Light Grey #f3f4f6ish */
+  --background: oklch(0.99 0 0); /* Near White */
   --foreground: oklch(0.1 0 0); /* Near Black */
 
   --card: oklch(1 0 0);

@@ -132,8 +132,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
 
           {/* Journalistic Note */}
           {entry.nota_periodistica && (
-            <section className="bg-muted p-6 border-2 border-black">
-              <h3 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4 uppercase tracking-tight">
+            <section className="bg-muted p-6">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4 uppercase tracking-tight border-b-2 border-black pb-2">
                 <PenTool className="h-5 w-5" />
                 Análisis Periodístico
               </h3>
@@ -147,7 +147,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
 
           {/* Full Text / Cuerpo */}
           <section className="space-y-4">
-            <h3 className="text-lg font-bold flex items-center gap-2 text-foreground/80 border-b pb-2">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-foreground/80 border-b-2 border-black pb-2 uppercase tracking-tight">
               <FileTextIcon className="h-5 w-5" />
               Texto Oficial Completo
             </h3>
@@ -176,9 +176,11 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
         <aside className="lg:col-span-4 space-y-8">
           {/* Metadata Card */}
           <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-            <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
+            <div className="bg-muted/30 px-4 py-3 border-b-2 border-black flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-semibold text-sm">Información del Acto</h3>
+              <h3 className="font-semibold text-sm uppercase tracking-wider">
+                Información del Acto
+              </h3>
             </div>
             <div className="p-4 space-y-4">
               <div>
@@ -257,9 +259,9 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   if (!items || items.length === 0) return null;
                   return (
                     <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
+                      <div className="bg-muted/30 px-4 py-3 border-b-2 border-black flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="font-semibold text-sm">
+                        <h3 className="font-semibold text-sm uppercase tracking-wider">
                           Organismos Relacionados
                         </h3>
                       </div>
@@ -317,9 +319,9 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   if (!items || items.length === 0) return null;
                   return (
                     <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
+                      <div className="bg-muted/30 px-4 py-3 border-b-2 border-black flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="font-semibold text-sm">
+                        <h3 className="font-semibold text-sm uppercase tracking-wider">
                           Personas Relacionadas
                         </h3>
                       </div>
@@ -375,9 +377,9 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   if (!items || items.length === 0) return null;
                   return (
                     <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
+                      <div className="bg-muted/30 px-4 py-3 border-b-2 border-black flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="font-semibold text-sm">
+                        <h3 className="font-semibold text-sm uppercase tracking-wider">
                           Empresas Relacionadas
                         </h3>
                       </div>
@@ -439,9 +441,9 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   if (!items || items.length === 0) return null;
                   return (
                     <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
+                      <div className="bg-muted/30 px-4 py-3 border-b-2 border-black flex items-center gap-2">
                         <Info className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="font-semibold text-sm">
+                        <h3 className="font-semibold text-sm uppercase tracking-wider">
                           Otras Entidades
                         </h3>
                       </div>
@@ -474,9 +476,9 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
           {entry.referencias_relacionadas &&
             entry.referencias_relacionadas.length > 0 && (
               <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
+                <div className="bg-muted/30 px-4 py-3 border-b-2 border-black flex items-center gap-2">
                   <FileTextIcon className="h-4 w-4 text-muted-foreground" />
-                  <h3 className="font-semibold text-sm">
+                  <h3 className="font-semibold text-sm uppercase tracking-wider">
                     Normativa Referenciada
                   </h3>
                 </div>

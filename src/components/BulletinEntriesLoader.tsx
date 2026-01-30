@@ -97,7 +97,7 @@ export default function BulletinEntriesLoader({
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Left Column: Journalistic Version */}
       <div className="w-full lg:flex-1 space-y-8">
-        <div className="flex items-center gap-2 pb-4 border-b">
+        <div className="flex items-center gap-2 pb-4">
           <Newspaper className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-2xl font-bold tracking-tight">
             Versión Periodística
@@ -178,7 +178,7 @@ export default function BulletinEntriesLoader({
 
       {/* Right Column: Official List (40% on Desktop) */}
       <aside className="w-full lg:w-[40%] space-y-8 lg:border-l lg:pl-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto custom-scrollbar">
-        <div className="flex items-center gap-2 pb-4 border-b sticky top-0 bg-background/95 backdrop-blur z-10 pt-2">
+        <div className="flex items-center gap-2 pb-4 sticky top-0 bg-background/95 backdrop-blur z-10 pt-2">
           <FileText className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-xl font-bold tracking-tight">Lista Oficial</h2>
         </div>
