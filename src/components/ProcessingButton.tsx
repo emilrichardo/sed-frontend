@@ -319,7 +319,7 @@ export function ProcessingButton({
             <div
               role="button"
               onClick={handleCancel}
-              className="p-0.5 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors z-50 cursor-pointer pointer-events-auto"
+              className="p-0.5 hover:bg-black hover:text-white text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto border-2 border-transparent hover:border-black"
               title="Cancelar"
             >
               <X className="h-4 w-4" />
@@ -336,7 +336,7 @@ export function ProcessingButton({
             <div
               role="button"
               onClick={handleCancel}
-              className="p-0.5 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors z-50 cursor-pointer pointer-events-auto"
+              className="p-0.5 hover:bg-black hover:text-white text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto border-2 border-transparent hover:border-black"
               title="Cancelar"
             >
               <X className="h-4 w-4" />
@@ -481,7 +481,7 @@ export function ProcessingButton({
             return (
               <div
                 key={info.id || idx}
-                className="space-y-1 bg-background/50 backdrop-blur-sm p-1 rounded-md border border-border/50 shadow-sm"
+                className="space-y-1 bg-background p-1 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
               >
                 <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
                   <span>
@@ -489,9 +489,9 @@ export function ProcessingButton({
                   </span>
                   <span>{percentage}%</span>
                 </div>
-                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-secondary h-3 border-2 border-black overflow-hidden relative">
                   <div
-                    className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                    className="bg-black h-full transition-all duration-500 ease-out"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>

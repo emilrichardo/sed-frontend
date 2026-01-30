@@ -185,7 +185,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
             <input
               type="text"
               placeholder="Buscar por número..."
-              className="w-full pl-9 pr-4 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full pl-9 pr-4 py-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -194,12 +194,12 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
           <div className="flex items-center gap-4">
             <Link
               href="/admin/subir-boletin"
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground border-2 border-primary hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[1px] font-bold text-sm uppercase tracking-wide"
             >
               <Upload className="w-4 h-4" />
               Cargar Boletín
             </Link>
-            <div className="flex border rounded-md overflow-hidden">
+            <div className="flex border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <button
                 onClick={() => setViewMode("table")}
                 className={`p-2 ${
@@ -228,7 +228,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
       </div>
 
       {isEditing && (
-        <div className="bg-muted/30 p-4 rounded-lg flex items-center justify-between border">
+        <div className="bg-muted/30 p-4 flex items-center justify-between border-2 border-black">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Checkbox
@@ -326,9 +326,9 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
       ) : (
         <>
           {viewMode === "table" ? (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-black overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
               <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
+                <thead className="bg-white text-black font-bold uppercase tracking-wide border-b-2 border-black text-xs">
                   <tr>
                     {isEditing && (
                       <th className="px-4 py-3 w-10">
@@ -432,7 +432,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
                                     ([id, name]) => (
                                       <span
                                         key={id}
-                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground"
+                                        className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-secondary text-secondary-foreground border-2 border-black uppercase tracking-tighter"
                                       >
                                         {name}
                                       </span>
@@ -477,7 +477,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
                 <Link
                   key={b.id}
                   href={`/boletines/${b.slug}`}
-                  className="block p-4 border rounded-lg hover:border-primary transition-colors bg-card"
+                  className="block p-4 border-2 border-black hover:bg-muted transition-all bg-card shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -488,7 +488,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
                         Publicado el {formatDate(b.fecha_publicacion)}
                       </p>
                     </div>
-                    <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                    <span className="text-xs font-bold font-mono bg-black text-white px-2 py-1 uppercase border-2 border-black">
                       {b.año_edicion}
                     </span>
                   </div>
@@ -502,7 +502,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Mostrando {bulletins?.docs.length} de {bulletins?.totalDocs}{" "}
               boletines (duplicados fusionados automáticamente)
             </p>
@@ -510,7 +510,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
               <button
                 disabled={!bulletins?.hasPrevPage}
                 onClick={() => setPage((p) => p - 1)}
-                className="p-2 border rounded-md disabled:opacity-50 hover:bg-muted transition-colors"
+                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -520,7 +520,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
               <button
                 disabled={!bulletins?.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
-                className="p-2 border rounded-md disabled:opacity-50 hover:bg-muted transition-colors"
+                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

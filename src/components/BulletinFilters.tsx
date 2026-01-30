@@ -95,17 +95,14 @@ export default function BulletinFilters({
   };
 
   return (
-    <div className="border rounded-lg bg-card overflow-hidden">
+    <div className="border-2 border-black bg-card shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
       <div
-        className="p-4 flex items-center justify-between cursor-pointer hover:bg-accent/50 transition-colors"
+        className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center gap-2 font-semibold">
+        <div className="flex items-center gap-2 font-bold uppercase tracking-wider">
           <Filter className="h-4 w-4" />
           <span>Filtros Avanzados</span>
-          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full ml-2">
-            Beta: Reactivo
-          </span>
         </div>
         <div className="flex items-center gap-4">
           <button
@@ -113,18 +110,18 @@ export default function BulletinFilters({
               e.stopPropagation();
               handleClearFilters();
             }}
-            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+            className="text-xs text-muted-foreground hover:text-black hover:underline uppercase font-bold flex items-center gap-1"
           >
             <X className="h-3 w-3" />
             Limpiar
           </button>
           <div
             className={cn(
-              "p-1 rounded-md hover:bg-accent transition-transform duration-200",
+              "p-1 border-2 border-transparent transition-transform duration-200",
               isExpanded && "rotate-180",
             )}
           >
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4" />
           </div>
         </div>
       </div>
@@ -138,10 +135,10 @@ export default function BulletinFilters({
         )}
       >
         <div className="overflow-hidden space-y-4">
-          <div className="h-px bg-border mb-4" />
+          <div className="h-0.5 bg-black mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="space-y-1.5 lg:col-span-1">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Buscar
               </label>
               <div className="relative">
@@ -151,19 +148,19 @@ export default function BulletinFilters({
                   placeholder="Nº de acto, referencia..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 p-2 border rounded-md bg-background text-sm"
+                  className="w-full pl-9 p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Sección
               </label>
               <select
                 value={selectedSeccion}
                 onChange={(e) => setSelectedSeccion(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-sm"
+                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               >
                 <option value="">Todas</option>
                 {secciones.map((s) => (
@@ -175,13 +172,13 @@ export default function BulletinFilters({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Tipo de Acto
               </label>
               <select
                 value={selectedTipoActo}
                 onChange={(e) => setSelectedTipoActo(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-sm"
+                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               >
                 <option value="">Todos</option>
                 {tiposActo.map((t) => (
@@ -193,13 +190,13 @@ export default function BulletinFilters({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Jurisdicción
               </label>
               <select
                 value={selectedOrganismo}
                 onChange={(e) => setSelectedOrganismo(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-sm"
+                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               >
                 <option value="">Todas</option>
                 {organismos.map((o) => (
@@ -211,26 +208,26 @@ export default function BulletinFilters({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Desde
               </label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-sm"
+                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Hasta
               </label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background text-sm"
+                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               />
             </div>
           </div>

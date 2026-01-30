@@ -26,7 +26,7 @@ export default async function Home() {
           <div className="flex items-center gap-4">
             <Link
               href="/admin/subir-boletin"
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground border-2 border-primary hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[1px] font-bold text-sm uppercase tracking-wide"
             >
               <FileText className="w-4 h-4" />
               Cargar Boletín
@@ -44,7 +44,7 @@ export default async function Home() {
         {latestBulletin ? (
           <Link
             href={`/boletines/${latestBulletin.slug}`}
-            className="block p-6 border rounded-xl bg-card hover:border-primary transition-all group shadow-sm"
+            className="block p-6 border-2 border-black bg-card hover:bg-muted transition-all group shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px]"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -58,7 +58,7 @@ export default async function Home() {
                   ).toLocaleDateString("es-AR")}
                 </p>
               </div>
-              <span className="px-3 py-1 bg-muted rounded-full text-xs font-mono">
+              <span className="px-3 py-1 bg-black text-white text-xs font-bold font-mono uppercase border-2 border-black">
                 {latestBulletin.año_edicion}
               </span>
             </div>

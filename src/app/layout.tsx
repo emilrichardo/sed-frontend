@@ -1,11 +1,15 @@
-import { Source_Code_Pro } from "next/font/google";
+import { Source_Code_Pro, Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-const sourceCodePro = Source_Code_Pro({ subsets: ["latin"] });
+const sourceCodePro = Source_Code_Pro({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 // ... (metadata)
 
 export default function RootLayout({
@@ -15,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={sourceCodePro.className}>
+      <body className={`${sourceCodePro.variable} ${inter.variable} font-mono`}>
         <AuthProvider>
           <ProtectedRoute>
             <Navbar />

@@ -77,7 +77,7 @@ export function CreateNewsButton() {
     <button
       onClick={handleCreate}
       disabled={isCreating}
-      className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-md transition-all"
+      className="bg-primary text-primary-foreground px-6 py-3 font-bold uppercase disabled:opacity-50 flex items-center gap-2 border-2 border-black hover:bg-black hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px] transition-all"
     >
       {isCreating ? (
         "Creando..."

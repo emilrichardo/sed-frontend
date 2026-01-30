@@ -168,13 +168,13 @@ export default function EntriesList({ filters }: EntriesListProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-end items-center gap-4">
-        <div className="flex border-2 border-black overflow-hidden">
+        <div className="flex border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <button
             onClick={() => setViewMode("table")}
-            className={`p-2 ${
+            className={`p-2 transition-colors ${
               viewMode === "table"
-                ? "bg-accent text-accent-foreground"
-                : "bg-background"
+                ? "bg-black text-white"
+                : "bg-white text-black hover:bg-neutral-100"
             }`}
             title="Vista Tabla"
           >
@@ -182,10 +182,10 @@ export default function EntriesList({ filters }: EntriesListProps) {
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 ${
+            className={`p-2 transition-colors ${
               viewMode === "list"
-                ? "bg-accent text-accent-foreground"
-                : "bg-background"
+                ? "bg-black text-white"
+                : "bg-white text-black hover:bg-neutral-100"
             }`}
             title="Vista Lista"
           >
@@ -606,14 +606,14 @@ export default function EntriesList({ filters }: EntriesListProps) {
                                 •
                               </span>
                               <span
-                                className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${
+                                className={`text-[10px] uppercase font-bold px-1.5 py-0.5 border-2 ${
                                   entry.nivel_opacidad === "Transparente" ||
                                   (typeof entry.nivel_opacidad === "number" &&
                                     entry.nivel_opacidad < 5)
-                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    ? "bg-green-50 text-green-700 border-green-700"
                                     : entry.nivel_opacidad === "Parcial"
-                                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                      : "bg-red-50 text-red-700 border-red-200"
+                                      ? "bg-yellow-50 text-yellow-700 border-yellow-700"
+                                      : "bg-red-50 text-red-700 border-red-700"
                                 }`}
                               >
                                 {typeof entry.nivel_opacidad === "number"
@@ -694,14 +694,14 @@ export default function EntriesList({ filters }: EntriesListProps) {
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Mostrando {entries?.docs.length} de {entries?.totalDocs} actos
             </p>
             <div className="flex gap-2">
               <button
                 disabled={!entries?.hasPrevPage}
                 onClick={() => setPage((p) => p - 1)}
-                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors"
+                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
                 title="Página Anterior"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -712,7 +712,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
               <button
                 disabled={!entries?.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
-                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors"
+                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
                 title="Página Siguiente"
               >
                 <ChevronRight className="h-4 w-4" />

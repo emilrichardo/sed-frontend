@@ -15,14 +15,14 @@ export function Card({ title, description, date, href, className }: CardProps) {
     <Link
       href={href}
       className={cn(
-        "block group border border-border p-6 hover:bg-muted/50 transition-colors",
-        className
+        "block group border-2 border-black p-6 bg-card transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none",
+        className,
       )}
     >
       <div className="flex flex-col h-full justify-between">
         <div>
           {date && (
-            <time className="text-xs text-muted-foreground font-mono mb-2 block">
+            <time className="text-xs text-muted-foreground font-mono mb-2 block font-bold uppercase tracking-wide">
               {new Date(date).toLocaleDateString("es-CL", {
                 year: "numeric",
                 month: "long",
@@ -30,16 +30,16 @@ export function Card({ title, description, date, href, className }: CardProps) {
               })}
             </time>
           )}
-          <h3 className="text-lg font-medium group-hover:underline decoration-1 underline-offset-4 mb-2">
+          <h3 className="text-lg font-bold uppercase tracking-tight group-hover:underline decoration-2 underline-offset-4 mb-2">
             {title}
           </h3>
           {description && (
-            <p className="text-muted-foreground text-sm line-clamp-3">
+            <p className="text-muted-foreground text-sm line-clamp-3 font-sans font-medium">
               {description}
             </p>
           )}
         </div>
-        <div className="mt-4 flex items-center text-sm font-medium">
+        <div className="mt-4 flex items-center text-sm font-bold uppercase tracking-wider">
           Leer más
           <svg
             className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"

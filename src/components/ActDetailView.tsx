@@ -124,7 +124,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
 
             {/* Resume / Summary */}
             {entry.resumen && (
-              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-serif border-l-4 border-primary/20 pl-4 py-1">
+              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-sans border-l-4 border-primary/20 pl-4 py-1">
                 {entry.resumen}
               </p>
             )}
@@ -137,7 +137,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                 <PenTool className="h-5 w-5" />
                 Análisis Periodístico
               </h3>
-              <div className="prose prose-neutral dark:prose-invert max-w-none font-mono leading-relaxed text-sm">
+              <div className="prose prose-neutral dark:prose-invert max-w-none font-sans leading-relaxed text-sm">
                 <div className="whitespace-pre-wrap">
                   {entry.nota_periodistica}
                 </div>
@@ -152,7 +152,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
               Texto Oficial Completo
             </h3>
 
-            <div className="prose prose-gray md:prose-lg max-w-none text-foreground/90 font-serif">
+            <div className="prose prose-gray md:prose-lg max-w-none text-foreground/90 font-sans">
               {entry.cuerpo ? (
                 <div className="whitespace-pre-line leading-relaxed">
                   {(() => {

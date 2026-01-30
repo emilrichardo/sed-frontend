@@ -387,11 +387,11 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
   // Helper to render input based on block type
   const renderBlockInput = (block: EditableBlock, index: number) => {
     const commonClasses =
-      "w-full bg-background border border-input rounded p-2 focus:ring-2 focus:ring-primary/20 outline-none";
+      "w-full bg-background border-2 border-black p-2 focus:ring-0 outline-none font-mono shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]";
 
     if (block.type === "upload") {
       return (
-        <div className="border rounded p-2 bg-muted/20">
+        <div className="border-2 border-black p-2 bg-muted/20">
           <div className="text-xs text-muted-foreground mb-2">
             Imagen: {block.value?.filename}
           </div>
@@ -399,7 +399,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
             <img
               src={block.value.url}
               alt={block.value.alt || "Imagen subida"}
-              className="max-h-64 rounded object-contain"
+              className="max-h-64 object-contain border-2 border-black"
             />
           )}
         </div>
@@ -497,21 +497,21 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
   if (isEditing && user) {
     return (
       <div className="space-y-8">
-        <div className="bg-muted/30 p-6 rounded-lg border border-dashed border-border">
+        <div className="bg-muted/30 p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold">Editor de Contenido</h2>
             <div className="flex gap-2">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="bg-red-500 text-white px-4 py-2 rounded font-medium hover:bg-red-600 disabled:opacity-50 text-sm"
+                className="bg-red-500 text-white px-4 py-2 font-bold uppercase disabled:opacity-50 text-xs border-2 border-black hover:bg-red-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
               >
                 {isDeleting ? "Eliminando..." : "Eliminar Noticia"}
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded font-medium hover:opacity-90 disabled:opacity-50 text-sm"
+                className="bg-primary text-primary-foreground px-4 py-2 font-bold uppercase hover:opacity-90 disabled:opacity-50 text-xs border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
               >
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </button>
@@ -527,7 +527,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-2xl font-bold bg-background border border-input rounded p-3 focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full text-2xl font-bold bg-background border-2 border-black p-3 focus:ring-0 outline-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
               />
             </div>
 
@@ -538,14 +538,14 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
               {blocks.map((block, index) => (
                 <div
                   key={block.id}
-                  className="group relative flex gap-2 items-start bg-background p-2 rounded border border-transparent hover:border-border/50 transition-colors"
+                  className="group relative flex gap-2 items-start bg-background p-2 border-2 border-transparent hover:border-black transition-colors"
                 >
                   {/* Reorder Controls */}
                   <div className="flex flex-col gap-1 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => moveBlock(index, "up")}
                       disabled={index === 0}
-                      className="p-1 hover:bg-muted rounded disabled:opacity-30"
+                      className="p-1 hover:bg-black hover:text-white disabled:opacity-30 border-2 border-transparent hover:border-black"
                       title="Mover arriba"
                     >
                       <svg
@@ -565,7 +565,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
                     <button
                       onClick={() => moveBlock(index, "down")}
                       disabled={index === blocks.length - 1}
-                      className="p-1 hover:bg-muted rounded disabled:opacity-30"
+                      className="p-1 hover:bg-black hover:text-white disabled:opacity-30 border-2 border-transparent hover:border-black"
                       title="Mover abajo"
                     >
                       <svg
@@ -588,7 +588,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
 
                   <button
                     onClick={() => removeBlock(index)}
-                    className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-500 hover:text-white transition-all border-2 border-transparent hover:border-black"
                     title="Eliminar bloque"
                   >
                     <svg
@@ -649,7 +649,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
                     key={block.id}
                     src={block.value.url}
                     alt={block.value.alt || ""}
-                    className="rounded-lg"
+                    className="border-2 border-black"
                   />
                 ) : null;
               }
@@ -693,7 +693,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
         )}
       </header>
 
-      <div className="prose prose-neutral max-w-none">
+      <div className="prose prose-neutral max-w-none font-sans">
         {data.contenido?.root?.children ? (
           <RichTextParser content={data.contenido.root.children} />
         ) : (
