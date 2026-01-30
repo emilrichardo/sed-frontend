@@ -69,7 +69,7 @@ export default function BulletinEntriesLoader({
     return (
       <div className="text-center py-12 border-2 border-red-600 bg-red-50 text-red-600">
         <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-        <p className="font-bold uppercase tracking-wider">
+        <p className="font-bold uppercase tracking-normal">
           Error al cargar actos
         </p>
         <p className="text-sm opacity-80 font-mono">{error}</p>
@@ -106,7 +106,7 @@ export default function BulletinEntriesLoader({
 
         {journalistActs.length === 0 ? (
           <div className="text-center py-12 px-4 bg-muted/20 border-2 border-dashed border-muted-foreground/30">
-            <h3 className="text-lg font-bold uppercase tracking-wide text-muted-foreground">
+            <h3 className="text-lg font-bold uppercase tracking-normal text-muted-foreground">
               No hay análisis periodísticos disponibles.
             </h3>
             <p className="text-sm text-muted-foreground/70 mt-2 font-mono">
@@ -131,18 +131,18 @@ export default function BulletinEntriesLoader({
                 >
                   <article
                     className={cn(
-                      "p-6 md:p-8 border-2 border-black bg-card text-card-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-y-[2px] hover:shadow-black/50",
-                      act.destacado && "border-l-[6px] border-l-black",
+                      "p-6 md:p-8 border border-black bg-card text-card-foreground shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-y-[1px] hover:shadow-black/50",
+                      act.destacado && "border-l-[4px] border-l-black",
                     )}
                   >
                     <div className="space-y-4">
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-normal text-muted-foreground">
                         {act.destacado && (
                           <span className="bg-black text-white px-2 py-0.5 border border-black flex items-center gap-1">
                             DESTACADO
                           </span>
                         )}
-                        <span className="bg-white border-2 border-black text-black px-2 py-0.5">
+                        <span className="bg-white border border-black text-black px-2 py-0.5">
                           {act.seccion}
                         </span>
                       </div>
@@ -177,7 +177,7 @@ export default function BulletinEntriesLoader({
       </div>
 
       {/* Right Column: Official List (40% on Desktop) */}
-      <aside className="w-full lg:w-[40%] space-y-8 lg:border-l lg:pl-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto custom-scrollbar">
+      <aside className="w-full lg:w-[40%] space-y-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto custom-scrollbar">
         <div className="flex items-center gap-2 pb-4 sticky top-0 bg-background/95 backdrop-blur z-10 pt-2">
           <FileText className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-xl font-bold tracking-tight">Lista Oficial</h2>

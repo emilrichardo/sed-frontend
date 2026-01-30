@@ -387,11 +387,11 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
   // Helper to render input based on block type
   const renderBlockInput = (block: EditableBlock, index: number) => {
     const commonClasses =
-      "w-full bg-background border-2 border-black p-2 focus:ring-0 outline-none font-mono shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]";
+      "w-full bg-background border border-black p-2 focus:ring-0 outline-none font-mono shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]";
 
     if (block.type === "upload") {
       return (
-        <div className="border-2 border-black p-2 bg-muted/20">
+        <div className="border border-black p-2 bg-muted/20">
           <div className="text-xs text-muted-foreground mb-2">
             Imagen: {block.value?.filename}
           </div>
@@ -399,7 +399,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
             <img
               src={block.value.url}
               alt={block.value.alt || "Imagen subida"}
-              className="max-h-64 object-contain border-2 border-black"
+              className="max-h-64 object-contain border border-black"
             />
           )}
         </div>
@@ -497,21 +497,21 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
   if (isEditing && user) {
     return (
       <div className="space-y-8">
-        <div className="bg-muted/30 p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-muted/30 p-6 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold">Editor de Contenido</h2>
             <div className="flex gap-2">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="bg-red-500 text-white px-4 py-2 font-bold uppercase disabled:opacity-50 text-xs border-2 border-black hover:bg-red-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
+                className="bg-red-500 text-white px-4 py-2 font-bold uppercase disabled:opacity-50 text-xs border border-black hover:bg-red-600 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
               >
                 {isDeleting ? "Eliminando..." : "Eliminar Noticia"}
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-primary text-primary-foreground px-4 py-2 font-bold uppercase hover:opacity-90 disabled:opacity-50 text-xs border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
+                className="bg-primary text-primary-foreground px-4 py-2 font-bold uppercase hover:opacity-90 disabled:opacity-50 text-xs border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
               >
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </button>
@@ -520,19 +520,19 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium mb-1 text-muted-foreground uppercase tracking-wider">
+              <label className="block text-xs font-medium mb-1 text-muted-foreground uppercase tracking-normal">
                 Título
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-2xl font-bold bg-background border-2 border-black p-3 focus:ring-0 outline-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full text-2xl font-bold bg-background border border-black p-3 focus:ring-0 outline-none shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
               />
             </div>
 
             <div className="space-y-4">
-              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-normal">
                 Cuerpo
               </label>
               {blocks.map((block, index) => (
@@ -649,7 +649,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
                     key={block.id}
                     src={block.value.url}
                     alt={block.value.alt || ""}
-                    className="border-2 border-black"
+                    className="border border-black"
                   />
                 ) : null;
               }

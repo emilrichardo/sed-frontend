@@ -129,7 +129,7 @@ export default function BulletinHighlightsSlider({
                 <div className="p-6 flex flex-col h-full gap-4 relative z-10">
                   {/* Header: Section & Opacity */}
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold uppercase tracking-normal">
                       {act.seccion}
                     </span>
                     {act.nivel_opacidad && (

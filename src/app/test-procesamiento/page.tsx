@@ -97,7 +97,7 @@ export default function TestProcesamientoPage() {
                 >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider">
+                      <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-normal">
                         Boletín
                       </span>
                       <span className="text-xs text-muted-foreground font-mono">

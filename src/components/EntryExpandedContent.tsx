@@ -56,31 +56,10 @@ export default function EntryExpandedContent({
 
   return (
     <div className="mt-4 pt-4 border-t space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-      {/* Journalistic Content Highlighting */}
-      {(entry.titulo_periodistico || entry.nota_periodistica) && (
-        <div className="bg-blue-50/50 dark:bg-blue-900/10 p-5 rounded-lg border border-blue-100 dark:border-blue-900/20 space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 uppercase tracking-wide">
-              Análisis Periodístico
-            </span>
-          </div>
-          {entry.titulo_periodistico && (
-            <h3 className="text-xl font-bold leading-tight text-blue-950 dark:text-blue-100">
-              {entry.titulo_periodistico}
-            </h3>
-          )}
-          {entry.nota_periodistica && (
-            <div className="prose prose-sm prose-blue dark:prose-invert max-w-none text-muted-foreground">
-              <p>{entry.nota_periodistica}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Metadata Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
+      {/* Metadata Grid - More subtle, no boxes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-1">
+          <span className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block">
             Identificador
           </span>
           <span className="text-sm font-mono font-bold text-wrap break-all">
@@ -88,8 +67,8 @@ export default function EntryExpandedContent({
           </span>
         </div>
         {entry.lugar_fecha && (
-          <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block">
               Lugar y Fecha
             </span>
             <span className="text-sm font-medium italic">
@@ -98,24 +77,24 @@ export default function EntryExpandedContent({
           </div>
         )}
         {entry.resolucion && (
-          <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block">
               Resolución
             </span>
             <span className="text-sm font-medium">{entry.resolucion}</span>
           </div>
         )}
         {entry.paginas && (
-          <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block">
               Páginas
             </span>
             <span className="text-sm font-medium">{entry.paginas}</span>
           </div>
         )}
         {entry.es_homologacion && (
-          <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-            <span className="text-[10px] uppercase tracking-wider text-green-700 font-bold block mb-1">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase tracking-normal text-green-700 font-bold block">
               Estado
             </span>
             <span className="text-sm font-bold text-green-800 flex items-center gap-1">
@@ -124,8 +103,8 @@ export default function EntryExpandedContent({
           </div>
         )}
         {entry.id_acto_referenciado && (
-          <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block">
               Acto Referenciado
             </span>
             <span className="text-sm font-mono">
@@ -134,8 +113,8 @@ export default function EntryExpandedContent({
           </div>
         )}
         {entry.nivel_opacidad !== undefined && (
-          <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block">
               Opacidad
             </span>
             <span
@@ -158,20 +137,17 @@ export default function EntryExpandedContent({
         )}
       </div>
 
-      {/* Full Text / Cuerpo */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-bold flex items-center gap-2 text-muted-foreground uppercase tracking-widest">
+      {/* Full Text / Cuerpo - Subtle */}
+      <div className="space-y-4 pt-4 border-t border-dashed">
+        <h4 className="text-xs font-bold flex items-center gap-2 text-muted-foreground uppercase tracking-normal">
           <FileText className="h-3 w-3" />
           Cuerpo / Texto Completo
         </h4>
-        <div className="bg-card p-6 border rounded-lg font-serif text-sm leading-relaxed shadow-inner">
+        <div className="font-serif text-sm leading-relaxed p-0">
           {entry.cuerpo ? (
-            <div className="whitespace-pre-line">
+            <div className="whitespace-pre-line text-foreground/90">
               {(() => {
-                // Fix line breaks: replace single newlines with space, keep double newlines
-                // This handles text that was hard-wrapped in OCR/PDF extraction
                 const text = entry.cuerpo;
-                // Replace single \n that are NOT preceded or followed by another \n
                 return text.replace(/(?<!\n)\n(?!\n)/g, " ");
               })()}
             </div>

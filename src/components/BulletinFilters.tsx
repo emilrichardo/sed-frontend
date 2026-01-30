@@ -95,12 +95,12 @@ export default function BulletinFilters({
   };
 
   return (
-    <div className="border-2 border-black bg-card shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+    <div className="border border-black bg-card shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
       <div
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center gap-2 font-bold uppercase tracking-wider">
+        <div className="flex items-center gap-2 font-bold uppercase tracking-normal">
           <Filter className="h-4 w-4" />
           <span>Filtros Avanzados</span>
         </div>
@@ -138,7 +138,7 @@ export default function BulletinFilters({
           <div className="h-0.5 bg-black mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="space-y-1.5 lg:col-span-1">
-              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
                 Buscar
               </label>
               <div className="relative">
@@ -148,19 +148,19 @@ export default function BulletinFilters({
                   placeholder="Nº de acto, referencia..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+                  className="w-full pl-9 p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
                 Sección
               </label>
               <select
                 value={selectedSeccion}
                 onChange={(e) => setSelectedSeccion(e.target.value)}
-                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               >
                 <option value="">Todas</option>
                 {secciones.map((s) => (
@@ -172,13 +172,13 @@ export default function BulletinFilters({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
                 Tipo de Acto
               </label>
               <select
                 value={selectedTipoActo}
                 onChange={(e) => setSelectedTipoActo(e.target.value)}
-                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               >
                 <option value="">Todos</option>
                 {tiposActo.map((t) => (
@@ -190,13 +190,13 @@ export default function BulletinFilters({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
                 Jurisdicción
               </label>
               <select
                 value={selectedOrganismo}
                 onChange={(e) => setSelectedOrganismo(e.target.value)}
-                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               >
                 <option value="">Todas</option>
                 {organismos.map((o) => (
@@ -208,26 +208,26 @@ export default function BulletinFilters({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
                 Desde
               </label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
                 Hasta
               </label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full p-2 border-2 border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
               />
             </div>
           </div>

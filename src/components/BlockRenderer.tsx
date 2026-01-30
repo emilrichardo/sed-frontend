@@ -133,7 +133,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
                 key={id || index}
                 className="border border-dashed border-border p-4 rounded-sm bg-muted/30"
               >
-                <p className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">
+                <p className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-normal">
                   Block: {blockType}
                 </p>
                 <pre className="text-xs overflow-x-auto p-2 bg-muted rounded-sm">

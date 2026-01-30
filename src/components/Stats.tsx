@@ -125,7 +125,7 @@ export function Stats() {
         return (
           <div
             key={idx}
-            className="bg-card border-2 border-black p-4 flex flex-col items-center justify-center text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] transition-all"
+            className="bg-card border border-black p-4 flex flex-col items-center justify-center text-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] transition-all"
           >
             <Icon className={`w-6 h-6 mb-2 ${stat.color}`} />
             <span className="text-2xl font-bold font-mono tracking-tighter">
@@ -137,7 +137,7 @@ export function Stats() {
                 stat.value
               )}
             </span>
-            <span className="text-[10px] uppercase font-bold text-muted-foreground mt-1 tracking-wider leading-tight">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground mt-1 tracking-normal leading-tight">
               {stat.label}
             </span>
           </div>

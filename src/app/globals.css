@@ -76,12 +76,12 @@
   --radius-lg: var(--radius);
   --radius-xl: var(--radius);
 
-  /* Override Shadows for Brutalism */
-  --shadow-sm: 2px 2px 0px 0px rgba(0, 0, 0, 1);
-  --shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
-  --shadow-md: 6px 6px 0px 0px rgba(0, 0, 0, 1);
-  --shadow-lg: 8px 8px 0px 0px rgba(0, 0, 0, 1);
-  --shadow-xl: 12px 12px 0px 0px rgba(0, 0, 0, 1);
+  /* Override Shadows for Brutalism - More subtle */
+  --shadow-sm: 1px 1px 0px 0px rgba(0, 0, 0, 1);
+  --shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-md: 3px 3px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-lg: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-xl: 6px 6px 0px 0px rgba(0, 0, 0, 1);
 }
 
 body {
@@ -110,7 +110,7 @@ body {
   }
 
   /* Make all borders thicker by default in key components if needed, or stick to utility classes.
-     For 'brutalist', explicit bold borders are key. */
+     For 'brutalist', explicit bold borders are key. Now more subtle. */
   .border,
   .border-t,
   .border-b,
@@ -118,7 +118,7 @@ body {
   .border-r,
   .border-x,
   .border-y {
-    border-width: 2px;
+    border-width: 1px;
   }
 
   /* Buttons: Bold, square, hard shadow on hover */
@@ -129,24 +129,23 @@ body {
   /* Cards */
   .card,
   [class*="bg-card"] {
-    @apply border-2 shadow shadow-black;
+    @apply border shadow shadow-black;
   }
 }
 
-/* Minimalist scrollbar */
+/* Subtle scrollbar */
 ::-webkit-scrollbar {
-  width: 12px;
-  background: var(--background);
-  border-left: 2px solid var(--border);
+  width: 8px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--foreground);
-  border: 2px solid var(--background);
+  background: oklch(0.8 0 0);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: oklch(0.6 0 0);
 }
 
 .dark {

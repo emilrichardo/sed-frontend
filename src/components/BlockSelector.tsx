@@ -76,7 +76,7 @@ export const BlockSelector: React.FC<BlockSelectorProps> = ({
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 w-64 bg-popover text-popover-foreground rounded-lg shadow-xl border border-border z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="max-h-80 overflow-y-auto py-2">
-            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-normal">
               Texto
             </div>
             <MenuItem
@@ -91,7 +91,7 @@ export const BlockSelector: React.FC<BlockSelectorProps> = ({
             />
 
             <div className="my-1 border-t border-border/50" />
-            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-normal">
               Headings
             </div>
             <MenuItem
@@ -126,7 +126,7 @@ export const BlockSelector: React.FC<BlockSelectorProps> = ({
             />
 
             <div className="my-1 border-t border-border/50" />
-            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-normal">
               Listas
             </div>
             <MenuItem
@@ -146,7 +146,7 @@ export const BlockSelector: React.FC<BlockSelectorProps> = ({
             />
 
             <div className="my-1 border-t border-border/50" />
-            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-normal">
               Media
             </div>
             <MenuItem
@@ -156,7 +156,7 @@ export const BlockSelector: React.FC<BlockSelectorProps> = ({
             />
 
             <div className="my-1 border-t border-border/50" />
-            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-normal">
               Basic
             </div>
             <MenuItem

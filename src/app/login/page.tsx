@@ -63,7 +63,7 @@ function LoginContent() {
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-md p-8 border-2 border-black bg-card shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="w-full max-w-md p-8 border border-black bg-card shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <h1 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h1>
 
         {isExpired && !error && (
@@ -88,7 +88,7 @@ function LoginContent() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border-2 border-black bg-background focus:outline-none focus:ring-0 focus:border-black/50 font-mono placeholder:text-muted-foreground/50"
+              className="w-full p-2 border border-black bg-background focus:outline-none focus:ring-0 focus:border-black/50 font-mono placeholder:text-muted-foreground/50"
               placeholder="admin@ejemplo.com"
               required
             />
@@ -106,7 +106,7 @@ function LoginContent() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border-2 border-black bg-background focus:outline-none focus:ring-0 focus:border-black/50 font-mono placeholder:text-muted-foreground/50"
+              className="w-full p-2 border border-black bg-background focus:outline-none focus:ring-0 focus:border-black/50 font-mono placeholder:text-muted-foreground/50"
               placeholder="••••••••"
               required
             />
@@ -115,7 +115,7 @@ function LoginContent() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white font-bold uppercase tracking-wider py-2 hover:bg-black/80 transition-opacity disabled:opacity-50 border-2 border-transparent"
+            className="w-full bg-black text-white font-bold uppercase tracking-normal py-2 hover:bg-black/80 transition-opacity disabled:opacity-50 border-2 border-transparent"
           >
             {loading ? "Cargando..." : "Ingresar"}
           </button>

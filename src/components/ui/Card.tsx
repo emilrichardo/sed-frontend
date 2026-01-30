@@ -15,14 +15,14 @@ export function Card({ title, description, date, href, className }: CardProps) {
     <Link
       href={href}
       className={cn(
-        "block group border-2 border-black p-6 bg-card transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none",
+        "block group border border-black p-6 bg-card transition-all shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none",
         className,
       )}
     >
       <div className="flex flex-col h-full justify-between">
         <div>
           {date && (
-            <time className="text-xs text-muted-foreground font-mono mb-2 block font-bold uppercase tracking-wide">
+            <time className="text-xs text-muted-foreground font-mono mb-2 block font-bold uppercase tracking-normal">
               {new Date(date).toLocaleDateString("es-CL", {
                 year: "numeric",
                 month: "long",
@@ -39,7 +39,7 @@ export function Card({ title, description, date, href, className }: CardProps) {
             </p>
           )}
         </div>
-        <div className="mt-4 flex items-center text-sm font-bold uppercase tracking-wider">
+        <div className="mt-4 flex items-center text-sm font-bold uppercase tracking-normal">
           Leer más
           <svg
             className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"

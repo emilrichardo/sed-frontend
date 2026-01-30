@@ -168,7 +168,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-end items-center gap-4">
-        <div className="flex border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="flex border border-black overflow-hidden shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
           <button
             onClick={() => setViewMode("table")}
             className={`p-2 transition-colors ${
@@ -195,7 +195,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
       </div>
 
       {isEditing && (
-        <div className="bg-muted/30 p-4 flex items-center justify-between border-2 border-black">
+        <div className="bg-muted/30 p-4 flex items-center justify-between border border-black">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Checkbox
@@ -287,12 +287,12 @@ export default function EntriesList({ filters }: EntriesListProps) {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin h-8 w-8 border-b-2 border-black"></div>
+          <div className="animate-spin h-8 w-8 border-b border-black"></div>
         </div>
       ) : (
         <>
           {viewMode === "table" ? (
-            <div className="border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="border border-black overflow-hidden shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
                   <tr>
@@ -557,7 +557,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                   <div
                     key={entry.id}
                     className={cn(
-                      "p-4 border-2 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-black/50",
+                      "p-4 border-2 transition-all shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-black/50",
                       expandedEntryId === entry.id
                         ? "border-black bg-muted shadow-none"
                         : "bg-card border-black",
@@ -587,7 +587,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                               />
                             </div>
                           )}
-                          <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                          <span className="text-xs font-bold uppercase tracking-normal text-primary">
                             {entry.seccion || "Sección"}
                           </span>
                           <span className="text-muted-foreground text-[10px]">
@@ -634,7 +634,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                         <div className="flex flex-col gap-1 mb-2">
                           {entry.titulo_periodistico && (
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 border border-black bg-white text-black uppercase tracking-wide">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 border border-black bg-white text-black uppercase tracking-normal">
                                 Periodístico
                               </span>
                               {entry.titulo && (
@@ -683,7 +683,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                 );
               })}
               {entries?.docs.length === 0 && (
-                <div className="text-center py-12 border-2 border-black border-dashed">
+                <div className="text-center py-12 border border-black border-dashed">
                   <p className="text-muted-foreground font-mono uppercase">
                     No se encontraron actos administrativos.
                   </p>
@@ -694,14 +694,14 @@ export default function EntriesList({ filters }: EntriesListProps) {
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
               Mostrando {entries?.docs.length} de {entries?.totalDocs} actos
             </p>
             <div className="flex gap-2">
               <button
                 disabled={!entries?.hasPrevPage}
                 onClick={() => setPage((p) => p - 1)}
-                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
+                className="p-2 border border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
                 title="Página Anterior"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -712,7 +712,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
               <button
                 disabled={!entries?.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
-                className="p-2 border-2 border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
+                className="p-2 border border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
                 title="Página Siguiente"
               >
                 <ChevronRight className="h-4 w-4" />

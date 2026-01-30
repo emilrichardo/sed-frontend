@@ -481,7 +481,7 @@ export function ProcessingButton({
             return (
               <div
                 key={info.id || idx}
-                className="space-y-1 bg-background p-1 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                className="space-y-1 bg-background p-1 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
               >
                 <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
                   <span>
@@ -489,7 +489,7 @@ export function ProcessingButton({
                   </span>
                   <span>{percentage}%</span>
                 </div>
-                <div className="w-full bg-secondary h-3 border-2 border-black overflow-hidden relative">
+                <div className="w-full bg-secondary h-3 border border-black overflow-hidden relative">
                   <div
                     className="bg-black h-full transition-all duration-500 ease-out"
                     style={{ width: `${percentage}%` }}

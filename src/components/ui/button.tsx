@@ -29,15 +29,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap text-sm font-bold uppercase tracking-wider ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-2 border-transparent",
+          "inline-flex items-center justify-center whitespace-nowrap text-sm font-bold uppercase tracking-normal ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-2 border-transparent",
           {
-            "bg-primary text-primary-foreground hover:bg-black/80 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px]":
+            "bg-primary text-primary-foreground hover:bg-black/80 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px]":
               variant === "default",
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]":
+            "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]":
               variant === "destructive",
-            "border-2 border-black bg-background hover:bg-black hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px]":
+            "border border-black bg-background hover:bg-black hover:text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px]":
               variant === "outline",
-            "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]":
+            "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]":
               variant === "secondary",
             "hover:bg-accent hover:text-accent-foreground border-2 border-transparent hover:border-black":
               variant === "ghost",
