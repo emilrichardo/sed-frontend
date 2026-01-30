@@ -78,6 +78,10 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
           relatedId={bulletin.id}
           existingProcessingId={getExistingProcessingId()}
           requiredAgentId="5"
+          hasExistingResults={
+            bulletin.status_procesamiento === "basic" ||
+            bulletin.status_procesamiento === "ai_enhanced"
+          }
           className="bg-zinc-800 text-white hover:bg-zinc-700"
         />
         <button

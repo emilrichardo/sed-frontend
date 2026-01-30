@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Seccion, TipoActo, Organismo, getTaxonomy } from "@/lib/api";
-import { Filter, X, Search, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, X } from "lucide-react";
 
 interface BulletinFiltersProps {
-  onFilterChange: (filters: any) => void;
+  onFilterChange: (
+    filters:
+      | Record<string, unknown>
+      | ((prev: Record<string, unknown>) => Record<string, unknown>),
+  ) => void;
 }
 
 export default function BulletinFilters({
@@ -22,8 +25,6 @@ export default function BulletinFilters({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-
-  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     async function loadTaxonomies() {
@@ -59,9 +60,6 @@ export default function BulletinFilters({
     onFilterChange({
       seccion: selectedSeccion,
       tipo_acto: selectedTipoActo,
-      jurisdiccion: selectedOrganismo,
-      fecha_desde: dateFrom,
-      fecha_hasta: dateTo,
       search: searchTerm,
     });
   }, [
@@ -71,12 +69,13 @@ export default function BulletinFilters({
     dateFrom,
     dateTo,
     onFilterChange,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ]);
 
   // Debounced update for search term
   useEffect(() => {
     const timer = setTimeout(() => {
-      onFilterChange((prev: any) => ({
+      onFilterChange((prev: Record<string, unknown>) => ({
         ...prev,
         search: searchTerm,
       }));
@@ -95,143 +94,114 @@ export default function BulletinFilters({
   };
 
   return (
-    <div className="border border-black bg-card shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-      <div
-        className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2 font-bold uppercase tracking-normal">
-          <Filter className="h-4 w-4" />
-          <span>Filtros Avanzados</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClearFilters();
-            }}
-            className="text-xs text-muted-foreground hover:text-black hover:underline uppercase font-bold flex items-center gap-1"
-          >
-            <X className="h-3 w-3" />
-            Limpiar
-          </button>
-          <div
-            className={cn(
-              "p-1 border-2 border-transparent transition-transform duration-200",
-              isExpanded && "rotate-180",
-            )}
-          >
-            <ChevronDown className="h-4 w-4" />
-          </div>
+    <div className="flex flex-col xl:flex-row gap-4 items-end w-full">
+      {/* Search Input - Primary Filter */}
+      <div className="flex-1 w-full xl:w-auto min-w-[200px]">
+        <label className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1 block">
+          Buscar
+        </label>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Número, referencia..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 p-2 h-10 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+          />
         </div>
       </div>
 
-      <div
-        className={cn(
-          "grid transition-all duration-300 ease-in-out",
-          isExpanded
-            ? "grid-rows-[1fr] opacity-100 p-4 pt-0"
-            : "grid-rows-[0fr] opacity-0",
-        )}
-      >
-        <div className="overflow-hidden space-y-4">
-          <div className="h-0.5 bg-black mb-4" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div className="space-y-1.5 lg:col-span-1">
-              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
-                Buscar
-              </label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Nº de acto, referencia..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
-                Sección
-              </label>
-              <select
-                value={selectedSeccion}
-                onChange={(e) => setSelectedSeccion(e.target.value)}
-                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
-              >
-                <option value="">Todas</option>
-                {secciones.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
-                Tipo de Acto
-              </label>
-              <select
-                value={selectedTipoActo}
-                onChange={(e) => setSelectedTipoActo(e.target.value)}
-                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
-              >
-                <option value="">Todos</option>
-                {tiposActo.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
-                Jurisdicción
-              </label>
-              <select
-                value={selectedOrganismo}
-                onChange={(e) => setSelectedOrganismo(e.target.value)}
-                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
-              >
-                <option value="">Todas</option>
-                {organismos.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
-                Desde
-              </label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
-                Hasta
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full p-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
-              />
-            </div>
-          </div>
+      {/* Date Filters Group */}
+      <div className="flex gap-2 w-full xl:w-auto shrink-0">
+        <div className="space-y-1 w-1/2 xl:w-32">
+          <label className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1 block">
+            Desde
+          </label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-full p-2 h-10 border border-black bg-background text-xs focus:outline-none focus:ring-0 font-mono"
+          />
         </div>
+
+        <div className="space-y-1 w-1/2 xl:w-32">
+          <label className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1 block">
+            Hasta
+          </label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-full p-2 h-10 border border-black bg-background text-xs focus:outline-none focus:ring-0 font-mono"
+          />
+        </div>
+      </div>
+
+      {/* Select Filters Group */}
+      <div className="flex gap-2 w-full xl:w-auto shrink-0 overflow-x-auto pb-1 xl:pb-0">
+        <div className="space-y-1 min-w-[120px]">
+          <label className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1 block">
+            Sección
+          </label>
+          <select
+            value={selectedSeccion}
+            onChange={(e) => setSelectedSeccion(e.target.value)}
+            className="w-full p-2 h-10 border border-black bg-background text-xs focus:outline-none focus:ring-0 font-mono truncate"
+          >
+            <option value="">Todas</option>
+            {secciones.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1 min-w-[120px]">
+          <label className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1 block">
+            Tipo Acto
+          </label>
+          <select
+            value={selectedTipoActo}
+            onChange={(e) => setSelectedTipoActo(e.target.value)}
+            className="w-full p-2 h-10 border border-black bg-background text-xs focus:outline-none focus:ring-0 font-mono truncate"
+          >
+            <option value="">Todos</option>
+            {tiposActo.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1 min-w-[120px]">
+          <label className="text-[10px] font-bold uppercase tracking-normal text-muted-foreground mb-1 block">
+            Jurisdicción
+          </label>
+          <select
+            value={selectedOrganismo}
+            onChange={(e) => setSelectedOrganismo(e.target.value)}
+            className="w-full p-2 h-10 border border-black bg-background text-xs focus:outline-none focus:ring-0 font-mono truncate"
+          >
+            <option value="">Todas</option>
+            {organismos.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={handleClearFilters}
+          className="h-10 px-3 border border-black bg-white hover:bg-black hover:text-white transition-colors flex items-center justify-center shrink-0 mt-auto"
+          title="Limpiar filtros"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

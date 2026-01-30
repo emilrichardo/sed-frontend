@@ -167,6 +167,7 @@ export default function EntryExpandedContent({
             relatedId={entry.id}
             existingProcessingId={getExistingProcessingId()}
             requiredAgentId="6"
+            hasExistingResults={!!entry.cuerpo}
             className="h-9 px-3 text-xs"
           />
         </div>

@@ -35,7 +35,26 @@ export function LoginModal() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        const text = await res.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // If response is not JSON (e.g. 500 error page), throw
+          throw new Error(
+            res.status === 500
+              ? "Error interno del servidor (500). Es posible que necesites reiniciar el backend."
+              : `Error del servidor (${res.status}): ${text.substring(0, 50)}...`,
+          );
+        }
+      } catch (parseErr: unknown) {
+        const message =
+          parseErr instanceof Error
+            ? parseErr.message
+            : "Respuesta inválida del servidor";
+        throw new Error(message);
+      }
 
       if (res.ok && data.token && data.user) {
         // Successful login
@@ -51,9 +70,11 @@ export function LoginModal() {
           data.errors?.[0]?.message || data.message || "Credenciales inválidas";
         setError(msg);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("Error de conexión al servidor");
+      const message =
+        err instanceof Error ? err.message : "Error de conexión al servidor";
+      setError(message);
     } finally {
       setLoading(false);
     }

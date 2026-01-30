@@ -114,6 +114,10 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                               : entry.procesamiento_asociado[0].id
                             : undefined
                         }
+                        hasExistingResults={
+                          !!entry.cuerpo ||
+                          entry.status_procesamiento === "completado"
+                        }
                         className="h-7 text-xs px-3"
                       />
                     </div>

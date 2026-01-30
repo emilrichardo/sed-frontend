@@ -18,8 +18,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className={`${sourceCodePro.variable} ${inter.variable} font-mono`}>
+    <html lang="es" suppressHydrationWarning>
+      <body
+        className={`${sourceCodePro.variable} ${inter.variable} font-mono`}
+        suppressHydrationWarning
+      >
         <AuthProvider>
           <ProtectedRoute>
             <Navbar />

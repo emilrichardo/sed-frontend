@@ -136,7 +136,18 @@ export interface Boletin {
   content_type?: string;
   raw_text?: string;
   contenido_procesado?: string | null;
-  status_procesamiento?: ("unprocessed" | "basic" | "ai_enhanced") | null;
+  status_procesamiento?:
+    | (
+        | "unprocessed"
+        | "basic"
+        | "ai_enhanced"
+        | "completed"
+        | "processing"
+        | "queued"
+        | "error"
+      )
+    | null;
+  cant_actos?: number;
   procesamiento_asociado?: (string | Procesamiento)[] | null;
   createdAt: string;
   updatedAt: string;

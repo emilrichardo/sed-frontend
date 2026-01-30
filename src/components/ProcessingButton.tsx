@@ -43,6 +43,7 @@ interface ProcessingButtonProps {
   className?: string;
   pollingInterval?: number;
   requiredAgentId?: string | number;
+  hasExistingResults?: boolean;
 }
 
 interface ProgressItem {
@@ -63,9 +64,16 @@ export function ProcessingButton({
   className,
   pollingInterval = 2000,
   requiredAgentId,
+  hasExistingResults = false,
 }: ProcessingButtonProps) {
   const [status, setStatus] = useState<
-    "idle" | "creating" | "queued" | "processing" | "completed" | "error"
+    | "idle"
+    | "creating"
+    | "queued"
+    | "processing"
+    | "completed"
+    | "error"
+    | "cancelled"
   >("idle");
   const [procId, setProcId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -119,6 +127,9 @@ export function ProcessingButton({
           } else if (proc.status === "error") {
             setStatus("error");
             onStatusChange?.("error");
+          } else if (proc.status === "cancelado") {
+            setStatus("cancelled");
+            onStatusChange?.("cancelado");
           } else if (proc.status === "procesando") {
             setStatus("processing");
             onStatusChange?.("procesando");
@@ -133,6 +144,8 @@ export function ProcessingButton({
               }
               if (Array.isArray(info)) {
                 setProgressInfo(info);
+              } else if (info && typeof info === "object") {
+                setProgressInfo([info as ProgressItem]);
               }
             }
           } else if (proc.status === "en_cola") {
@@ -141,16 +154,25 @@ export function ProcessingButton({
           }
         } catch (err) {
           console.log("No existing processing found or error fetching:", err);
-          setStatus("idle");
-          onStatusChange?.("sin_procesar");
+          if (hasExistingResults) {
+            setStatus("completed");
+            onStatusChange?.("completado");
+          } else {
+            setStatus("idle");
+            onStatusChange?.("sin_procesar");
+          }
         }
+      } else if (hasExistingResults) {
+        setStatus("completed");
+        onStatusChange?.("completado");
       } else {
         onStatusChange?.("sin_procesar");
       }
       setIsInitialized(true);
     };
     fetchExistingStatus();
-  }, [existingProcessingId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingProcessingId, hasExistingResults]);
 
   const stopPolling = useCallback(() => {
     if (pollTimerRef.current) {
@@ -166,8 +188,13 @@ export function ProcessingButton({
     pollTimerRef.current = setInterval(async () => {
       try {
         const proc = await getProcesamiento(procId);
-        if (proc.status === "procesando") {
-          // console.log("Processing update debug:", proc.id, proc.status, proc.info_progreso);
+
+        // Check cancellation
+        if (proc.status === "cancelado") {
+          setStatus("cancelled");
+          onStatusChange?.("cancelado");
+          stopPolling();
+          return;
         }
 
         if (proc.status === "completado") {
@@ -197,8 +224,9 @@ export function ProcessingButton({
                 }
               }
               if (Array.isArray(info)) {
-                console.log("Setting progress info:", info);
                 setProgressInfo(info);
+              } else if (info && typeof info === "object") {
+                setProgressInfo([info as ProgressItem]);
               }
             }
           }
@@ -220,13 +248,13 @@ export function ProcessingButton({
     } else {
       stopPolling();
     }
-
     return () => stopPolling();
   }, [status, startPolling, stopPolling]);
 
   const handleStart = async () => {
     setPopoverOpen(false);
     setStatus("creating");
+    onStatusChange?.("procesando");
     setErrorMessage(null);
 
     const rawId = relatedId;
@@ -260,10 +288,7 @@ export function ProcessingButton({
         },
       };
 
-      console.log("Sending payload:", JSON.stringify(payload));
-
       const { doc } = await createProcesamiento(payload);
-      console.log("Processing created:", doc);
       setProcId(doc.id);
       setStatus("queued");
       onStatusChange?.("en_cola");
@@ -271,9 +296,7 @@ export function ProcessingButton({
       console.error("Failed to create processing:", err);
       setStatus("error");
       onStatusChange?.("error");
-      setErrorMessage(
-        "No se pudo iniciar el procesamiento. Revise la consola.",
-      );
+      setErrorMessage("No se pudo iniciar el procesamiento.");
     }
   };
 
@@ -283,14 +306,16 @@ export function ProcessingButton({
 
     try {
       await updateProcesamiento(procId, { status: "cancelado" });
-      setStatus("error");
-      setErrorMessage("Procesamiento cancelado por el usuario");
+      setStatus("cancelled");
+      setErrorMessage("Procesamiento cancelado");
       onStatusChange?.("cancelado");
       stopPolling();
     } catch (err) {
       console.error("Error clicking cancel:", err);
     }
   };
+
+  // ...
 
   const renderButtonContent = () => {
     switch (status) {
@@ -327,19 +352,38 @@ export function ProcessingButton({
           </div>
         );
       case "processing":
+        const firstProgress =
+          progressInfo && progressInfo.length > 0 ? progressInfo[0] : null;
+        const percentage =
+          firstProgress && firstProgress.totalPages > 0
+            ? Math.round(
+                (firstProgress.processedPages / firstProgress.totalPages) * 100,
+              )
+            : 0;
+
         return (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-500" />
-              Procesando...
+          <div className="flex flex-col items-center w-full min-w-[120px]">
+            <div className="flex items-center gap-2 mb-1">
+              <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+              <span className="text-[10px] font-bold uppercase">
+                {firstProgress
+                  ? `Procesando ${firstProgress.processedPages}/${firstProgress.totalPages}`
+                  : "Procesando..."}
+              </span>
+              <div
+                role="button"
+                onClick={handleCancel}
+                className="p-0.5 hover:bg-black hover:text-white text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto border border-transparent hover:border-black"
+                title="Cancelar"
+              >
+                <X className="h-3 w-3" />
+              </div>
             </div>
-            <div
-              role="button"
-              onClick={handleCancel}
-              className="p-0.5 hover:bg-black hover:text-white text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto border-2 border-transparent hover:border-black"
-              title="Cancelar"
-            >
-              <X className="h-4 w-4" />
+            <div className="w-full bg-secondary h-1.5 border border-black overflow-hidden relative">
+              <div
+                className="bg-blue-500 h-full transition-all duration-500 ease-out"
+                style={{ width: `${percentage}%` }}
+              />
             </div>
           </div>
         );
@@ -359,17 +403,29 @@ export function ProcessingButton({
             <ChevronDown className="ml-2 h-4 w-4" />
           </>
         );
+      case "cancelled":
+        return (
+          <>
+            <X className="mr-2 h-4 w-4 text-orange-500" />
+            Cancelado
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </>
+        );
     }
   };
 
   const getVariant = () => {
     if (status === "error") return "destructive";
+    if (status === "cancelled") return "secondary"; // Or destructive/outline
     if (status === "completed") return "outline";
     return "default";
   };
 
   const canOpenPopover =
-    status === "idle" || status === "error" || status === "completed";
+    status === "idle" ||
+    status === "error" ||
+    status === "completed" ||
+    status === "cancelled";
 
   if (!isInitialized) {
     return (
@@ -470,35 +526,6 @@ export function ProcessingButton({
       </Popover>
       {errorMessage && (
         <span className="text-xs text-red-500">{errorMessage}</span>
-      )}
-      {status === "processing" && progressInfo && progressInfo.length > 0 && (
-        <div className="w-full min-w-[160px] space-y-1 animate-in fade-in slide-in-from-top-1 duration-300 relative z-10 pt-1">
-          {progressInfo.map((info, idx) => {
-            const percentage =
-              info.totalPages > 0
-                ? Math.round((info.processedPages / info.totalPages) * 100)
-                : 0;
-            return (
-              <div
-                key={info.id || idx}
-                className="space-y-1 bg-background p-1 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
-              >
-                <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
-                  <span>
-                    Páginas: {info.processedPages} / {info.totalPages}
-                  </span>
-                  <span>{percentage}%</span>
-                </div>
-                <div className="w-full bg-secondary h-3 border border-black overflow-hidden relative">
-                  <div
-                    className="bg-black h-full transition-all duration-500 ease-out"
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
       )}
     </div>
   );

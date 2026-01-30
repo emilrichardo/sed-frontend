@@ -12,7 +12,6 @@ import {
 } from "@/lib/api";
 import Link from "next/link";
 import {
-  Search,
   LayoutGrid,
   List as ListIcon,
   ChevronLeft,
@@ -31,19 +30,21 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import BulletinFilters from "./BulletinFilters";
 
 interface BulletinArchiveProps {
   filters?: Record<string, unknown>;
 }
 
-export default function BulletinArchive({ filters }: BulletinArchiveProps) {
+export default function BulletinArchive({
+  filters: initialFilters,
+}: BulletinArchiveProps) {
   const [bulletins, setBulletins] = useState<PayloadResponse<Boletin> | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "list">("table");
   const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
   const { isEditing } = useAuth();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [localStatuses, setLocalStatuses] = useState<Record<string, string>>(
@@ -55,14 +56,21 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
   const [openCombobox, setOpenCombobox] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
+  // Filters State
+  const [filters, setFilters] = useState<Record<string, unknown>>(
+    initialFilters || {},
+  );
+
   const fetchAgents = async () => {
     if (agents.length > 0) return;
     setIsAgentsLoading(true);
     try {
       const agentList = await getAgents();
-      setAgents(agentList);
-      if (agentList.length > 0 && !selectedAgentId) {
-        setSelectedAgentId(agentList[0].id);
+      // Only keep "Boletín Extractor" (ID 5)
+      const filteredAgents = agentList.filter((a) => String(a.id) === "5");
+      setAgents(filteredAgents);
+      if (filteredAgents.length > 0 && !selectedAgentId) {
+        setSelectedAgentId(filteredAgents[0].id);
       }
     } catch (err) {
       console.error("Error fetching agents:", err);
@@ -120,12 +128,17 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
     async function loadBulletins() {
       setLoading(true);
       try {
+        const queryFilters = { ...filters };
+        const search = queryFilters.search as string;
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete queryFilters.search;
+
         const data = await getBulletins({
           page,
           limit: 50,
           where: {
-            ...filters,
-            ...(searchQuery ? { numero: searchQuery } : {}),
+            ...queryFilters,
+            ...(search ? { numero: search } : {}),
           },
         });
         setBulletins(data);
@@ -136,14 +149,9 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
       }
     }
     loadBulletins();
-  }, [page, filters, searchQuery]);
+  }, [page, filters]);
 
-  // Select all by default when bulletins load
-  useEffect(() => {
-    if (bulletins?.docs) {
-      setSelectedIds(new Set(bulletins.docs.map((b) => b.id)));
-    }
-  }, [bulletins?.docs]);
+  // Removed auto-select useEffect
 
   const toggleSelectAll = () => {
     if (bulletins?.docs && selectedIds.size === bulletins.docs.length) {
@@ -174,38 +182,27 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Archivo de Boletines
-        </h1>
-
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Buscar por número..."
-              className="w-full pl-9 pr-4 py-2 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      <div className="flex flex-col gap-4">
+        {/* Top Controls Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          {/* Integrated Filters (Search + Dates) */}
+          <div className="flex-1">
+            <BulletinFilters onFilterChange={setFilters} />
           </div>
 
           <div className="flex items-center gap-4">
             <Link
               href="/admin/subir-boletin"
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground border-2 border-primary hover:bg-black hover:text-white transition-colors shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[1px] font-bold text-sm uppercase tracking-normal"
+              className="flex items-center gap-2 px-4 py-2 bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all hover:translate-y-[1px] font-bold text-sm uppercase tracking-normal whitespace-nowrap"
             >
               <Upload className="w-4 h-4" />
               Cargar Boletín
             </Link>
-            <div className="flex border border-black overflow-hidden shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex border border-black overflow-hidden bg-white">
               <button
                 onClick={() => setViewMode("table")}
-                className={`p-2 ${
-                  viewMode === "table"
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-background"
+                className={`p-2 border-r border-black hover:bg-gray-100 ${
+                  viewMode === "table" ? "bg-gray-200" : "bg-white"
                 }`}
                 title="Vista Tabla"
               >
@@ -213,10 +210,8 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 ${
-                  viewMode === "list"
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-background"
+                className={`p-2 hover:bg-gray-100 ${
+                  viewMode === "list" ? "bg-gray-200" : "bg-white"
                 }`}
                 title="Vista Lista"
               >
@@ -227,7 +222,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
         </div>
       </div>
 
-      {isEditing && (
+      {isEditing && selectedIds.size > 0 && (
         <div className="bg-muted/30 p-4 flex items-center justify-between border border-black">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -250,7 +245,7 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
                   <Button
                     variant="default"
                     size="sm"
-                    className="flex items-center gap-2 bg-primary text-primary-foreground"
+                    className="flex items-center gap-2 bg-black text-white hover:bg-black/90"
                     onClick={() => {
                       setOpenCombobox(true);
                       fetchAgents();
@@ -326,151 +321,263 @@ export default function BulletinArchive({ filters }: BulletinArchiveProps) {
       ) : (
         <>
           {viewMode === "table" ? (
-            <div className="border border-black overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-white text-black font-bold uppercase tracking-normal border-b border-black text-xs">
-                  <tr>
-                    {isEditing && (
-                      <th className="px-4 py-3 w-10">
-                        <Checkbox
-                          checked={
-                            (bulletins?.docs?.length ?? 0) > 0 &&
-                            selectedIds.size === bulletins?.docs?.length
-                          }
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </th>
-                    )}
-                    <th className="px-4 py-3">Número</th>
-                    <th className="px-4 py-3">Fecha</th>
-                    <th className="px-4 py-3">Año Edición</th>
-                    <th className="px-4 py-3">Páginas</th>
-                    {isEditing && <th className="px-4 py-3">Procesamiento</th>}
-                    <th className="px-4 py-3 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {bulletins?.docs.map((b) => {
-                    // Normalize processing association which can be an array
-                    const procs = Array.isArray(b.procesamiento_asociado)
-                      ? b.procesamiento_asociado
-                      : b.procesamiento_asociado
-                        ? [b.procesamiento_asociado]
-                        : [];
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block border border-black overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-white text-black font-bold uppercase tracking-normal border-b border-black text-xs">
+                    <tr>
+                      {isEditing && (
+                        <th className="px-4 py-3 w-10">
+                          <Checkbox
+                            checked={
+                              (bulletins?.docs?.length ?? 0) > 0 &&
+                              selectedIds.size === bulletins?.docs?.length
+                            }
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </th>
+                      )}
+                      <th className="px-4 py-3">Número</th>
+                      <th className="px-4 py-3">Fecha</th>
+                      <th className="px-4 py-3">Año Edición</th>
+                      <th className="px-4 py-3">Páginas</th>
+                      <th className="px-4 py-3">Actos</th>
+                      {isEditing && (
+                        <th className="px-4 py-3">Procesamiento</th>
+                      )}
+                      <th className="px-4 py-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y relative">
+                    {bulletins?.docs.map((b) => {
+                      const procs = Array.isArray(b.procesamiento_asociado)
+                        ? b.procesamiento_asociado
+                        : b.procesamiento_asociado
+                          ? [b.procesamiento_asociado]
+                          : [];
+                      const validProcs = procs.filter(
+                        (p) => typeof p !== "string",
+                      ) as Procesamiento[];
+                      const latestProc =
+                        validProcs.length > 0
+                          ? validProcs.sort(
+                              (a, b) =>
+                                new Date(b.createdAt).getTime() -
+                                new Date(a.createdAt).getTime(),
+                            )[0]
+                          : undefined;
 
-                    // Filter and find the most relevant processing (e.g. valid object)
-                    const validProcs = procs.filter(
-                      (p) => typeof p !== "string",
-                    ) as Procesamiento[];
+                      const initialStatus = latestProc?.status;
+                      const currentStatus =
+                        localStatuses[b.id] || initialStatus;
 
-                    // Sort by createdAt descending to get true latest
-                    const latestProc =
-                      validProcs.length > 0
-                        ? validProcs.sort(
-                            (a, b) =>
-                              new Date(b.createdAt).getTime() -
-                              new Date(a.createdAt).getTime(),
-                          )[0]
-                        : undefined;
+                      const isProcessing = currentStatus === "procesando";
+                      const isQueued = currentStatus === "en_cola";
+                      const isError =
+                        currentStatus === "error" ||
+                        currentStatus === "cancelado";
 
-                    const initialStatus = latestProc?.status;
-                    const currentStatus = localStatuses[b.id] || initialStatus;
+                      const isExplicitlyCompleted = (b.cant_actos || 0) > 0;
 
-                    return (
-                      <tr
-                        key={b.id}
-                        className={cn(
-                          "hover:bg-muted/30 transition-colors",
-                          isEditing &&
-                            currentStatus === "completado" &&
-                            "bg-green-50/50 dark:bg-green-950/20",
-                          isEditing &&
-                            currentStatus === "procesando" &&
-                            "bg-blue-50/50 dark:bg-blue-950/20",
-                          isEditing &&
-                            currentStatus === "en_cola" &&
-                            "bg-amber-50/50 dark:bg-amber-950/20",
-                          isEditing &&
-                            currentStatus === "error" &&
-                            "bg-red-50/50 dark:bg-red-950/20",
-                        )}
-                      >
-                        {isEditing && (
-                          <td className="px-4 py-3">
-                            <Checkbox
-                              checked={selectedIds.has(b.id)}
-                              onCheckedChange={() => toggleSelect(b.id)}
-                            />
-                          </td>
-                        )}
-                        <td className="px-4 py-3 font-medium">{b.numero}</td>
-                        <td className="px-4 py-3">
-                          {formatDate(b.fecha_publicacion)}
-                        </td>
-                        <td className="px-4 py-3">{b.año_edicion}</td>
-                        <td className="px-4 py-3">{b.cantidad_paginas}</td>
-                        {isEditing && (
-                          <td className="px-4 py-3">
-                            <div className="flex flex-col gap-2 relative">
-                              <div className="flex flex-wrap gap-1 mb-1">
-                                {(() => {
-                                  const agentsMap = new Map<string, string>();
-                                  validProcs.forEach((p) => {
-                                    if (
-                                      p.agente &&
-                                      typeof p.agente === "object" &&
-                                      "id" in p.agente
-                                    ) {
-                                      agentsMap.set(
-                                        String(p.agente.id),
-                                        p.agente.name,
-                                      );
-                                    }
-                                  });
-
-                                  return Array.from(agentsMap.entries()).map(
-                                    ([id, name]) => (
-                                      <span
-                                        key={id}
-                                        className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-secondary text-secondary-foreground border border-black uppercase tracking-tighter"
-                                      >
-                                        {name}
-                                      </span>
-                                    ),
-                                  );
-                                })()}
-                              </div>
-
-                              <ProcessingButton
-                                relationTo="boletines"
-                                relatedId={b.id}
-                                existingProcessingId={latestProc?.id}
-                                onStatusChange={(status) => {
-                                  setLocalStatuses((prev) => ({
-                                    ...prev,
-                                    [b.id]: status,
-                                  }));
-                                }}
-                                className="scale-90 origin-left"
+                      return (
+                        <tr
+                          key={b.id}
+                          className={cn(
+                            "hover:bg-muted/30 transition-colors",
+                            isEditing &&
+                              isProcessing &&
+                              "bg-blue-50/50 dark:bg-blue-950/20",
+                            isEditing &&
+                              isQueued &&
+                              "bg-amber-50/50 dark:bg-amber-950/20",
+                            isEditing &&
+                              isError &&
+                              "bg-red-50/50 dark:bg-red-950/20",
+                            isEditing &&
+                              !isProcessing &&
+                              !isQueued &&
+                              !isError &&
+                              isExplicitlyCompleted &&
+                              "bg-green-50/50 dark:bg-green-950/20",
+                          )}
+                        >
+                          {isEditing && (
+                            <td className="px-4 py-3">
+                              <Checkbox
+                                checked={selectedIds.has(b.id)}
+                                onCheckedChange={() => toggleSelect(b.id)}
                               />
-                            </div>
+                            </td>
+                          )}
+                          <td className="px-4 py-3 font-medium">{b.numero}</td>
+                          <td className="px-4 py-3">
+                            {formatDate(b.fecha_publicacion)}
                           </td>
+                          <td className="px-4 py-3">{b.año_edicion}</td>
+                          <td className="px-4 py-3">{b.cantidad_paginas}</td>
+                          <td className="px-4 py-3">{b.cant_actos || 0}</td>
+                          {isEditing && (
+                            <td className="px-4 py-3">
+                              <div className="flex flex-col gap-2 relative">
+                                <ProcessingButton
+                                  relationTo="boletines"
+                                  relatedId={b.id}
+                                  existingProcessingId={latestProc?.id}
+                                  requiredAgentId="5"
+                                  hasExistingResults={
+                                    !isError && isExplicitlyCompleted
+                                  }
+                                  onStatusChange={(status) => {
+                                    setLocalStatuses((prev) => ({
+                                      ...prev,
+                                      [b.id]: status,
+                                    }));
+                                  }}
+                                  className="scale-90 origin-left"
+                                />
+                              </div>
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-right">
+                            <Link
+                              href={`/boletines/${b.slug}`}
+                              className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                            >
+                              Ver Detalle
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile List View (replaces table on small screens) */}
+              <div className="md:hidden space-y-4">
+                {bulletins?.docs.map((b) => {
+                  const procs = Array.isArray(b.procesamiento_asociado)
+                    ? b.procesamiento_asociado
+                    : b.procesamiento_asociado
+                      ? [b.procesamiento_asociado]
+                      : [];
+                  const validProcs = procs.filter(
+                    (p) => typeof p !== "string",
+                  ) as Procesamiento[];
+                  const latestProc =
+                    validProcs.length > 0
+                      ? validProcs.sort(
+                          (a, b) =>
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime(),
+                        )[0]
+                      : undefined;
+
+                  const initialStatus = latestProc?.status;
+                  const currentStatus = localStatuses[b.id] || initialStatus;
+
+                  const isProcessing = currentStatus === "procesando";
+                  const isQueued = currentStatus === "en_cola";
+                  const isError =
+                    currentStatus === "error" || currentStatus === "cancelado";
+
+                  const isExplicitlyCompleted = (b.cant_actos || 0) > 0;
+
+                  return (
+                    <div
+                      key={b.id}
+                      className={cn(
+                        "flex flex-col gap-3 p-4 border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-card",
+                        isEditing &&
+                          isProcessing &&
+                          "bg-blue-50/50 dark:bg-blue-950/20",
+                        isEditing &&
+                          isQueued &&
+                          "bg-amber-50/50 dark:bg-amber-950/20",
+                        isEditing &&
+                          isError &&
+                          "bg-red-50/50 dark:bg-red-950/20",
+                        isEditing &&
+                          !isProcessing &&
+                          !isQueued &&
+                          !isError &&
+                          isExplicitlyCompleted &&
+                          "bg-green-50/50 dark:bg-green-950/20",
+                      )}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-lg">#{b.numero}</span>
+                          <span className="text-xs text-muted-foreground uppercase">
+                            {formatDate(b.fecha_publicacion)}
+                          </span>
+                        </div>
+                        {isEditing && (
+                          <Checkbox
+                            checked={selectedIds.has(b.id)}
+                            onCheckedChange={() => toggleSelect(b.id)}
+                          />
                         )}
-                        <td className="px-4 py-3 text-right">
-                          <Link
-                            href={`/boletines/${b.slug}`}
-                            className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                      </div>
+
+                      <div className="flex gap-4 text-sm text-muted-foreground border-y border-dashed border-gray-300 py-2">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold uppercase">
+                            Año
+                          </span>
+                          <span>{b.año_edicion}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold uppercase">
+                            Páginas
+                          </span>
+                          <span>{b.cantidad_paginas}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold uppercase">
+                            Actos
+                          </span>
+                          <span>{b.cant_actos || 0}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 mt-1">
+                        {isEditing && (
+                          <ProcessingButton
+                            relationTo="boletines"
+                            relatedId={b.id}
+                            existingProcessingId={latestProc?.id}
+                            requiredAgentId="5"
+                            hasExistingResults={
+                              !isError && isExplicitlyCompleted
+                            }
+                            onStatusChange={(status) => {
+                              setLocalStatuses((prev) => ({
+                                ...prev,
+                                [b.id]: status,
+                              }));
+                            }}
+                            className="w-full"
+                          />
+                        )}
+                        <Link href={`/boletines/${b.slug}`} className="w-full">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-between group"
                           >
                             Ver Detalle
-                            <ChevronRight className="h-4 w-4" />
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <div className="grid gap-4">
               {bulletins?.docs.map((b) => (

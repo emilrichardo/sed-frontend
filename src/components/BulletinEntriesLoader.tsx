@@ -1,18 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getActosAdministrativos, ActoAdministrativo } from "@/lib/api";
+import {
+  getActosAdministrativos,
+  ActoAdministrativo,
+  updateBulletin,
+  Boletin,
+} from "@/lib/api";
 import BulletinEntriesBySection from "./BulletinEntriesBySection";
 import { Loader2, AlertCircle, FileText, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface BulletinEntriesLoaderProps {
-  bulletinId: string | number;
+  bulletin: Boletin;
 }
 
 export default function BulletinEntriesLoader({
-  bulletinId,
+  bulletin,
 }: BulletinEntriesLoaderProps) {
   const [entries, setEntries] = useState<ActoAdministrativo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +29,7 @@ export default function BulletinEntriesLoader({
       setError(null);
       try {
         const data = await getActosAdministrativos({
-          where: { boletin: bulletinId },
+          where: { boletin: bulletin.id },
           limit: 100,
           sort: "-createdAt",
         });
@@ -39,6 +44,23 @@ export default function BulletinEntriesLoader({
         });
 
         setEntries(sortedDocs);
+
+        // SELF-HEALING: If the actual number of acts differs from the bulletin metadata, update it.
+        // This fixes cases where cant_actos is 0 but acts exist.
+        if (
+          sortedDocs.length > 0 &&
+          (bulletin.cant_actos === 0 ||
+            bulletin.cant_actos !== sortedDocs.length)
+        ) {
+          console.log(
+            `Self-healing: Updating cant_actos for bulletin ${bulletin.numero} from ${bulletin.cant_actos} to ${sortedDocs.length}`,
+          );
+          updateBulletin(String(bulletin.id), {
+            cant_actos: sortedDocs.length,
+          }).catch((err) =>
+            console.error("Failed to update bulletin cant_actos:", err),
+          );
+        }
       } catch (err: unknown) {
         console.error("Error loading entries for bulletin:", err);
         const errorMessage =
@@ -51,10 +73,10 @@ export default function BulletinEntriesLoader({
       }
     }
 
-    if (bulletinId) {
+    if (bulletin.id) {
       loadEntries();
     }
-  }, [bulletinId]);
+  }, [bulletin]);
 
   if (loading) {
     return (

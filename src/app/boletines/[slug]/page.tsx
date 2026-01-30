@@ -16,14 +16,16 @@ export default async function BulletinDetailPage({
 
   try {
     bulletin = await getBulletin(slug);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error loading bulletin:", err);
+    const errorMessage =
+      err instanceof Error
+        ? err.message
+        : "No se pudo encontrar el boletín solicitado.";
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-bold">Error al cargar el boletín</h1>
-        <p className="text-muted-foreground mt-2">
-          {err.message || "No se pudo encontrar el boletín solicitado."}
-        </p>
+        <p className="text-muted-foreground mt-2">{errorMessage}</p>
         <Link
           href="/boletines"
           className="text-primary hover:underline mt-4 inline-block"
@@ -71,7 +73,7 @@ export default async function BulletinDetailPage({
 
       <div className="space-y-6">
         {/* Fetch entries on the client because they may require auth token from localStorage */}
-        <BulletinEntriesLoader bulletinId={bulletin.id} />
+        <BulletinEntriesLoader bulletin={bulletin} />
       </div>
     </main>
   );
