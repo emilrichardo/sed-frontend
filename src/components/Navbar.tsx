@@ -52,10 +52,10 @@ export function Navbar() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={toggleEditMode}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border-2 border-black transition-all ${
                     isEditing
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "bg-black text-white shadow-none"
+                      : "bg-white text-black hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:shadow-none"
                   }`}
                 >
                   <Edit3 className="h-3.5 w-3.5" />
@@ -89,10 +89,8 @@ export function Navbar() {
             {user && (
               <button
                 onClick={toggleEditMode}
-                className={`p-2 rounded-md transition-colors ${
-                  isEditing
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                className={`p-2 border-2 border-black transition-colors ${
+                  isEditing ? "bg-black text-white" : "bg-white text-black"
                 }`}
                 title="Toggle Edit Mode"
               >
@@ -124,10 +122,10 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className={`block px-4 py-2 text-base font-medium rounded-md transition-colors ${
+                  className={`block px-4 py-2 text-base font-bold uppercase tracking-wide border-2 border-transparent hover:border-black transition-colors ${
                     pathname === link.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-primary"
+                      ? "bg-black text-white border-black"
+                      : "text-muted-foreground hover:bg-muted hover:text-black"
                   }`}
                 >
                   {link.name}
@@ -148,7 +146,7 @@ export function Navbar() {
                       logout();
                       setIsOpen(false);
                     }}
-                    className="flex w-full items-center gap-3 py-2 text-base font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                    className="flex w-full items-center gap-3 py-2 text-base font-bold uppercase text-destructive hover:bg-destructive/10 border-2 border-transparent hover:border-destructive transition-colors"
                   >
                     <LogOut className="h-5 w-5" />
                     Cerrar Sesión
@@ -158,7 +156,7 @@ export function Navbar() {
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2 text-base font-medium text-muted-foreground hover:bg-muted hover:text-primary rounded-md transition-colors"
+                  className="flex items-center gap-3 px-4 py-2 text-base font-bold uppercase text-muted-foreground hover:bg-muted hover:text-black border-2 border-transparent hover:border-black transition-colors"
                 >
                   <LogIn className="h-5 w-5" />
                   Iniciar Sesión

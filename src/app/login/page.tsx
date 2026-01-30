@@ -63,17 +63,17 @@ function LoginContent() {
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-md p-8 border border-border rounded-lg bg-card shadow-sm">
+      <div className="w-full max-w-md p-8 border-2 border-black bg-card shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <h1 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h1>
 
         {isExpired && !error && (
-          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 p-3 rounded mb-4 text-sm text-center">
+          <div className="bg-amber-50 text-amber-900 p-3 border-2 border-amber-900 mb-4 text-sm text-center font-bold">
             Su sesión ha expirado. Por favor, ingrese de nuevo.
           </div>
         )}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded mb-4 text-sm text-center">
+          <div className="bg-red-50 text-red-900 p-3 border-2 border-red-900 mb-4 text-sm text-center font-bold">
             {error}
           </div>
         )}
@@ -88,7 +88,7 @@ function LoginContent() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full p-2 border-2 border-black bg-background focus:outline-none focus:ring-0 focus:border-black/50 font-mono placeholder:text-muted-foreground/50"
               placeholder="admin@ejemplo.com"
               required
             />
@@ -106,7 +106,7 @@ function LoginContent() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full p-2 border-2 border-black bg-background focus:outline-none focus:ring-0 focus:border-black/50 font-mono placeholder:text-muted-foreground/50"
               placeholder="••••••••"
               required
             />
@@ -115,7 +115,7 @@ function LoginContent() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-foreground text-background font-medium py-2 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full bg-black text-white font-bold uppercase tracking-wider py-2 hover:bg-black/80 transition-opacity disabled:opacity-50 border-2 border-transparent"
           >
             {loading ? "Cargando..." : "Ingresar"}
           </button>

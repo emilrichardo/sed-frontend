@@ -74,11 +74,11 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
 
                 {/* Tags row */}
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-full uppercase tracking-wide">
+                  <span className="px-2.5 py-0.5 bg-primary text-primary-foreground text-xs font-bold border-2 border-primary uppercase tracking-wide">
                     {entry.seccion}
                   </span>
                   {entry.tipo_de_acto && (
-                    <span className="px-2.5 py-0.5 bg-muted text-muted-foreground text-xs font-bold rounded-full uppercase tracking-wide">
+                    <span className="px-2.5 py-0.5 bg-muted text-muted-foreground text-xs font-bold border-2 border-transparent uppercase tracking-wide">
                       {typeof entry.tipo_de_acto === "object"
                         ? entry.tipo_de_acto.nombre
                         : "Acto"}
@@ -88,10 +88,10 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                     <button
                       onClick={toggleDestacado}
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium transition-all",
+                        "flex items-center gap-1.5 px-2.5 py-0.5 border-2 border-black text-xs font-bold transition-all hover:bg-black hover:text-white uppercase tracking-wider",
                         isDestacado
-                          ? "bg-yellow-50 border-yellow-200 text-yellow-700"
-                          : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50",
+                          ? "bg-black text-white"
+                          : "bg-white text-black",
                       )}
                     >
                       <Star
@@ -132,12 +132,12 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
 
           {/* Journalistic Note */}
           {entry.nota_periodistica && (
-            <section className="bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-900/20">
-              <h3 className="text-lg font-bold flex items-center gap-2 text-blue-900 dark:text-blue-100 mb-4">
+            <section className="bg-muted p-6 border-2 border-black">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4 uppercase tracking-tight">
                 <PenTool className="h-5 w-5" />
                 Análisis Periodístico
               </h3>
-              <div className="prose prose-blue dark:prose-invert max-w-none font-serif leading-relaxed">
+              <div className="prose prose-neutral dark:prose-invert max-w-none font-mono leading-relaxed text-sm">
                 <div className="whitespace-pre-wrap">
                   {entry.nota_periodistica}
                 </div>
@@ -175,7 +175,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
         {/* Sidebar Column */}
         <aside className="lg:col-span-4 space-y-8">
           {/* Metadata Card */}
-          <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
             <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
               <h3 className="font-semibold text-sm">Información del Acto</h3>
@@ -185,7 +185,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                 <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block mb-1">
                   Identificador
                 </label>
-                <code className="text-xs bg-muted px-2 py-1 rounded block w-full break-all font-mono">
+                <code className="text-xs bg-muted px-2 py-1 block w-full break-all font-mono border border-black/10">
                   {entry.identificador_de_acto}
                 </code>
               </div>
@@ -230,12 +230,12 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                     Nivel de Opacidad
                   </label>
                   <span
-                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${
+                    className={`inline-flex items-center px-2 py-1 text-xs font-bold border-2 ${
                       entry.nivel_opacidad === "Transparente"
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-white text-black border-black"
                         : entry.nivel_opacidad === "Parcial"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
+                          ? "bg-gray-200 text-black border-black"
+                          : "bg-black text-white border-black"
                     }`}
                   >
                     {entry.nivel_opacidad}
@@ -256,7 +256,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card rounded-xl border shadow-sm overflow-hidden mb-4">
+                    <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
                       <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm">
@@ -316,7 +316,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card rounded-xl border shadow-sm overflow-hidden mb-4">
+                    <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
                       <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm">
@@ -374,7 +374,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card rounded-xl border shadow-sm overflow-hidden mb-4">
+                    <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
                       <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm">
@@ -438,7 +438,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card rounded-xl border shadow-sm overflow-hidden mb-4">
+                    <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
                       <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <Info className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm">
@@ -473,7 +473,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
           {/* Related References Table */}
           {entry.referencias_relacionadas &&
             entry.referencias_relacionadas.length > 0 && (
-              <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+              <div className="bg-card border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                 <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                   <FileTextIcon className="h-4 w-4 text-muted-foreground" />
                   <h3 className="font-semibold text-sm">
