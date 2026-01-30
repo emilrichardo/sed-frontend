@@ -21,8 +21,18 @@ export async function POST(req: NextRequest) {
 
     // 1. Upload to Payload Media
     const mediaFormData = new FormData();
-    mediaFormData.append("file", file);
-    mediaFormData.append("alt", `Boletin N° ${itemData.numero || "Unknown"}`);
+    const numero = itemData.numero ? parseInt(String(itemData.numero)) : null;
+    const filename = numero
+      ? `${numero}.pdf`
+      : (file as File).name || "document.pdf";
+
+    if (file instanceof File) {
+      mediaFormData.append("file", file, filename);
+    } else {
+      // Fallback if it's not a File object (unlikely for file upload but TS safety)
+      mediaFormData.append("file", file);
+    }
+    mediaFormData.append("alt", `Boletin N° ${numero || "Unknown"}`);
 
     // Call Payload API (Server to Server)
     const mediaRes = await fetch(`${API_BASE_URL}/api/boletines-pdf`, {
@@ -31,16 +41,54 @@ export async function POST(req: NextRequest) {
       body: mediaFormData,
     });
 
+    let mediaId = "";
+
     if (!mediaRes.ok) {
       const txt = await mediaRes.text();
-      return NextResponse.json(
-        { error: `Falló subida de PDF: ${txt}` },
-        { status: mediaRes.status },
-      );
-    }
+      console.warn("Media Upload Failed, trying to find existing:", txt);
 
-    const mediaJson = await mediaRes.json();
-    const mediaId = mediaJson.doc?.id || mediaJson.id;
+      // Attempt to find existing file by filename to recover from 500s (e.g. duplicate file collision crashing server)
+      try {
+        const findRes = await fetch(
+          `${API_BASE_URL}/api/boletines-pdf?where[filename][equals]=${filename}`,
+          {
+            headers: authHeader ? { Authorization: authHeader } : undefined,
+          },
+        );
+
+        if (findRes.ok) {
+          const findJson = await findRes.json();
+          if (findJson.docs && findJson.docs.length > 0) {
+            mediaId = findJson.docs[0].id;
+            console.log("Found existing media, using it:", mediaId);
+          } else {
+            console.error(
+              "Media Upload Failed and Existing file NOT Found:",
+              txt,
+            );
+            return NextResponse.json(
+              { error: `Falló subida de PDF: ${txt}` },
+              { status: mediaRes.status },
+            );
+          }
+        } else {
+          console.error("Media Upload Failed and Search Failed:", txt);
+          return NextResponse.json(
+            { error: `Falló subida de PDF: ${txt}` },
+            { status: mediaRes.status },
+          );
+        }
+      } catch (searchErr) {
+        console.error("Error searching for existing file:", searchErr);
+        return NextResponse.json(
+          { error: `Falló subida de PDF y búsqueda: ${txt}` },
+          { status: mediaRes.status },
+        );
+      }
+    } else {
+      const mediaJson = await mediaRes.json();
+      mediaId = mediaJson.doc?.id || mediaJson.id;
+    }
 
     // 2. Create or Update Bulletin Entry
     // STRICT SCHEMA MAPPING based on BOLETIN_OFICIAL_PARSING.md
