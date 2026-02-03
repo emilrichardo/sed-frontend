@@ -88,10 +88,10 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                     <button
                       onClick={toggleDestacado}
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-0.5 border border-black text-xs font-bold transition-all hover:bg-black hover:text-white uppercase tracking-normal",
+                        "flex items-center gap-1.5 px-2.5 py-0.5 border text-xs font-bold transition-all hover:bg-muted hover:text-foreground uppercase tracking-normal rounded-full",
                         isDestacado
-                          ? "bg-black text-white"
-                          : "bg-white text-black",
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground",
                       )}
                     >
                       <Star
@@ -137,7 +137,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
           {/* Journalistic Note */}
           {entry.nota_periodistica && (
             <section className="bg-muted p-6">
-              <h3 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4 uppercase tracking-tight border-b border-black pb-2">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4 uppercase tracking-tight border-b pb-2">
                 <PenTool className="h-5 w-5" />
                 Análisis Periodístico
               </h3>
@@ -151,7 +151,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
 
           {/* Full Text / Cuerpo */}
           <section className="space-y-4">
-            <h3 className="text-lg font-bold flex items-center gap-2 text-foreground/80 border-b border-black pb-2 uppercase tracking-tight">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-foreground/80 border-b pb-2 uppercase tracking-tight">
               <FileTextIcon className="h-5 w-5" />
               Texto Oficial Completo
             </h3>
@@ -179,8 +179,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
         {/* Sidebar Column */}
         <aside className="lg:col-span-4 space-y-8">
           {/* Metadata Card */}
-          <div className="bg-card border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-            <div className="bg-muted/30 px-4 py-3 border-b border-black flex items-center gap-2">
+          <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
               <h3 className="font-semibold text-sm uppercase tracking-normal">
                 Información del Acto
@@ -191,7 +191,7 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                 <label className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block mb-1">
                   Identificador
                 </label>
-                <code className="text-xs bg-muted px-2 py-1 block w-full break-all font-mono border border-black/10">
+                <code className="text-xs bg-muted px-2 py-1 block w-full break-all font-mono border rounded-md">
                   {entry.identificador_de_acto}
                 </code>
               </div>
@@ -262,8 +262,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b border-black flex items-center gap-2">
+                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden mb-4">
+                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm uppercase tracking-normal">
                           Organismos Relacionados
@@ -322,8 +322,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b border-black flex items-center gap-2">
+                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden mb-4">
+                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm uppercase tracking-normal">
                           Personas Relacionadas
@@ -380,8 +380,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b border-black flex items-center gap-2">
+                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden mb-4">
+                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm uppercase tracking-normal">
                           Empresas Relacionadas
@@ -444,8 +444,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   );
                   if (!items || items.length === 0) return null;
                   return (
-                    <div className="bg-card border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-4">
-                      <div className="bg-muted/30 px-4 py-3 border-b border-black flex items-center gap-2">
+                    <div className="bg-card border rounded-lg shadow-sm overflow-hidden mb-4">
+                      <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                         <Info className="h-4 w-4 text-muted-foreground" />
                         <h3 className="font-semibold text-sm uppercase tracking-normal">
                           Otras Entidades
@@ -479,8 +479,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
           {/* Related References Table */}
           {entry.referencias_relacionadas &&
             entry.referencias_relacionadas.length > 0 && (
-              <div className="bg-card border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                <div className="bg-muted/30 px-4 py-3 border-b border-black flex items-center gap-2">
+              <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
+                <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
                   <FileTextIcon className="h-4 w-4 text-muted-foreground" />
                   <h3 className="font-semibold text-sm uppercase tracking-normal">
                     Normativa Referenciada

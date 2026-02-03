@@ -387,7 +387,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
   // Helper to render input based on block type
   const renderBlockInput = (block: EditableBlock, index: number) => {
     const commonClasses =
-      "w-full bg-background border border-black p-2 focus:ring-0 outline-none font-mono shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]";
+      "w-full bg-background border rounded-md p-2 focus:ring-2 focus:ring-ring outline-none font-sans";
 
     if (block.type === "upload") {
       return (
@@ -497,21 +497,21 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
   if (isEditing && user) {
     return (
       <div className="space-y-8">
-        <div className="bg-muted/30 p-6 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-muted/30 p-6 border rounded-lg shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold">Editor de Contenido</h2>
             <div className="flex gap-2">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="bg-red-500 text-white px-4 py-2 font-bold uppercase disabled:opacity-50 text-xs border border-black hover:bg-red-600 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
+                className="bg-destructive text-destructive-foreground px-4 py-2 font-bold uppercase rounded-md disabled:opacity-50 text-xs hover:bg-destructive/90 transition-colors shadow-sm"
               >
                 {isDeleting ? "Eliminando..." : "Eliminar Noticia"}
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-primary text-primary-foreground px-4 py-2 font-bold uppercase hover:opacity-90 disabled:opacity-50 text-xs border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[1px]"
+                className="bg-primary text-primary-foreground px-4 py-2 font-bold uppercase rounded-md hover:opacity-90 disabled:opacity-50 text-xs transition-colors shadow-sm"
               >
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </button>
@@ -527,7 +527,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-2xl font-bold bg-background border border-black p-3 focus:ring-0 outline-none shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full text-2xl font-bold bg-background border rounded-md p-3 focus:ring-2 focus:ring-ring outline-none"
               />
             </div>
 
@@ -538,7 +538,7 @@ export const NewsEditable: React.FC<NewsEditableProps> = ({ initialData }) => {
               {blocks.map((block, index) => (
                 <div
                   key={block.id}
-                  className="group relative flex gap-2 items-start bg-background p-2 border-2 border-transparent hover:border-black transition-colors"
+                  className="group relative flex gap-2 items-start bg-background p-2 border border-transparent hover:border-border rounded-md transition-colors"
                 >
                   {/* Reorder Controls */}
                   <div className="flex flex-col gap-1 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">

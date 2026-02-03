@@ -343,8 +343,11 @@ export function ProcessingButton({
             </div>
             <div
               role="button"
-              onClick={handleCancel}
-              className="p-0.5 hover:bg-black hover:text-white text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto border-2 border-transparent hover:border-black"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancel(e);
+              }}
+              className="p-0.5 hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto rounded-sm"
               title="Cancelar"
             >
               <X className="h-4 w-4" />
@@ -373,15 +376,15 @@ export function ProcessingButton({
               <div
                 role="button"
                 onClick={handleCancel}
-                className="p-0.5 hover:bg-black hover:text-white text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto border border-transparent hover:border-black"
+                className="p-0.5 hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors z-50 cursor-pointer pointer-events-auto rounded-sm"
                 title="Cancelar"
               >
                 <X className="h-3 w-3" />
               </div>
             </div>
-            <div className="w-full bg-secondary h-1.5 border border-black overflow-hidden relative">
+            <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden relative">
               <div
-                className="bg-blue-500 h-full transition-all duration-500 ease-out"
+                className="bg-primary h-full transition-all duration-500 ease-out rounded-full"
                 style={{ width: `${percentage}%` }}
               />
             </div>

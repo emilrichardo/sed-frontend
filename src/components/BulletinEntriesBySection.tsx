@@ -23,10 +23,10 @@ export default function BulletinEntriesBySection({
         {entries.map((entry) => (
           <div
             key={entry.id}
-            className={`p-4 border border-black transition-all ${
+            className={`p-4 border rounded-lg transition-all ${
               expandedEntryId === entry.id
-                ? "bg-white shadow-none"
-                : "bg-card shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:shadow-black/50"
+                ? "bg-muted/50 border-input shadow-none"
+                : "bg-card border-input shadow-sm hover:shadow-md hover:border-primary/50"
             }`}
           >
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -41,11 +41,11 @@ export default function BulletinEntriesBySection({
                       ? entry.tipo_de_acto.nombre
                       : "Acto"}
                   </span>
-                  <span className="text-[10px] bg-white border border-black px-1.5 py-0.5 text-black uppercase font-bold tracking-normal">
+                  <span className="text-[10px] bg-secondary text-secondary-foreground border border-transparent px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">
                     {entry.seccion || "Sección"}
                   </span>
                 </div>
-                <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
+                <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors font-mono">
                   {entry.identificador_de_acto}
                 </h3>
                 <p className="text-sm text-muted-foreground line-clamp-2">

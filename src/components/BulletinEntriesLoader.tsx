@@ -89,11 +89,9 @@ export default function BulletinEntriesLoader({
 
   if (error) {
     return (
-      <div className="text-center py-12 border-2 border-red-600 bg-red-50 text-red-600">
+      <div className="text-center py-12 border rounded-lg border-destructive/50 bg-destructive/10 text-destructive">
         <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-        <p className="font-bold uppercase tracking-normal">
-          Error al cargar actos
-        </p>
+        <p className="font-bold tracking-tight">Error al cargar actos</p>
         <p className="text-sm opacity-80 font-mono">{error}</p>
       </div>
     );
@@ -101,8 +99,8 @@ export default function BulletinEntriesLoader({
 
   if (entries.length === 0) {
     return (
-      <div className="text-center py-12 border-2 border-dashed border-muted-foreground/40 bg-muted/10">
-        <p className="text-muted-foreground font-mono uppercase">
+      <div className="text-center py-12 border border-dashed rounded-lg bg-muted/30">
+        <p className="text-muted-foreground font-medium uppercase text-sm">
           No hay actos registrados para este boletín.
         </p>
       </div>
@@ -153,28 +151,28 @@ export default function BulletinEntriesLoader({
                 >
                   <article
                     className={cn(
-                      "p-6 md:p-8 border border-black bg-card text-card-foreground shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-y-[1px] hover:shadow-black/50",
-                      act.destacado && "border-l-[4px] border-l-black",
+                      "p-6 md:p-8 border rounded-lg bg-card text-card-foreground shadow-sm transition-all hover:shadow-md",
+                      act.destacado && "ring-1 ring-primary/20 bg-primary/5",
                     )}
                   >
                     <div className="space-y-4">
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-normal text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         {act.destacado && (
-                          <span className="bg-black text-white px-2 py-0.5 border border-black flex items-center gap-1">
+                          <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full flex items-center gap-1 text-[10px]">
                             DESTACADO
                           </span>
                         )}
-                        <span className="bg-white border border-black text-black px-2 py-0.5">
+                        <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full text-[10px]">
                           {act.seccion}
                         </span>
                       </div>
 
-                      <h2 className="text-2xl md:text-3xl font-bold leading-tight group-hover:text-primary transition-colors">
+                      <h2 className="text-2xl md:text-3xl font-bold leading-tight group-hover:text-primary transition-colors font-mono">
                         {act.titulo_periodistico || act.identificador_de_acto}
                       </h2>
 
                       {act.resumen ? (
-                        <p className="text-lg text-muted-foreground line-clamp-3 leading-relaxed">
+                        <p className="text-lg text-muted-foreground line-clamp-3 leading-relaxed font-sans">
                           {act.resumen}
                         </p>
                       ) : (
@@ -205,7 +203,7 @@ export default function BulletinEntriesLoader({
           <h2 className="text-xl font-bold tracking-tight">Lista Oficial</h2>
         </div>
 
-        <div className="bg-muted/10 p-1 border-2 border-transparent">
+        <div className="bg-muted/10 p-1 rounded-lg">
           <BulletinEntriesBySection entries={entries} />
         </div>
       </aside>

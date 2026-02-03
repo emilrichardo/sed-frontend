@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${sourceCodePro.variable} ${inter.variable} font-mono`}
+        className={`${sourceCodePro.variable} ${inter.variable} font-sans`}
         suppressHydrationWarning
       >
         <AuthProvider>

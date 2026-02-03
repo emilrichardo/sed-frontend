@@ -184,7 +184,8 @@ export default function BulletinArchive({
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
         {/* Top Controls Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        {/* Top Controls Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border bg-white rounded-lg shadow-sm">
           {/* Integrated Filters (Search + Dates) */}
           <div className="flex-1">
             <BulletinFilters onFilterChange={setFilters} />
@@ -193,15 +194,15 @@ export default function BulletinArchive({
           <div className="flex items-center gap-4">
             <Link
               href="/admin/subir-boletin"
-              className="flex items-center gap-2 px-4 py-2 bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all hover:translate-y-[1px] font-bold text-sm uppercase tracking-normal whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 transition-all rounded-md shadow-sm font-bold text-sm tracking-normal whitespace-nowrap"
             >
               <Upload className="w-4 h-4" />
               Cargar Boletín
             </Link>
-            <div className="flex border border-black overflow-hidden bg-white">
+            <div className="flex border rounded-md overflow-hidden bg-white">
               <button
                 onClick={() => setViewMode("table")}
-                className={`p-2 border-r border-black hover:bg-gray-100 ${
+                className={`p-2 border-r hover:bg-gray-100 ${
                   viewMode === "table" ? "bg-gray-200" : "bg-white"
                 }`}
                 title="Vista Tabla"
@@ -223,7 +224,7 @@ export default function BulletinArchive({
       </div>
 
       {isEditing && selectedIds.size > 0 && (
-        <div className="bg-muted/30 p-4 flex items-center justify-between border border-black">
+        <div className="bg-muted/30 p-4 flex items-center justify-between border rounded-lg">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Checkbox
@@ -323,9 +324,9 @@ export default function BulletinArchive({
           {viewMode === "table" ? (
             <>
               {/* Desktop Table View */}
-              <div className="hidden md:block border border-black overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <div className="hidden md:block border rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-white text-black font-bold uppercase tracking-normal border-b border-black text-xs">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium text-xs border-b">
                     <tr>
                       {isEditing && (
                         <th className="px-4 py-3 w-10">
@@ -489,7 +490,7 @@ export default function BulletinArchive({
                     <div
                       key={b.id}
                       className={cn(
-                        "flex flex-col gap-3 p-4 border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-card",
+                        "flex flex-col gap-3 p-4 border rounded-lg shadow-sm bg-card",
                         isEditing &&
                           isProcessing &&
                           "bg-blue-50/50 dark:bg-blue-950/20",
@@ -584,7 +585,7 @@ export default function BulletinArchive({
                 <Link
                   key={b.id}
                   href={`/boletines/${b.slug}`}
-                  className="block p-4 border border-black hover:bg-muted transition-all bg-card shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none"
+                  className="block p-4 border hover:bg-muted/50 transition-all bg-card rounded-lg shadow-sm hover:shadow-md"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -617,7 +618,7 @@ export default function BulletinArchive({
               <button
                 disabled={!bulletins?.hasPrevPage}
                 onClick={() => setPage((p) => p - 1)}
-                className="p-2 border border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
+                className="p-2 border rounded-md disabled:opacity-50 hover:bg-muted transition-colors shadow-sm bg-background"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -627,7 +628,7 @@ export default function BulletinArchive({
               <button
                 disabled={!bulletins?.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
-                className="p-2 border border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
+                className="p-2 border rounded-md disabled:opacity-50 hover:bg-muted transition-colors shadow-sm bg-background"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

@@ -52,10 +52,10 @@ export function Navbar() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={toggleEditMode}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-normal border border-black transition-all ${
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-normal rounded-md border transition-all ${
                     isEditing
-                      ? "bg-black text-white shadow-none"
-                      : "bg-white text-black hover:bg-gray-100 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:shadow-none"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background text-foreground hover:bg-muted border-input shadow-sm hover:shadow-none"
                   }`}
                 >
                   <Edit3 className="h-3.5 w-3.5" />
@@ -89,8 +89,10 @@ export function Navbar() {
             {user && (
               <button
                 onClick={toggleEditMode}
-                className={`p-2 border border-black transition-colors ${
-                  isEditing ? "bg-black text-white" : "bg-white text-black"
+                className={`p-2 border rounded-md transition-colors ${
+                  isEditing
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground hover:bg-muted"
                 }`}
                 title="Toggle Edit Mode"
               >
@@ -122,10 +124,10 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className={`block px-4 py-2 text-base font-bold uppercase tracking-normal border-2 border-transparent hover:border-black transition-colors ${
+                  className={`block px-4 py-2 text-sm font-medium transition-colors rounded-md ${
                     pathname === link.href
-                      ? "bg-black text-white border-black"
-                      : "text-muted-foreground hover:bg-muted hover:text-black"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {link.name}
@@ -146,7 +148,7 @@ export function Navbar() {
                       logout();
                       setIsOpen(false);
                     }}
-                    className="flex w-full items-center gap-3 py-2 text-base font-bold uppercase text-destructive hover:bg-destructive/10 border-2 border-transparent hover:border-destructive transition-colors"
+                    className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                   >
                     <LogOut className="h-5 w-5" />
                     Cerrar Sesión
@@ -156,7 +158,7 @@ export function Navbar() {
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2 text-base font-bold uppercase text-muted-foreground hover:bg-muted hover:text-black border-2 border-transparent hover:border-black transition-colors"
+                  className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-colors"
                 >
                   <LogIn className="h-5 w-5" />
                   Iniciar Sesión

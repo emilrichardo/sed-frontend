@@ -29,24 +29,23 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap text-sm font-bold uppercase tracking-normal ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-2 border-transparent",
+          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-primary text-primary-foreground hover:bg-black/80 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px]":
+            "bg-primary text-primary-foreground shadow hover:bg-primary/90":
               variant === "default",
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]":
+            "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90":
               variant === "destructive",
-            "border border-black bg-background hover:bg-black hover:text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[4px]":
+            "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground":
               variant === "outline",
-            "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]":
+            "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80":
               variant === "secondary",
-            "hover:bg-accent hover:text-accent-foreground border-2 border-transparent hover:border-black":
-              variant === "ghost",
+            "hover:bg-accent hover:text-accent-foreground": variant === "ghost",
             "text-primary underline-offset-4 hover:underline":
               variant === "link",
-            "h-10 px-4 py-2": size === "default",
-            "h-9 px-3": size === "sm",
-            "h-11 px-8": size === "lg",
-            "h-10 w-10": size === "icon",
+            "h-9 px-4 py-2": size === "default",
+            "h-8 rounded-md px-3 text-xs": size === "sm",
+            "h-10 rounded-md px-8": size === "lg",
+            "h-9 w-9": size === "icon",
           },
           className,
         )}

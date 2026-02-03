@@ -63,7 +63,7 @@ export default function BulletinFilters({
             placeholder="Número, referencia..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 p-2 h-10 border border-black bg-background text-sm focus:outline-none focus:ring-0 font-mono"
+            className="w-full pl-9 p-2 h-10 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 ring-primary/20 font-sans"
           />
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function BulletinFilters({
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-full p-2 h-10 border border-black bg-background text-xs focus:outline-none focus:ring-0 font-mono"
+            className="w-full p-2 h-10 border rounded-md bg-background text-xs focus:outline-none focus:ring-2 ring-primary/20 font-sans"
           />
         </div>
 
@@ -90,7 +90,7 @@ export default function BulletinFilters({
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-full p-2 h-10 border border-black bg-background text-xs focus:outline-none focus:ring-0 font-mono"
+            className="w-full p-2 h-10 border rounded-md bg-background text-xs focus:outline-none focus:ring-2 ring-primary/20 font-sans"
           />
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function BulletinFilters({
       <div className="flex gap-2 w-full xl:w-auto shrink-0 overflow-x-auto pb-1 xl:pb-0">
         <button
           onClick={handleClearFilters}
-          className="h-10 px-3 border border-black bg-white hover:bg-black hover:text-white transition-colors flex items-center justify-center shrink-0 mt-auto"
+          className="h-10 px-3 border rounded-md bg-background hover:bg-muted transition-colors flex items-center justify-center shrink-0 mt-auto shadow-sm"
           title="Limpiar filtros"
         >
           <X className="h-4 w-4" />

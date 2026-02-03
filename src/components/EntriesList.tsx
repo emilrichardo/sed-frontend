@@ -168,25 +168,27 @@ export default function EntriesList({ filters }: EntriesListProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-end items-center gap-4">
-        <div className="flex border border-black overflow-hidden shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+        <div className="flex bg-muted rounded-md p-1 items-center">
           <button
             onClick={() => setViewMode("table")}
-            className={`p-2 transition-colors ${
+            className={cn(
+              "p-2 rounded-sm transition-all",
               viewMode === "table"
-                ? "bg-black text-white"
-                : "bg-white text-black hover:bg-neutral-100"
-            }`}
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
             title="Vista Tabla"
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 transition-colors ${
+            className={cn(
+              "p-2 rounded-sm transition-all",
               viewMode === "list"
-                ? "bg-black text-white"
-                : "bg-white text-black hover:bg-neutral-100"
-            }`}
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
             title="Vista Lista"
           >
             <ListIcon className="h-4 w-4" />
@@ -195,7 +197,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
       </div>
 
       {isEditing && (
-        <div className="bg-muted/30 p-4 flex items-center justify-between border border-black">
+        <div className="bg-muted/30 p-4 flex items-center justify-between border rounded-lg">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Checkbox
@@ -250,7 +252,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                           <div
                             key={agent.id}
                             className={cn(
-                              "flex items-center gap-2 p-2 hover:bg-black hover:text-white cursor-pointer border-2 border-transparent",
+                              "flex items-center gap-2 p-2 hover:bg-accent cursor-pointer rounded-md border border-transparent",
                               selectedAgentId === agent.id
                                 ? "border-primary bg-primary/5"
                                 : "border-transparent",
@@ -287,12 +289,12 @@ export default function EntriesList({ filters }: EntriesListProps) {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin h-8 w-8 border-b border-black"></div>
+          <div className="animate-spin h-8 w-8 border-b-2 border-primary rounded-full"></div>
         </div>
       ) : (
         <>
           {viewMode === "table" ? (
-            <div className="border border-black overflow-hidden shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+            <div className="border rounded-lg overflow-hidden shadow-sm">
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
                   <tr>
@@ -379,7 +381,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                           {entry.identificador_de_acto}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-xs bg-muted px-2 py-1 border border-black inline-block font-bold">
+                          <span className="text-xs bg-muted px-2 py-1 rounded-md border inline-block font-medium">
                             {entry.seccion || "-"}
                           </span>
                         </td>
@@ -488,11 +490,10 @@ export default function EntriesList({ filters }: EntriesListProps) {
                                     "Failed to toggle destacado",
                                     err,
                                   );
-                                  // Revert on error could be implemented here
                                 }
                               }}
                               className={cn(
-                                "p-1 hover:bg-black hover:text-white transition-colors border border-transparent",
+                                "p-1 transition-colors rounded-full hover:bg-muted",
                                 entry.destacado
                                   ? "text-yellow-500"
                                   : "text-muted-foreground/30",
@@ -557,15 +558,14 @@ export default function EntriesList({ filters }: EntriesListProps) {
                   <div
                     key={entry.id}
                     className={cn(
-                      "p-4 border-2 transition-all shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-black/50",
+                      "p-4 border rounded-lg transition-all shadow-sm",
                       expandedEntryId === entry.id
-                        ? "border-black bg-muted shadow-none"
-                        : "bg-card border-black",
+                        ? "bg-muted/50 border-input shadow-none"
+                        : "bg-card hover:shadow-md",
                       // Status styles
                       currentStatus === "completado" && "bg-green-50/10",
                       currentStatus === "procesando" && "bg-blue-50/10",
                       currentStatus === "error" && "bg-red-50/10",
-                      !currentStatus && "border-black",
                     )}
                   >
                     {/* List View Content (Simplified from original for brevity, keeping main struct) */}
@@ -587,7 +587,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                               />
                             </div>
                           )}
-                          <span className="text-xs font-bold uppercase tracking-normal text-primary">
+                          <span className="text-xs font-bold uppercase tracking-wider text-primary">
                             {entry.seccion || "Sección"}
                           </span>
                           <span className="text-muted-foreground text-[10px]">
@@ -606,14 +606,14 @@ export default function EntriesList({ filters }: EntriesListProps) {
                                 •
                               </span>
                               <span
-                                className={`text-[10px] uppercase font-bold px-1.5 py-0.5 border-2 ${
+                                className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full border ${
                                   entry.nivel_opacidad === "Transparente" ||
                                   (typeof entry.nivel_opacidad === "number" &&
                                     entry.nivel_opacidad < 5)
-                                    ? "bg-green-50 text-green-700 border-green-700"
+                                    ? "bg-green-50 text-green-700 border-green-200"
                                     : entry.nivel_opacidad === "Parcial"
-                                      ? "bg-yellow-50 text-yellow-700 border-yellow-700"
-                                      : "bg-red-50 text-red-700 border-red-700"
+                                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                      : "bg-red-50 text-red-700 border-red-200"
                                 }`}
                               >
                                 {typeof entry.nivel_opacidad === "number"
@@ -624,7 +624,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                           )}
                         </div>
 
-                        <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors mb-1">
+                        <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors mb-1 font-mono">
                           {entry.titulo_periodistico ||
                             entry.titulo ||
                             entry.identificador_de_acto}
@@ -634,7 +634,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                         <div className="flex flex-col gap-1 mb-2">
                           {entry.titulo_periodistico && (
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 border border-black bg-white text-black uppercase tracking-normal">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 border rounded-sm bg-muted text-muted-foreground uppercase tracking-widest">
                                 Periodístico
                               </span>
                               {entry.titulo && (
@@ -650,7 +650,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                           </p>
                         </div>
 
-                        <div className="text-sm text-foreground/80 line-clamp-3">
+                        <div className="text-sm text-foreground/80 line-clamp-3 font-sans">
                           {entry.nota_periodistica ||
                             entry.resumen ||
                             "Sin resumen disponible."}
@@ -683,8 +683,8 @@ export default function EntriesList({ filters }: EntriesListProps) {
                 );
               })}
               {entries?.docs.length === 0 && (
-                <div className="text-center py-12 border border-black border-dashed">
-                  <p className="text-muted-foreground font-mono uppercase">
+                <div className="text-center py-12 border border-dashed rounded-lg">
+                  <p className="text-muted-foreground font-medium uppercase text-sm">
                     No se encontraron actos administrativos.
                   </p>
                 </div>
@@ -694,14 +694,14 @@ export default function EntriesList({ filters }: EntriesListProps) {
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4">
-            <p className="text-xs font-bold uppercase tracking-normal text-muted-foreground">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Mostrando {entries?.docs.length} de {entries?.totalDocs} actos
             </p>
             <div className="flex gap-2">
               <button
                 disabled={!entries?.hasPrevPage}
                 onClick={() => setPage((p) => p - 1)}
-                className="p-2 border border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
+                className="p-2 border rounded-md disabled:opacity-50 hover:bg-muted transition-colors bg-background shadow-sm"
                 title="Página Anterior"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -712,7 +712,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
               <button
                 disabled={!entries?.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
-                className="p-2 border border-black disabled:opacity-50 hover:bg-black hover:text-white transition-colors shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none bg-white"
+                className="p-2 border rounded-md disabled:opacity-50 hover:bg-muted transition-colors bg-background shadow-sm"
                 title="Página Siguiente"
               >
                 <ChevronRight className="h-4 w-4" />

@@ -125,7 +125,7 @@ export function Stats() {
         return (
           <div
             key={idx}
-            className="bg-card border border-black p-4 flex flex-col items-center justify-center text-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] transition-all"
+            className="bg-card border p-4 flex flex-col items-center justify-center text-center rounded-lg shadow-sm hover:shadow-md transition-all"
           >
             <Icon className={`w-6 h-6 mb-2 ${stat.color}`} />
             <span className="text-2xl font-bold font-mono tracking-tighter">
