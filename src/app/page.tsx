@@ -90,7 +90,7 @@ export default async function Home() {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {reports.docs.map((item) => {
             const contenido = item.contenido as any;
 
@@ -116,7 +116,7 @@ export default async function Home() {
                 href={`/informes/${item.slug}`}
                 imageUrl={item.imagen_destacada?.url}
                 imageAlt={item.imagen_destacada?.alt}
-                layout="horizontal"
+                // layout="horizontal" removed to use default vertical layout for grid
               />
             );
           })}
