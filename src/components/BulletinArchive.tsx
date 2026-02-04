@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import BulletinFilters from "./BulletinFilters";
+import { BulletinListSkeleton } from "./BulletinListSkeleton";
 
 interface BulletinArchiveProps {
   filters?: Record<string, unknown>;
@@ -135,7 +136,7 @@ export default function BulletinArchive({
 
         const data = await getBulletins({
           page,
-          limit: 50,
+          limit: 10,
           where: {
             ...queryFilters,
             ...(search ? { numero: search } : {}),
@@ -316,9 +317,7 @@ export default function BulletinArchive({
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+        <BulletinListSkeleton viewMode={viewMode} />
       ) : (
         <>
           {viewMode === "table" ? (
