@@ -140,6 +140,17 @@ export interface WidgetTableChart {
   };
 }
 
+export interface WidgetCTA {
+  label: string;
+  link_type: "internal" | "external";
+  internal_link?: {
+    relationTo: string;
+    value: { id: number; slug: string; titulo?: string };
+  };
+  external_url?: string | null;
+  open_new_tab?: boolean;
+}
+
 export interface WidgetItem {
   id: number;
   title: string;
@@ -147,7 +158,8 @@ export interface WidgetItem {
   image?: { url: string; alt?: string } | null;
   category?: string;
   tablas_graficos?: WidgetTableChart[];
-  config?: any;
+  config?: Record<string, unknown>;
+  cta?: WidgetCTA | null;
   updatedAt: string;
   createdAt: string;
 }

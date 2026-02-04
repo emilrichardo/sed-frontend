@@ -6,7 +6,7 @@ import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { WidgetItem } from "@/lib/api";
 import { ChartRenderer } from "./ChartRenderer";
-import { ArrowRight, BarChart3, Table } from "lucide-react";
+import { ArrowRight, BarChart3, Table, ExternalLink } from "lucide-react";
 
 interface WidgetCardProps {
   widget: WidgetItem;
@@ -36,11 +36,28 @@ const getImageUrl = (image: unknown): string | null => {
   return null;
 };
 
+// Helper to get CTA URL
+const getCtaUrl = (cta: NonNullable<WidgetItem["cta"]>): string => {
+  if (cta.link_type === "external" && cta.external_url) {
+    return cta.external_url;
+  }
+  if (cta.link_type === "internal" && cta.internal_link) {
+    const { relationTo, value } = cta.internal_link;
+    return getEntryUrl(relationTo, value.slug);
+  }
+  return "#";
+};
+
 export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
   const [activeTab, setActiveTab] = useState<"chart" | "table">("chart");
 
   // Check if this widget has specific entries to display
-  const specificEntries = widget.config?.specific_entries;
+  const specificEntries = widget.config?.specific_entries as
+    | Array<{
+        relationTo: string;
+        value: { id?: number; titulo?: string; slug?: string };
+      }>
+    | undefined;
   const hasSpecificEntries = specificEntries && specificEntries.length > 0;
 
   // Check if this widget has chart/table visualizations
@@ -72,11 +89,22 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
       }))
     : [];
 
+  // CTA data
+  const cta = widget.cta;
+  const hasCta = cta && cta.label;
+
   return (
     <div className="bg-card text-card-foreground rounded-lg border shadow-sm flex flex-col h-full">
-      {/* Widget Image */}
+      {/* 1. Title */}
+      <div className="p-6 pb-4">
+        <h3 className="text-2xl font-semibold leading-none tracking-tight">
+          {widget.title}
+        </h3>
+      </div>
+
+      {/* 2. Image */}
       {imageUrl && (
-        <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+        <div className="relative w-full h-48 overflow-hidden">
           <Image
             src={imageUrl}
             alt={widget.title}
@@ -87,20 +115,9 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
         </div>
       )}
 
-      <div className="p-6 pb-4">
-        <h3 className="text-2xl font-semibold leading-none tracking-tight mb-2">
-          {widget.title}
-        </h3>
-        {widget.description && (
-          <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{widget.description}</ReactMarkdown>
-          </div>
-        )}
-      </div>
-
-      {/* Tab Switcher - only for widgets with actual charts (not tables) */}
+      {/* 3. Chart/Table with Tab Switcher */}
       {hasActualCharts && (
-        <div className="px-6 pb-2">
+        <div className="px-6 pt-4 pb-2">
           <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md w-fit">
             <button
               onClick={() => setActiveTab("chart")}
@@ -262,33 +279,25 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
         {/* Render specific entries as a list of links (only if no visualizations) */}
         {!hasVisualizations && hasSpecificEntries && (
           <ul className="space-y-2">
-            {specificEntries.map(
-              (
-                entry: {
-                  relationTo: string;
-                  value: { id?: number; titulo?: string; slug?: string };
-                },
-                index: number,
-              ) => {
-                const relationTo = entry.relationTo;
-                const value = entry.value;
-                if (!value || !value.titulo || !value.slug) return null;
+            {specificEntries.map((entry, index) => {
+              const relationTo = entry.relationTo;
+              const value = entry.value;
+              if (!value || !value.titulo || !value.slug) return null;
 
-                return (
-                  <li key={value.id || index}>
-                    <Link
-                      href={getEntryUrl(relationTo, value.slug)}
-                      className="flex items-center gap-2 p-3 rounded-md border bg-muted/30 hover:bg-muted/60 transition-colors group"
-                    >
-                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-                      <span className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
-                        {value.titulo}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              },
-            )}
+              return (
+                <li key={value.id || index}>
+                  <Link
+                    href={getEntryUrl(relationTo, value.slug)}
+                    className="flex items-center gap-2 p-3 rounded-md border bg-muted/30 hover:bg-muted/60 transition-colors group"
+                  >
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                    <span className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
+                      {value.titulo}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
 
@@ -300,7 +309,41 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
             </span>
           </div>
         )}
+
+        {/* 4. Description */}
+        {widget.description && (
+          <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none border-t pt-4">
+            <ReactMarkdown>{widget.description}</ReactMarkdown>
+          </div>
+        )}
       </div>
+
+      {/* 5. CTA Button */}
+      {hasCta && (
+        <div className="p-6 pt-0">
+          {cta.link_type === "external" ? (
+            <a
+              href={getCtaUrl(cta)}
+              target={cta.open_new_tab ? "_blank" : "_self"}
+              rel={cta.open_new_tab ? "noopener noreferrer" : undefined}
+              className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+            >
+              {cta.label}
+              {cta.open_new_tab && <ExternalLink className="h-4 w-4" />}
+            </a>
+          ) : (
+            <Link
+              href={getCtaUrl(cta)}
+              className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
+            >
+              {cta.label}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Footer with update date */}
       <div className="p-6 pt-0 mt-auto text-xs text-muted-foreground text-right">
         Actualizado: {new Date(widget.updatedAt).toLocaleDateString()}
       </div>
