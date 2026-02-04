@@ -250,8 +250,9 @@ export const RichTextParser = ({ content }: { content: any }) => {
           const relatedData = tabla_relacionada.data;
           columns = relatedData.columns || [];
           rows = relatedData.rows || [];
-          // Use related title as fallback if local title is missing
-          if (!title) {
+
+          // Prioritize the title from the related collection
+          if (tabla_relacionada.titulo) {
             title = tabla_relacionada.titulo;
           }
         }
@@ -303,6 +304,50 @@ export const RichTextParser = ({ content }: { content: any }) => {
                 </tbody>
               </table>
             </div>
+
+            {(content.fields.tipo_visualizacion ||
+              tabla_relacionada?.fuente ||
+              tabla_relacionada?.actualizacion) && (
+              <div className="bg-muted/10 px-4 py-3 border-t text-xs text-muted-foreground flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
+                <div className="flex flex-col gap-1">
+                  {content.fields.tipo_visualizacion && (
+                    <div>
+                      <span className="font-semibold block sm:inline mr-1">
+                        Visualización:
+                      </span>
+                      <span className="capitalize">
+                        {content.fields.tipo_visualizacion.replace(/_/g, " ")}
+                      </span>
+                    </div>
+                  )}
+                  {tabla_relacionada?.fuente && (
+                    <div>
+                      <span className="font-semibold block sm:inline mr-1">
+                        Fuente:
+                      </span>
+                      {tabla_relacionada.fuente}
+                    </div>
+                  )}
+                </div>
+
+                {tabla_relacionada?.actualizacion && (
+                  <div className="sm:text-right mt-2 sm:mt-0">
+                    <span className="font-semibold block sm:inline mr-1">
+                      Actualizado:
+                    </span>
+                    <time dateTime={tabla_relacionada.actualizacion}>
+                      {new Date(
+                        tabla_relacionada.actualizacion,
+                      ).toLocaleDateString("es-CL", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </time>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       }
