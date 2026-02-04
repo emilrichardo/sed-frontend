@@ -1,5 +1,6 @@
 import React from "react";
 import { TableBlock } from "./TableBlock";
+import { WidgetCard } from "./WidgetCard";
 import slugify from "slugify";
 
 export const getTextFromNodes = (nodes: any): string => {
@@ -258,6 +259,16 @@ export const RichTextParser = ({ content }: { content: any }) => {
     case "block":
       if (content.fields?.blockType === "table") {
         return <TableBlock fields={content.fields} />;
+      }
+      if (
+        content.fields?.blockType === "widget_block" &&
+        content.fields.widget
+      ) {
+        return (
+          <div className="my-12 not-prose">
+            <WidgetCard widget={content.fields.widget} />
+          </div>
+        );
       }
       return null;
 

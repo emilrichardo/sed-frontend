@@ -207,6 +207,149 @@ export async function getWidgets(
   }
 }
 
+// --- Widget Helper Functions ---
+
+/**
+ * Helper to fetch entries based on collection type for dynamic widgets
+ */
+export async function fetchEntriesForCollection(
+  collection: string,
+  limit: number,
+  period?: string,
+): Promise<Array<{ relationTo: string; value: any }>> {
+  // Calculate date filter for period
+  let where: Record<string, unknown> = {};
+  if (period === "week") {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    where = { createdAt: { greater_than: weekAgo.toISOString() } };
+  } else if (period === "month") {
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    where = { createdAt: { greater_than: monthAgo.toISOString() } };
+  }
+
+  try {
+    switch (collection) {
+      case "noticias": {
+        const result = await getNews({ limit, sort: "-createdAt" });
+        return result.docs.map((item) => ({
+          relationTo: "noticias",
+          value: { id: item.id, titulo: item.titulo, slug: item.slug },
+        }));
+      }
+      case "boletines": {
+        const result = await getBulletins({
+          limit,
+          sort: "-fecha_publicacion",
+        });
+        return result.docs.map((item) => ({
+          relationTo: "boletines",
+          value: {
+            id: item.id,
+            titulo: `Boletín Nº ${item.numero}`,
+            slug: item.slug,
+          },
+        }));
+      }
+      case "informes": {
+        const result = await getReports({
+          limit,
+          where: { parent: { exists: false } },
+        });
+        return result.docs.map((item) => ({
+          relationTo: "informes",
+          value: { id: item.id, titulo: item.titulo, slug: item.slug },
+        }));
+      }
+      default:
+        return [];
+    }
+  } catch (error) {
+    console.error(
+      `[fetchEntriesForCollection] Error fetching ${collection}:`,
+      error,
+    );
+    return [];
+  }
+}
+
+/**
+ * Resolves widget entries - if specific_entries is empty AND no charts, fetch from collection
+ */
+export async function resolveWidgetEntries(
+  widget: WidgetItem,
+): Promise<WidgetItem> {
+  const config = widget.config;
+  if (!config) return widget;
+
+  // If widget has chart visualizations, don't fetch entries - it's a chart widget
+  const hasCharts = widget.tablas_graficos && widget.tablas_graficos.length > 0;
+  if (hasCharts) return widget;
+
+  // Use explicit casting to avoid TS errors with Record<string, unknown>
+  const specificEntries = (config.specific_entries as any[]) || [];
+  const hasManualEntries = specificEntries.length > 0;
+
+  // If manual entries exist, use them as-is
+  if (hasManualEntries) return widget;
+
+  // If no manual entries but collection is set, fetch latest
+  if (config.collection && config.limit) {
+    const fetchedEntries = await fetchEntriesForCollection(
+      config.collection as string,
+      config.limit as number,
+      config.period as string | undefined,
+    );
+
+    return {
+      ...widget,
+      config: {
+        ...config,
+        specific_entries: fetchedEntries,
+      },
+    };
+  }
+
+  return widget;
+}
+
+/**
+ * Traverses Lexical content recursively to find and resolve embedded widgets
+ */
+export async function resolveLexicalWidgets(node: any): Promise<any> {
+  if (!node) return node;
+
+  if (Array.isArray(node)) {
+    return Promise.all(node.map(resolveLexicalWidgets));
+  }
+
+  // Clone node to avoid mutating original if needed, but in-place is usually fine for these fetches
+  const newNode = { ...node };
+
+  // Handle block type
+  if (
+    newNode.type === "block" &&
+    newNode.fields?.blockType === "widget_block" &&
+    newNode.fields.widget
+  ) {
+    try {
+      newNode.fields.widget = await resolveWidgetEntries(newNode.fields.widget);
+    } catch (err) {
+      console.error("[resolveLexicalWidgets] Error resolving widget:", err);
+    }
+  }
+
+  // Handle children recursively
+  if (newNode.children && Array.isArray(newNode.children)) {
+    newNode.children = await Promise.all(
+      newNode.children.map(resolveLexicalWidgets),
+    );
+  }
+
+  return newNode;
+}
+
 export interface PayloadResponse<T> {
   docs: T[];
   totalDocs: number;

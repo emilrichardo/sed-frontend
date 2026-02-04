@@ -1,4 +1,4 @@
-import { getNewsItem } from "@/lib/api";
+import { getNewsItem, resolveLexicalWidgets } from "@/lib/api";
 import { NewsDetail } from "@/components/NewsDetail";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -17,6 +17,13 @@ export default async function NewsPage({ params }: PageProps) {
 
   if (!newsItem) {
     notFound();
+  }
+
+  // Resolve embedded widgets in rich text content
+  if (newsItem.contenido?.root?.children) {
+    newsItem.contenido.root.children = await resolveLexicalWidgets(
+      newsItem.contenido.root.children,
+    );
   }
 
   return (

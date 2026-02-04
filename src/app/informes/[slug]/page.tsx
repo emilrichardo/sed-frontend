@@ -1,4 +1,9 @@
-import { getReportItem, getReports, ReportItem } from "@/lib/api";
+import {
+  getReportItem,
+  getReports,
+  ReportItem,
+  resolveLexicalWidgets,
+} from "@/lib/api";
 import { NewsDetail } from "@/components/NewsDetail";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -66,6 +71,13 @@ export default async function ReportPage({ params }: PageProps) {
 
   if (!reportItem) {
     notFound();
+  }
+
+  // Resolve embedded widgets in rich text content
+  if (reportItem.contenido?.root?.children) {
+    reportItem.contenido.root.children = await resolveLexicalWidgets(
+      reportItem.contenido.root.children,
+    );
   }
 
   const parent =

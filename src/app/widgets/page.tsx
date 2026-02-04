@@ -1,9 +1,7 @@
 import {
   getWidgets,
-  getNews,
-  getBulletins,
-  getReports,
-  WidgetItem,
+  fetchEntriesForCollection,
+  resolveWidgetEntries,
 } from "@/lib/api";
 import { WidgetCard } from "@/components/WidgetCard";
 import { PageHeader } from "@/components/PageHeader";
@@ -16,104 +14,6 @@ export const metadata: Metadata = {
   title: "Widgets | Santiago en Datos",
   description: "Visualizaciones de datos destacados.",
 };
-
-// Helper to fetch entries based on collection type
-async function fetchEntriesForCollection(
-  collection: string,
-  limit: number,
-  period?: string,
-): Promise<Array<{ relationTo: string; value: any }>> {
-  // Calculate date filter for period
-  let where: Record<string, unknown> = {};
-  if (period === "week") {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    where = { createdAt: { greater_than: weekAgo.toISOString() } };
-  } else if (period === "month") {
-    const monthAgo = new Date();
-    monthAgo.setMonth(monthAgo.getMonth() - 1);
-    where = { createdAt: { greater_than: monthAgo.toISOString() } };
-  }
-
-  try {
-    switch (collection) {
-      case "noticias": {
-        const result = await getNews({ limit, sort: "-createdAt" });
-        return result.docs.map((item) => ({
-          relationTo: "noticias",
-          value: { id: item.id, titulo: item.titulo, slug: item.slug },
-        }));
-      }
-      case "boletines": {
-        const result = await getBulletins({
-          limit,
-          sort: "-fecha_publicacion",
-        });
-        return result.docs.map((item) => ({
-          relationTo: "boletines",
-          value: {
-            id: item.id,
-            titulo: `Boletín Nº ${item.numero}`,
-            slug: item.slug,
-          },
-        }));
-      }
-      case "informes": {
-        const result = await getReports({
-          limit,
-          where: { parent: { exists: false } },
-        });
-        return result.docs.map((item) => ({
-          relationTo: "informes",
-          value: { id: item.id, titulo: item.titulo, slug: item.slug },
-        }));
-      }
-      default:
-        return [];
-    }
-  } catch (error) {
-    console.error(
-      `[fetchEntriesForCollection] Error fetching ${collection}:`,
-      error,
-    );
-    return [];
-  }
-}
-
-// Resolve widget entries - if specific_entries is empty AND no charts, fetch from collection
-async function resolveWidgetEntries(widget: WidgetItem): Promise<WidgetItem> {
-  const config = widget.config;
-  if (!config) return widget;
-
-  // If widget has chart visualizations, don't fetch entries - it's a chart widget
-  const hasCharts = widget.tablas_graficos && widget.tablas_graficos.length > 0;
-  if (hasCharts) return widget;
-
-  const specificEntries = (config.specific_entries as any[]) || [];
-  const hasManualEntries = specificEntries.length > 0;
-
-  // If manual entries exist, use them as-is
-  if (hasManualEntries) return widget;
-
-  // If no manual entries but collection is set, fetch latest
-  if (config.collection && config.limit) {
-    const fetchedEntries = await fetchEntriesForCollection(
-      config.collection as string,
-      config.limit as number,
-      config.period as string | undefined,
-    );
-
-    return {
-      ...widget,
-      config: {
-        ...config,
-        specific_entries: fetchedEntries,
-      },
-    };
-  }
-
-  return widget;
-}
 
 export default async function WidgetsPage() {
   const { docs: rawWidgets } = await getWidgets();
