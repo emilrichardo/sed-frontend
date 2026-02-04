@@ -78,6 +78,12 @@ export interface PayloadBlock {
   [key: string]: unknown;
 }
 
+// Reports share the same structure as News
+// Reports share the same structure as News but can have a parent
+export interface ReportItem extends NewsItem {
+  parent?: ReportItem | number | null;
+}
+
 export interface NewsItem {
   id: number;
   titulo: string;
@@ -314,6 +320,94 @@ export async function getNewsItem(slug: string): Promise<NewsItem | null> {
     return data.docs[0];
   } catch (error) {
     console.error(`Error fetching news item ${slug}:`, error);
+    return null;
+  }
+}
+
+// --- Report Functions ---
+
+/**
+ * Fetches a list of reports (Informes)
+ */
+export async function getReports(
+  params: {
+    page?: number;
+    limit?: number;
+    sort?: string;
+    where?: Record<string, unknown>;
+  } = {},
+): Promise<PayloadResponse<ReportItem>> {
+  const { page = 1, limit = 10, sort = "-createdAt", where } = params;
+  let url = `${API_URL}/informes?page=${page}&limit=${limit}&sort=${sort}&draft=false`;
+
+  if (where) {
+    Object.entries(where).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        if (typeof value === "object" && !Array.isArray(value)) {
+          // Handle nested operators e.g. where: { parent: { exists: false } }
+          Object.entries(value).forEach(([op, val]) => {
+            url += `&where[${key}][${op}]=${val}`;
+          });
+        } else {
+          url += `&where[${key}][equals]=${value}`;
+        }
+      }
+    });
+  }
+
+  try {
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch reports");
+    }
+
+    return res.json();
+  } catch (error) {
+    console.error("Error fetching reports:", error);
+    return {
+      docs: [],
+      totalDocs: 0,
+      limit: 10,
+      totalPages: 0,
+      page: 1,
+      pagingCounter: 0,
+      hasPrevPage: false,
+      hasNextPage: false,
+      prevPage: null,
+      nextPage: null,
+    };
+  }
+}
+
+/**
+ * Fetches a single report by slug
+ */
+export async function getReportItem(slug: string): Promise<ReportItem | null> {
+  try {
+    // Search by slug
+    const res = await fetch(
+      `${API_URL}/informes?where[slug][equals]=${slug}&depth=3&draft=false`,
+      {
+        cache: "no-store",
+      },
+    );
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data: PayloadResponse<ReportItem> = await res.json();
+
+    if (data.docs.length === 0) {
+      return null;
+    }
+
+    return data.docs[0];
+  } catch (error) {
+    console.error(`Error fetching report item ${slug}:`, error);
     return null;
   }
 }

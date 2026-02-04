@@ -10,6 +10,7 @@ const navLinks = [
   { name: "Inicio", href: "/" },
   { name: "Noticias", href: "/noticias" },
   { name: "Boletines", href: "/boletines" },
+  { name: "Informes", href: "/informes" },
 ];
 
 export function Navbar() {
