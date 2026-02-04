@@ -94,7 +94,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
   const hasCta = cta && cta.label;
 
   return (
-    <div className="bg-card text-card-foreground rounded-lg border shadow-sm flex flex-col h-full">
+    <div className="bg-card text-card-foreground rounded-lg border shadow-sm flex flex-col">
       {/* 1. Title */}
       <div className="p-6 pb-4">
         <h3 className="text-2xl font-semibold leading-none tracking-tight">
