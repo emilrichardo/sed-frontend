@@ -1,4 +1,5 @@
 import React from "react";
+import { TableBlock } from "./TableBlock";
 
 export const RichTextParser = ({ content }: { content: any }) => {
   if (!content) return null;
@@ -242,118 +243,7 @@ export const RichTextParser = ({ content }: { content: any }) => {
 
     case "block":
       if (content.fields?.blockType === "table") {
-        let { title, columns, rows, source_type, tabla_relacionada } =
-          content.fields;
-
-        // Handle collection-sourced tables
-        if (source_type === "collection" && tabla_relacionada?.data) {
-          const relatedData = tabla_relacionada.data;
-          columns = relatedData.columns || [];
-          rows = relatedData.rows || [];
-
-          // Prioritize the title from the related collection
-          if (tabla_relacionada.titulo) {
-            title = tabla_relacionada.titulo;
-          }
-        } else if (content.fields.data) {
-          // Handle manual tables with nested data object
-          columns = content.fields.data.columns || columns;
-          rows = content.fields.data.rows || rows;
-        }
-
-        return (
-          <div className="my-8 overflow-hidden border rounded-lg shadow-sm">
-            {title && (
-              <div className="bg-muted/30 px-4 py-3 border-b">
-                <h4 className="font-bold text-sm uppercase tracking-wider">
-                  {title}
-                </h4>
-              </div>
-            )}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/50 border-b">
-                    {columns?.map((col: any) => (
-                      <th
-                        key={col.id}
-                        className="p-3 text-left font-medium text-muted-foreground"
-                      >
-                        {col.header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {rows?.map((row: any, rowIndex: number) => (
-                    <tr
-                      key={row.id || rowIndex}
-                      className="hover:bg-muted/20 transition-colors"
-                    >
-                      {row.cells
-                        ? // Legacy cells-based format
-                          row.cells.map((cell: any) => (
-                            <td key={cell.id} className="p-3">
-                              {cell.value}
-                            </td>
-                          ))
-                        : // New collection-based format (keyed by column ID)
-                          columns?.map((col: any) => (
-                            <td key={col.id} className="p-3">
-                              {row[col.id]}
-                            </td>
-                          ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {(content.fields.tipo_visualizacion ||
-              tabla_relacionada?.fuente ||
-              tabla_relacionada?.actualizacion) && (
-              <div className="bg-muted/10 px-4 py-3 border-t text-xs text-muted-foreground flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
-                <div className="flex flex-col gap-1">
-                  {content.fields.tipo_visualizacion && (
-                    <div>
-                      <span className="font-semibold block sm:inline mr-1">
-                        Visualización:
-                      </span>
-                      <span className="capitalize">
-                        {content.fields.tipo_visualizacion.replace(/_/g, " ")}
-                      </span>
-                    </div>
-                  )}
-                  {tabla_relacionada?.fuente && (
-                    <div>
-                      <span className="font-semibold block sm:inline mr-1">
-                        Fuente:
-                      </span>
-                      {tabla_relacionada.fuente}
-                    </div>
-                  )}
-                </div>
-
-                {tabla_relacionada?.actualizacion && (
-                  <div className="sm:text-right mt-2 sm:mt-0">
-                    <span className="font-semibold block sm:inline mr-1">
-                      Actualizado:
-                    </span>
-                    <time dateTime={tabla_relacionada.actualizacion}>
-                      {new Date(
-                        tabla_relacionada.actualizacion,
-                      ).toLocaleDateString("es-CL", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </time>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
+        return <TableBlock fields={content.fields} />;
       }
       return null;
 
