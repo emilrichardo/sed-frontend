@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
-import { ChevronRight, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { SourcesSection } from "@/components/SourcesSection";
 import { ReportSidebar } from "@/components/ReportSidebar";
 import { getTextFromNodes } from "@/components/RichTextParser";
@@ -84,6 +84,7 @@ export default async function ReportPage({ params }: PageProps) {
 
   // 2. Fetch Siblings (if has parent)
   let nextSibling: ReportItem | null = null;
+  let prevSibling: ReportItem | null = null;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let siblings: ReportItem[] = [];
 
@@ -96,6 +97,9 @@ export default async function ReportPage({ params }: PageProps) {
     siblings = siblingsData.docs;
     const currentIndex = siblings.findIndex((s) => s.id === reportItem.id);
     if (currentIndex !== -1) {
+      if (currentIndex > 0) {
+        prevSibling = siblings[currentIndex - 1];
+      }
       if (currentIndex < siblings.length - 1) {
         nextSibling = siblings[currentIndex + 1];
       }
@@ -123,7 +127,7 @@ export default async function ReportPage({ params }: PageProps) {
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 bg-background">
-        <article className="max-w-4xl mx-auto py-8 px-4 md:py-12 md:px-8">
+        <article className="max-w-6xl mx-auto py-8 px-4 md:py-12 md:px-8">
           {/* Main Content */}
           <NewsDetail initialData={reportItem} hideSources={true} />
 
@@ -133,20 +137,39 @@ export default async function ReportPage({ params }: PageProps) {
               Original had specific Next Link. I will include it at bottom.
           */}
 
-          {nextSibling && (
-            <div className="mt-12 flex justify-end border-t pt-6">
-              <Link
-                href={`/informes/${nextSibling.slug}`}
-                className="group flex flex-col items-end text-right"
-              >
-                <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                  Siguiente Informe
-                </span>
-                <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
-                  {nextSibling.titulo}
-                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </span>
-              </Link>
+          {(prevSibling || nextSibling) && (
+            <div className="mt-12 flex items-center justify-between border-t pt-6 gap-4">
+              {prevSibling ? (
+                <Link
+                  href={`/informes/${prevSibling.slug}`}
+                  className="group flex flex-col items-start text-left"
+                >
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                    Anterior Informe
+                  </span>
+                  <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
+                    <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                    {prevSibling.titulo}
+                  </span>
+                </Link>
+              ) : (
+                <div />
+              )}
+
+              {nextSibling && (
+                <Link
+                  href={`/informes/${nextSibling.slug}`}
+                  className="group flex flex-col items-end text-right"
+                >
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                    Siguiente Informe
+                  </span>
+                  <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
+                    {nextSibling.titulo}
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              )}
             </div>
           )}
 

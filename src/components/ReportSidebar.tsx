@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ReportItem } from "@/lib/api";
 import {
+  ChevronLeft, // Added
   ChevronRight,
   FileText,
+  LayoutGrid, // Added
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -71,15 +73,16 @@ function SidebarContent({
       {/* Back Link */}
       {backLink && (
         <div className="mb-6">
-          <Link
-            href={backLink.href}
-            className="flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors gap-2"
+          <Button
+            variant="outline"
+            asChild
+            className="w-full justify-start gap-2 pl-2"
           >
-            <div className="p-1 rounded-full border bg-background">
-              <ChevronRight className="h-3 w-3 rotate-180" />
-            </div>
-            {backLink.label}
-          </Link>
+            <Link href={backLink.href} title={backLink.label}>
+              <ChevronLeft className="h-4 w-4" />
+              <span className="truncate">{backLink.label}</span>
+            </Link>
+          </Button>
         </div>
       )}
 
@@ -111,7 +114,7 @@ function SidebarContent({
       )}
 
       {/* Report Structure (Children/Siblings) */}
-      {(childrenReports.length > 0 || parentReport) && (
+      {childrenReports.length > 0 && (
         <div className="pt-6 border-t border-border/50">
           <h3 className="font-semibold mb-4 text-sm text-foreground uppercase tracking-wider flex items-center gap-2">
             <FileText className="h-4 w-4" />
