@@ -255,6 +255,10 @@ export const RichTextParser = ({ content }: { content: any }) => {
           if (tabla_relacionada.titulo) {
             title = tabla_relacionada.titulo;
           }
+        } else if (content.fields.data) {
+          // Handle manual tables with nested data object
+          columns = content.fields.data.columns || columns;
+          rows = content.fields.data.rows || rows;
         }
 
         return (
