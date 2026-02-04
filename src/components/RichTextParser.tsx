@@ -46,12 +46,12 @@ export const RichTextParser = ({ content }: { content: any }) => {
     case "heading": {
       const Tag = (content.tag || "h1") as React.ElementType;
       const headingClasses = {
-        h1: "text-4xl md:text-5xl font-extrabold mt-12 mb-6 tracking-tight text-foreground leading-tight",
-        h2: "text-3xl font-bold mt-10 mb-4 tracking-tight text-foreground/90 border-b pb-2",
-        h3: "text-2xl font-bold mt-8 mb-3 tracking-tight text-foreground/90",
-        h4: "text-xl font-bold mt-6 mb-3 text-foreground/80",
-        h5: "text-lg font-bold mt-6 mb-2 text-foreground/80 uppercase tracking-wide",
-        h6: "text-base font-bold mt-4 mb-2 text-foreground/70 uppercase",
+        h1: "text-4xl md:text-5xl font-extrabold mt-12 mb-6 tracking-tight text-foreground leading-tight scroll-mt-24",
+        h2: "text-3xl font-bold mt-10 mb-4 tracking-tight text-foreground/90 border-b pb-2 scroll-mt-24",
+        h3: "text-2xl font-bold mt-8 mb-3 tracking-tight text-foreground/90 scroll-mt-24",
+        h4: "text-xl font-bold mt-6 mb-3 text-foreground/80 scroll-mt-24",
+        h5: "text-lg font-bold mt-6 mb-2 text-foreground/80 uppercase tracking-wide scroll-mt-24",
+        h6: "text-base font-bold mt-4 mb-2 text-foreground/70 uppercase scroll-mt-24",
       };
       // fallback to h1 style if tag not found
       const className =
