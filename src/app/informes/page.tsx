@@ -26,7 +26,7 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
   });
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="container mx-auto px-4 space-y-8">
       <header className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold flex items-center gap-3">

@@ -1,7 +1,7 @@
 import { Source_Code_Pro, Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { Navbar } from "@/components/Navbar";
+import { Sidebar } from "@/components/Sidebar";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -20,13 +20,17 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${sourceCodePro.variable} ${inter.variable} font-sans`}
+        className={`${sourceCodePro.variable} ${inter.variable} font-sans bg-background`}
         suppressHydrationWarning
       >
         <AuthProvider>
           <ProtectedRoute>
-            <Navbar />
-            <main className="min-h-screen py-8 md:py-12">{children}</main>
+            <div className="flex min-h-screen">
+              <Sidebar />
+              <main className="flex-1 w-full py-8 md:py-12 overflow-x-hidden">
+                {children}
+              </main>
+            </div>
           </ProtectedRoute>
         </AuthProvider>
       </body>
