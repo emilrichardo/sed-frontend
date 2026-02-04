@@ -1,17 +1,18 @@
-import { getNews, getBulletins } from "@/lib/api";
+import { getNews, getBulletins, getReports } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { CreateNewsButton } from "@/components/CreateNewsButton";
 import { Stats } from "@/components/Stats";
 
 import Link from "next/link";
-import { FileText, ArrowRight } from "lucide-react";
+import { FileText, ArrowRight, BookOpen } from "lucide-react";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const [news, bulletins] = await Promise.all([
+  const [news, bulletins, reports] = await Promise.all([
     getNews(),
     getBulletins({ limit: 1 }),
+    getReports({ limit: 4, where: { parent: { exists: false } } }),
   ]);
 
   const latestBulletin = bulletins.docs[0];
@@ -75,6 +76,58 @@ export default async function Home() {
         )}
       </section>
 
+      <section className="mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <BookOpen className="h-6 w-6" />
+            Informes
+          </h2>
+          <Link
+            href="/informes"
+            className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+          >
+            Ver todos
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="space-y-4">
+          {reports.docs.map((item) => {
+            const contenido = item.contenido as any;
+
+            let description = "Sin descripción";
+            if (contenido?.root?.children) {
+              const firstTextNode = contenido.root.children.find(
+                (child: any) =>
+                  child.children &&
+                  child.children.length > 0 &&
+                  child.children[0].text,
+              );
+              if (firstTextNode) {
+                description = firstTextNode.children[0].text;
+              }
+            }
+
+            return (
+              <Card
+                key={item.id}
+                title={item.titulo}
+                description={description}
+                date={item.createdAt}
+                href={`/informes/${item.slug}`}
+                imageUrl={item.imagen_destacada?.url}
+                imageAlt={item.imagen_destacada?.alt}
+                layout="horizontal"
+              />
+            );
+          })}
+        </div>
+        {reports.docs.length === 0 && (
+          <p className="text-muted-foreground italic">
+            No hay informes disponibles.
+          </p>
+        )}
+      </section>
+
       <section>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold">Últimas Noticias</h2>
@@ -91,22 +144,20 @@ export default async function Home() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {news.docs.map((item) => {
-            // Extract a brief description from the content if available
-            const contenido = item.contenido as
-              | {
-                  root?: {
-                    children?: Array<{
-                      type?: string;
-                      children?: Array<{ text?: string }>;
-                    }>;
-                  };
-                }
-              | undefined;
-            const description =
-              contenido?.root?.children?.find(
-                (child) =>
-                  child.type === "paragraph" || child.type === "heading",
-              )?.children?.[0]?.text || "Sin descripción";
+            const contenido = item.contenido as any;
+
+            let description = "Sin descripción";
+            if (contenido?.root?.children) {
+              const firstTextNode = contenido.root.children.find(
+                (child: any) =>
+                  child.children &&
+                  child.children.length > 0 &&
+                  child.children[0].text,
+              );
+              if (firstTextNode) {
+                description = firstTextNode.children[0].text;
+              }
+            }
 
             return (
               <Card

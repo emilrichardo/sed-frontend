@@ -2,6 +2,7 @@ import React from "react";
 import { NewsItem } from "@/lib/api";
 import { RichTextParser } from "@/components/RichTextParser";
 import { BlockRenderer } from "@/components/BlockRenderer";
+import { EditContentButton } from "@/components/EditContentButton";
 
 interface NewsDetailProps {
   initialData: NewsItem;
@@ -27,6 +28,7 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({ initialData }) => {
 
             {initialData.autor && typeof initialData.autor === "object" && (
               <div className="flex items-center gap-3 pl-0 sm:pl-6 sm:border-l border-border/50">
+                {/* Fallback if foto is not present or url is missing */}
                 {initialData.autor.foto?.url ? (
                   <div className="w-10 h-10 rounded-full overflow-hidden border border-border shrink-0 shadow-sm">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -42,8 +44,8 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({ initialData }) => {
                 ) : (
                   <div className="w-10 h-10 rounded-full overflow-hidden border border-border shrink-0 bg-muted flex items-center justify-center shadow-sm">
                     <span className="text-xs font-bold text-muted-foreground">
-                      {initialData.autor.nombre?.[0]}
-                      {initialData.autor.apellido?.[0]}
+                      {(initialData.autor.nombre || "?")[0]}
+                      {(initialData.autor.apellido || "?")[0]}
                     </span>
                   </div>
                 )}
@@ -62,6 +64,10 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({ initialData }) => {
                 </div>
               </div>
             )}
+            <EditContentButton
+              collection={initialData.parent ? "informes" : "noticias"}
+              id={initialData.id}
+            />
           </div>
         )}
 

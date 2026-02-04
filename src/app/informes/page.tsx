@@ -39,22 +39,22 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-6">
         {reports.docs.map((item) => {
-          const contenido = item.contenido as
-            | {
-                root?: {
-                  children?: Array<{
-                    type?: string;
-                    children?: Array<{ text?: string }>;
-                  }>;
-                };
-              }
-            | undefined;
-          const description =
-            contenido?.root?.children?.find(
-              (child) => child.type === "paragraph" || child.type === "heading",
-            )?.children?.[0]?.text || "Sin descripción";
+          const contenido = item.contenido as any;
+
+          let description = "Sin descripción";
+          if (contenido?.root?.children) {
+            const firstTextNode = contenido.root.children.find(
+              (child: any) =>
+                child.children &&
+                child.children.length > 0 &&
+                child.children[0].text,
+            );
+            if (firstTextNode) {
+              description = firstTextNode.children[0].text;
+            }
+          }
 
           return (
             <Card
@@ -65,6 +65,7 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
               href={`/informes/${item.slug}`}
               imageUrl={item.imagen_destacada?.url}
               imageAlt={item.imagen_destacada?.alt}
+              layout="horizontal"
             />
           );
         })}
