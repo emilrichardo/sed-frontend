@@ -62,6 +62,8 @@ export default async function NewsArchivePage({ searchParams }: PageProps) {
               description={description}
               date={item.createdAt}
               href={`/noticias/${item.slug}`}
+              imageUrl={item.imagen_destacada?.url}
+              imageAlt={item.imagen_destacada?.alt}
             />
           );
         })}

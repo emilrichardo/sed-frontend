@@ -63,6 +63,8 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
               description={description}
               date={item.createdAt}
               href={`/informes/${item.slug}`}
+              imageUrl={item.imagen_destacada?.url}
+              imageAlt={item.imagen_destacada?.alt}
             />
           );
         })}

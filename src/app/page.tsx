@@ -115,6 +115,8 @@ export default async function Home() {
                 description={description}
                 date={item.createdAt}
                 href={`/noticias/${item.slug}`}
+                imageUrl={item.imagen_destacada?.url}
+                imageAlt={item.imagen_destacada?.alt}
               />
             );
           })}

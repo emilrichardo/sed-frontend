@@ -69,6 +69,19 @@ export default async function BulletinDetailPage({
           {bulletin.cantidad_paginas} páginas
         </p>
         <BulletinActions bulletin={bulletin} />
+
+        {bulletin.imagen_destacada?.url && (
+          <div className="mt-6 rounded-lg overflow-hidden relative aspect-video shadow-sm border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={bulletin.imagen_destacada.url}
+              alt={
+                bulletin.imagen_destacada.alt || `Boletín ${bulletin.numero}`
+              }
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">

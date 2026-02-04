@@ -64,6 +64,17 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({ initialData }) => {
             )}
           </div>
         )}
+
+        {initialData.imagen_destacada?.url && (
+          <div className="mt-8 rounded-lg overflow-hidden relative aspect-video shadow-sm border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={initialData.imagen_destacada.url}
+              alt={initialData.imagen_destacada.alt || initialData.titulo}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
       </header>
 
       <div className="prose prose-neutral max-w-none font-sans">

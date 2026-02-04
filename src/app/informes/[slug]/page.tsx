@@ -150,6 +150,8 @@ export default async function ReportPage({ params }: PageProps) {
                   description={description}
                   date={child.createdAt}
                   href={`/informes/${child.slug}`}
+                  imageUrl={child.imagen_destacada?.url}
+                  imageAlt={child.imagen_destacada?.alt}
                 />
               );
             })}

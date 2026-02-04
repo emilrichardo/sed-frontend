@@ -109,6 +109,14 @@ export interface NewsItem {
         };
       }
     | number;
+  imagen_destacada?: {
+    id: number | string;
+    url: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 
@@ -168,6 +176,14 @@ export interface Boletin {
     | null;
   cant_actos?: number;
   procesamiento_asociado?: (string | Procesamiento)[] | null;
+  imagen_destacada?: {
+    id: number | string;
+    url: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+    [key: string]: unknown;
+  };
   createdAt: string;
   updatedAt: string;
 }
