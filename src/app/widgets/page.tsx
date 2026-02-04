@@ -120,7 +120,7 @@ export default async function WidgetsPage() {
   const widgets = await Promise.all(rawWidgets.map(resolveWidgetEntries));
 
   return (
-    <div className="max-w-7xl mx-auto py-8">
+    <div className="max-w-6xl mx-auto py-8">
       <header className="mb-12">
         <h1 className="text-3xl font-bold tracking-tight mb-4">Widgets</h1>
         <p className="text-muted-foreground text-lg max-w-2xl">
