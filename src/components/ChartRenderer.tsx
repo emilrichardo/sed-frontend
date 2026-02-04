@@ -23,6 +23,7 @@ import {
   PolarRadiusAxis,
   Radar,
   Treemap,
+  ReferenceLine,
 } from "recharts";
 
 // Color Palettes
@@ -331,6 +332,11 @@ export const ChartRenderer = ({
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
+            <ReferenceLine
+              x={0}
+              stroke="hsl(var(--muted-foreground))"
+              strokeOpacity={0.5}
+            />
             <XAxis
               type="number"
               tickFormatter={(val) => Math.abs(val).toLocaleString()}
@@ -376,10 +382,12 @@ export const ChartRenderer = ({
             <Legend
               verticalAlign="top"
               wrapperStyle={{ paddingBottom: "20px" }}
-              payload={[
-                { value: xLabel, type: "rect", color: colors[0] },
-                { value: yLabel, type: "rect", color: colors[1] },
-              ]}
+              {...({
+                payload: [
+                  { value: xLabel, type: "rect", color: colors[0] },
+                  { value: yLabel, type: "rect", color: colors[1] },
+                ],
+              } as any)}
             />
             <Bar
               dataKey="_left"
