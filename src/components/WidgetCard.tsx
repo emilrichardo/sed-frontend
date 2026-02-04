@@ -1,11 +1,12 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { WidgetItem } from "@/lib/api";
 import { ChartRenderer } from "./ChartRenderer";
-import { TableBlock } from "./TableBlock";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BarChart3, Table } from "lucide-react";
 
 interface WidgetCardProps {
   widget: WidgetItem;
@@ -26,14 +27,18 @@ const getEntryUrl = (relationTo: string, slug: string): string => {
 };
 
 // Helper to get image URL
-const getImageUrl = (image: any): string | null => {
+const getImageUrl = (image: unknown): string | null => {
   if (!image) return null;
   if (typeof image === "string") return image;
-  if (image.url) return image.url;
+  if (typeof image === "object" && image !== null && "url" in image) {
+    return (image as { url: string }).url;
+  }
   return null;
 };
 
 export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
+  const [activeTab, setActiveTab] = useState<"chart" | "table">("chart");
+
   // Check if this widget has specific entries to display
   const specificEntries = widget.config?.specific_entries;
   const hasSpecificEntries = specificEntries && specificEntries.length > 0;
@@ -42,9 +47,30 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
   const hasVisualizations =
     widget.tablas_graficos && widget.tablas_graficos.length > 0;
 
+  // Check if there are actual charts (not just tables)
+  const hasActualCharts =
+    hasVisualizations &&
+    widget.tablas_graficos!.some(
+      (item) =>
+        item.tipo_visualizacion &&
+        item.tipo_visualizacion !== "table" &&
+        item.tipo_visualizacion !== "list_view" &&
+        item.configuracion_visualizacion,
+    );
+
   // Get image URL
   const imageUrl = getImageUrl(widget.image);
   const isLocalhost = imageUrl?.includes("localhost");
+
+  // Get all table data for the table view
+  const tableData = hasVisualizations
+    ? widget.tablas_graficos!.map((item) => ({
+        id: item.id,
+        title: item.tabla_relacionada?.titulo || "Datos",
+        columns: item.tabla_relacionada?.data?.columns || [],
+        rows: item.tabla_relacionada?.data?.rows || [],
+      }))
+    : [];
 
   return (
     <div className="bg-card text-card-foreground rounded-lg border shadow-sm flex flex-col h-full">
@@ -72,54 +98,197 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
         )}
       </div>
 
-      <div className="p-6 pt-0 flex-grow flex flex-col gap-6">
-        {/* Render chart/table visualizations (priority) */}
-        {hasVisualizations &&
-          widget.tablas_graficos!.map((item) => {
-            const type = item.tipo_visualizacion;
+      {/* Tab Switcher - only for widgets with actual charts (not tables) */}
+      {hasActualCharts && (
+        <div className="px-6 pb-2">
+          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md w-fit">
+            <button
+              onClick={() => setActiveTab("chart")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+                activeTab === "chart"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              Gráfico
+            </button>
+            <button
+              onClick={() => setActiveTab("table")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+                activeTab === "table"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <Table className="h-3.5 w-3.5" />
+              Tabla
+            </button>
+          </div>
+        </div>
+      )}
 
-            if (
-              item.configuracion_visualizacion &&
-              item.tabla_relacionada?.data
-            ) {
-              return (
-                <div key={item.id} className="w-full min-h-[300px]">
-                  <ChartRenderer
-                    type={type}
-                    data={item.tabla_relacionada.data.rows}
-                    columns={item.tabla_relacionada.data.columns}
-                    config={item.configuracion_visualizacion}
-                  />
-                </div>
-              );
-            } else if (item.tabla_relacionada?.data) {
-              return <TableBlock key={item.id} fields={item as any} />;
-            }
-            return null;
-          })}
+      <div className="p-6 pt-2 flex-grow flex flex-col gap-6">
+        {/* Chart View - only shown when there are actual charts and chart tab is active */}
+        {hasActualCharts && activeTab === "chart" && (
+          <>
+            {widget.tablas_graficos!.map((item) => {
+              const type = item.tipo_visualizacion;
+
+              if (
+                item.configuracion_visualizacion &&
+                item.tabla_relacionada?.data
+              ) {
+                return (
+                  <div key={item.id} className="w-full min-h-[300px]">
+                    <ChartRenderer
+                      type={type}
+                      data={item.tabla_relacionada.data.rows}
+                      columns={item.tabla_relacionada.data.columns}
+                      config={item.configuracion_visualizacion}
+                    />
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </>
+        )}
+
+        {/* Table View - shown when chart widget has table tab active */}
+        {hasActualCharts && activeTab === "table" && (
+          <div className="overflow-x-auto">
+            {tableData.map((table) => (
+              <div key={table.id} className="mb-4">
+                {table.title && (
+                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+                    {table.title}
+                  </h4>
+                )}
+                <table className="w-full text-sm border rounded-md overflow-hidden">
+                  <thead>
+                    <tr className="bg-muted/50 border-b">
+                      {table.columns?.map(
+                        (col: { id: string; header: string }, i: number) => (
+                          <th
+                            key={col.id || i}
+                            className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap"
+                          >
+                            {col.header}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {table.rows?.map(
+                      (row: Record<string, unknown>, i: number) => (
+                        <tr
+                          key={i}
+                          className="hover:bg-muted/50 transition-colors"
+                        >
+                          {table.columns?.map(
+                            (
+                              col: { id: string; header: string },
+                              j: number,
+                            ) => (
+                              <td key={col.id || j} className="px-4 py-3">
+                                {String(row[col.id] ?? "")}
+                              </td>
+                            ),
+                          )}
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Table-only widgets - show table directly without tabs */}
+        {hasVisualizations && !hasActualCharts && (
+          <div className="overflow-x-auto">
+            {tableData.map((table) => (
+              <div key={table.id} className="mb-4">
+                {table.title && (
+                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+                    {table.title}
+                  </h4>
+                )}
+                <table className="w-full text-sm border rounded-md overflow-hidden">
+                  <thead>
+                    <tr className="bg-muted/50 border-b">
+                      {table.columns?.map(
+                        (col: { id: string; header: string }, i: number) => (
+                          <th
+                            key={col.id || i}
+                            className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap"
+                          >
+                            {col.header}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {table.rows?.map(
+                      (row: Record<string, unknown>, i: number) => (
+                        <tr
+                          key={i}
+                          className="hover:bg-muted/50 transition-colors"
+                        >
+                          {table.columns?.map(
+                            (
+                              col: { id: string; header: string },
+                              j: number,
+                            ) => (
+                              <td key={col.id || j} className="px-4 py-3">
+                                {String(row[col.id] ?? "")}
+                              </td>
+                            ),
+                          )}
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Render specific entries as a list of links (only if no visualizations) */}
         {!hasVisualizations && hasSpecificEntries && (
           <ul className="space-y-2">
-            {specificEntries.map((entry: any, index: number) => {
-              const relationTo = entry.relationTo;
-              const value = entry.value;
-              if (!value || !value.titulo || !value.slug) return null;
+            {specificEntries.map(
+              (
+                entry: {
+                  relationTo: string;
+                  value: { id?: number; titulo?: string; slug?: string };
+                },
+                index: number,
+              ) => {
+                const relationTo = entry.relationTo;
+                const value = entry.value;
+                if (!value || !value.titulo || !value.slug) return null;
 
-              return (
-                <li key={value.id || index}>
-                  <Link
-                    href={getEntryUrl(relationTo, value.slug)}
-                    className="flex items-center gap-2 p-3 rounded-md border bg-muted/30 hover:bg-muted/60 transition-colors group"
-                  >
-                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-                    <span className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
-                      {value.titulo}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
+                return (
+                  <li key={value.id || index}>
+                    <Link
+                      href={getEntryUrl(relationTo, value.slug)}
+                      className="flex items-center gap-2 p-3 rounded-md border bg-muted/30 hover:bg-muted/60 transition-colors group"
+                    >
+                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                      <span className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
+                        {value.titulo}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              },
+            )}
           </ul>
         )}
 

@@ -192,7 +192,14 @@ export const ChartRenderer = ({
             <Tooltip
               content={<CustomTooltip columns={columns} valueKey={yKey} />}
             />
-            <Bar dataKey={yKey} fill={colors[0]} radius={[0, 4, 4, 0]} />
+            <Bar dataKey={yKey} radius={[0, 4, 4, 0]}>
+              {chartData.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={colors[index % colors.length]}
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       );
