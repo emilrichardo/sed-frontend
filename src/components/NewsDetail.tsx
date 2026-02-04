@@ -3,12 +3,17 @@ import { NewsItem } from "@/lib/api";
 import { RichTextParser } from "@/components/RichTextParser";
 import { BlockRenderer } from "@/components/BlockRenderer";
 import { EditContentButton } from "@/components/EditContentButton";
+import { SourcesSection } from "@/components/SourcesSection";
 
 interface NewsDetailProps {
   initialData: NewsItem;
+  hideSources?: boolean;
 }
 
-export const NewsDetail: React.FC<NewsDetailProps> = ({ initialData }) => {
+export const NewsDetail: React.FC<NewsDetailProps> = ({
+  initialData,
+  hideSources = false,
+}) => {
   return (
     <>
       <header className="mb-10 border-b border-border pb-8">
@@ -90,6 +95,8 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({ initialData }) => {
           <BlockRenderer blocks={initialData.layout || []} />
         )}
       </div>
+
+      {!hideSources && <SourcesSection content={initialData.fuentes} />}
     </>
   );
 };

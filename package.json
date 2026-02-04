@@ -32,6 +32,7 @@
     "pdfjs-dist": "^5.4.530",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "react-pageflip": "^2.0.3",
     "react-pdf": "^10.3.0",
     "recharts": "^3.7.0",

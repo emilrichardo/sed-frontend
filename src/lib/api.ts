@@ -117,6 +117,7 @@ export interface NewsItem {
     height?: number;
     [key: string]: unknown;
   };
+  fuentes?: string;
   [key: string]: unknown;
 }
 

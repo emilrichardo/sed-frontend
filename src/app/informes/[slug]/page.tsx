@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
+import { SourcesSection } from "@/components/SourcesSection";
 
 export const revalidate = 60;
 
@@ -55,7 +56,8 @@ export default async function ReportPage({ params }: PageProps) {
 
   // 2. Fetch Siblings (if has parent)
   let nextSibling: ReportItem | null = null;
-  let prevSibling: ReportItem | null = null;
+  let prevSibling: ReportItem | null = null; // lint fix: kept but unused, or removing? Keep to avoid major shuffle
+  // Actually I can just remove prevSibling if it's unused and causing warnings
   let siblings: ReportItem[] = [];
 
   if (parentId) {
@@ -69,9 +71,6 @@ export default async function ReportPage({ params }: PageProps) {
     if (currentIndex !== -1) {
       if (currentIndex < siblings.length - 1) {
         nextSibling = siblings[currentIndex + 1];
-      }
-      if (currentIndex > 0) {
-        prevSibling = siblings[currentIndex - 1];
       }
     }
   }
@@ -125,7 +124,7 @@ export default async function ReportPage({ params }: PageProps) {
         )}
       </div>
 
-      <NewsDetail initialData={reportItem} />
+      <NewsDetail initialData={reportItem} hideSources={true} />
 
       {/* Children List / Menu */}
       {children.length > 0 && (
@@ -138,10 +137,18 @@ export default async function ReportPage({ params }: PageProps) {
             {children.map((child) => {
               // Isolate description extraction
               const contenido = child.contenido as any;
-              const description =
-                contenido?.root?.children?.find(
-                  (c: any) => c.type === "paragraph" || c.type === "heading",
-                )?.children?.[0]?.text || "Sin descripción";
+              let description = "Sin descripción";
+              if (contenido?.root?.children) {
+                const firstTextNode = contenido.root.children.find(
+                  (child: any) =>
+                    child.children &&
+                    child.children.length > 0 &&
+                    child.children[0].text,
+                );
+                if (firstTextNode) {
+                  description = firstTextNode.children[0].text;
+                }
+              }
 
               return (
                 <Card
@@ -158,6 +165,9 @@ export default async function ReportPage({ params }: PageProps) {
           </div>
         </div>
       )}
+
+      {/* Sources Section Rendering at the bottom */}
+      <SourcesSection content={reportItem.fuentes} />
     </article>
   );
 }
