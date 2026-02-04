@@ -186,6 +186,7 @@ export const ChartRenderer = ({
               type="category"
               width={150}
               tick={{ fontSize: 12 }}
+              interval={0}
             />
             <Tooltip
               content={<CustomTooltip columns={columns} valueKey={yKey} />}
