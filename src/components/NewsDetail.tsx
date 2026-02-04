@@ -41,7 +41,8 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
               const author =
                 typeof rawAuthor === "object" && rawAuthor ? rawAuthor : null;
 
-              if (!author) {
+              // Ensure at least a name or surname is present to display
+              if (!author || (!author.nombre && !author.apellido)) {
                 return null;
               }
 
