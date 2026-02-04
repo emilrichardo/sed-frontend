@@ -242,7 +242,20 @@ export const RichTextParser = ({ content }: { content: any }) => {
 
     case "block":
       if (content.fields?.blockType === "table") {
-        const { title, columns, rows } = content.fields;
+        let { title, columns, rows, source_type, tabla_relacionada } =
+          content.fields;
+
+        // Handle collection-sourced tables
+        if (source_type === "collection" && tabla_relacionada?.data) {
+          const relatedData = tabla_relacionada.data;
+          columns = relatedData.columns || [];
+          rows = relatedData.rows || [];
+          // Use related title as fallback if local title is missing
+          if (!title) {
+            title = tabla_relacionada.titulo;
+          }
+        }
+
         return (
           <div className="my-8 overflow-hidden border rounded-lg shadow-sm">
             {title && (
@@ -267,16 +280,24 @@ export const RichTextParser = ({ content }: { content: any }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {rows?.map((row: any) => (
+                  {rows?.map((row: any, rowIndex: number) => (
                     <tr
-                      key={row.id}
+                      key={row.id || rowIndex}
                       className="hover:bg-muted/20 transition-colors"
                     >
-                      {row.cells?.map((cell: any) => (
-                        <td key={cell.id} className="p-3">
-                          {cell.value}
-                        </td>
-                      ))}
+                      {row.cells
+                        ? // Legacy cells-based format
+                          row.cells.map((cell: any) => (
+                            <td key={cell.id} className="p-3">
+                              {cell.value}
+                            </td>
+                          ))
+                        : // New collection-based format (keyed by column ID)
+                          columns?.map((col: any) => (
+                            <td key={col.id} className="p-3">
+                              {row[col.id]}
+                            </td>
+                          ))}
                     </tr>
                   ))}
                 </tbody>

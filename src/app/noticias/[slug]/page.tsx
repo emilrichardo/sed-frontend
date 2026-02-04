@@ -1,5 +1,5 @@
 import { getNewsItem } from "@/lib/api";
-import { NewsEditable } from "@/components/NewsEditable";
+import { NewsDetail } from "@/components/NewsDetail";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -41,7 +41,7 @@ export default async function NewsPage({ params }: PageProps) {
         Volver al inicio
       </Link>
 
-      <NewsEditable initialData={newsItem} />
+      <NewsDetail initialData={newsItem} />
 
       {/* Debug view for raw data if needed, commented out for prod */}
       {/*

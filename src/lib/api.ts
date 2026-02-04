@@ -90,6 +90,19 @@ export interface NewsItem {
       children?: Array<{ type?: string; children?: Array<{ text?: string }> }>;
     };
   } | null;
+  autor?:
+    | {
+        id: number | string;
+        nombre: string;
+        apellido: string;
+        cargo?: string;
+        foto?: {
+          url: string;
+          alt?: string | null;
+          [key: string]: unknown;
+        };
+      }
+    | number;
   [key: string]: unknown;
 }
 
@@ -282,9 +295,9 @@ export async function getNewsItem(slug: string): Promise<NewsItem | null> {
   try {
     // Search by slug
     const res = await fetch(
-      `${API_URL}/noticias?where[slug][equals]=${slug}&depth=2&draft=false`,
+      `${API_URL}/noticias?where[slug][equals]=${slug}&depth=3&draft=false`,
       {
-        next: { revalidate: 60 },
+        cache: "no-store",
       },
     );
 
