@@ -27,8 +27,7 @@ import {
 } from "recharts";
 
 // Color Palettes
-const COLORS_DEFAULT = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
-const COLORS_VIBRANT = [
+const COLORS_DEFAULT = [
   "#2563eb", // Blue
   "#db2777", // Pink
   "#ea580c", // Orange
@@ -38,11 +37,13 @@ const COLORS_VIBRANT = [
   "#ca8a04", // Yellow
   "#dc2626", // Red
 ];
+const COLORS_SLATE = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
 const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#dc2626"]; // Green, Yellow, Red
 const COLORS_HEATMAP = ["#fee2e2", "#fca5a5", "#ef4444", "#b91c1c", "#7f1d1d"];
 
 type ChartConfig = {
-  colores?: "default" | "vibrant" | "semaphore" | "heatmap";
+  colores?: "default" | "slate" | "semaphore" | "heatmap";
+  colors?: string[]; // Custom colors array override
   eje_principal?: string; // X Axis (Label) - matches Column Header
   eje_valores?: string; // Y Axis (Value) - matches Column Header
   eje_secundario?: string; // Grouping/Stacking - matches Column Header
@@ -54,8 +55,8 @@ type ChartData = {
 
 const getColors = (palette?: string) => {
   switch (palette) {
-    case "vibrant":
-      return COLORS_VIBRANT;
+    case "slate":
+      return COLORS_SLATE;
     case "semaphore":
       return COLORS_SEMAPHORE;
     case "heatmap":
@@ -151,7 +152,16 @@ export const ChartRenderer = ({
   columns: any[];
 }) => {
   const chartData = prepareData(rawData, columns);
-  const colors = getColors(config?.colores);
+
+  // Determine Colors: Priority to explicit config.colors array, then palette
+  let colors = getColors(config?.colores);
+  if (
+    config?.colors &&
+    Array.isArray(config.colors) &&
+    config.colors.length > 0
+  ) {
+    colors = config.colors;
+  }
 
   // Resolve Data Keys
   const xKey = getDataKey(columns, config?.eje_principal) || columns[0]?.id; // Default to first col
@@ -214,7 +224,14 @@ export const ChartRenderer = ({
             <Tooltip
               content={<CustomTooltip columns={columns} valueKey={yKey} />}
             />
-            <Bar dataKey={yKey} fill={colors[0]} radius={[4, 4, 0, 0]} />
+            <Bar dataKey={yKey} radius={[4, 4, 0, 0]}>
+              {chartData.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={colors[index % colors.length]}
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       );
