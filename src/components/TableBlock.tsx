@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Table, Code, Eye } from "lucide-react";
+import { ChartRenderer } from "./ChartRenderer";
 
 export const TableBlock = ({
   fields,
@@ -130,6 +131,19 @@ export const TableBlock = ({
         <>
           {/* Visualization Content */}
           <div className="overflow-x-auto">
+            {fields.tipo_visualizacion &&
+              fields.tipo_visualizacion !== "table" &&
+              fields.tipo_visualizacion !== "list_view" && (
+                <div className="p-4 bg-card mb-6 border-b">
+                  <ChartRenderer
+                    type={fields.tipo_visualizacion}
+                    config={fields.configuracion_visualizacion}
+                    data={rows}
+                    columns={columns}
+                  />
+                </div>
+              )}
+
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b">
@@ -168,7 +182,6 @@ export const TableBlock = ({
               </tbody>
             </table>
           </div>
-
           {/* Footer Metadata */}
           {(fields.tipo_visualizacion ||
             tabla_relacionada?.fuente ||
