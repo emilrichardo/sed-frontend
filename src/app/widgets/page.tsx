@@ -89,7 +89,7 @@ async function resolveWidgetEntries(widget: WidgetItem): Promise<WidgetItem> {
   const hasCharts = widget.tablas_graficos && widget.tablas_graficos.length > 0;
   if (hasCharts) return widget;
 
-  const specificEntries = config.specific_entries || [];
+  const specificEntries = (config.specific_entries as any[]) || [];
   const hasManualEntries = specificEntries.length > 0;
 
   // If manual entries exist, use them as-is
@@ -98,9 +98,9 @@ async function resolveWidgetEntries(widget: WidgetItem): Promise<WidgetItem> {
   // If no manual entries but collection is set, fetch latest
   if (config.collection && config.limit) {
     const fetchedEntries = await fetchEntriesForCollection(
-      config.collection,
-      config.limit,
-      config.period,
+      config.collection as string,
+      config.limit as number,
+      config.period as string | undefined,
     );
 
     return {
