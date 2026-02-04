@@ -1,5 +1,16 @@
 import React from "react";
 import { TableBlock } from "./TableBlock";
+import slugify from "slugify";
+
+export const getTextFromNodes = (nodes: any): string => {
+  if (!nodes) return "";
+  if (Array.isArray(nodes)) {
+    return nodes.map((node) => getTextFromNodes(node)).join("");
+  }
+  if (nodes.text) return nodes.text;
+  if (nodes.children) return getTextFromNodes(nodes.children);
+  return "";
+};
 
 export const RichTextParser = ({ content }: { content: any }) => {
   if (!content) return null;
@@ -47,8 +58,11 @@ export const RichTextParser = ({ content }: { content: any }) => {
         headingClasses[content.tag as keyof typeof headingClasses] ||
         headingClasses.h1;
 
+      const text = getTextFromNodes(content.children);
+      const id = slugify(text, { lower: true, strict: true });
+
       return (
-        <Tag className={className}>
+        <Tag className={className} id={id} data-heading-label={text}>
           <RichTextParser content={content.children} />
         </Tag>
       );

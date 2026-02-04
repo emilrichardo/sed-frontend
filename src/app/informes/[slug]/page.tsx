@@ -6,6 +6,9 @@ import { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { SourcesSection } from "@/components/SourcesSection";
+import { ReportSidebar } from "@/components/ReportSidebar";
+import { getTextFromNodes } from "@/components/RichTextParser";
+import slugify from "slugify";
 
 export const revalidate = 0;
 
@@ -32,6 +35,31 @@ export async function generateMetadata({
   };
 }
 
+function extractHeadings(
+  node: any,
+): { id: string; text: string; level: number }[] {
+  let headings: { id: string; text: string; level: number }[] = [];
+  if (!node) return headings;
+
+  // Check if current node is a heading
+  if (node.type === "heading" && (node.tag === "h1" || node.tag === "h2")) {
+    const text = getTextFromNodes(node.children);
+    const id = slugify(text, { lower: true, strict: true });
+    // Determine level
+    const level = node.tag === "h1" ? 1 : 2;
+    headings.push({ id, text, level });
+  }
+
+  // Recursively check children
+  if (node.children && Array.isArray(node.children)) {
+    node.children.forEach((child: any) => {
+      headings = headings.concat(extractHeadings(child));
+    });
+  }
+
+  return headings;
+}
+
 export default async function ReportPage({ params }: PageProps) {
   const { slug } = await params;
   const reportItem = await getReportItem(slug);
@@ -56,8 +84,7 @@ export default async function ReportPage({ params }: PageProps) {
 
   // 2. Fetch Siblings (if has parent)
   let nextSibling: ReportItem | null = null;
-  let prevSibling: ReportItem | null = null; // lint fix: kept but unused, or removing? Keep to avoid major shuffle
-  // Actually I can just remove prevSibling if it's unused and causing warnings
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let siblings: ReportItem[] = [];
 
   if (parentId) {
@@ -75,8 +102,11 @@ export default async function ReportPage({ params }: PageProps) {
     }
   }
 
+  // 3. Extract Headings for TOC
+  const headings = extractHeadings(reportItem.contenido?.root);
+
   return (
-    <article className="max-w-4xl mx-auto pb-12">
+    <article className="max-w-7xl mx-auto pb-12 px-4 sm:px-6">
       {/* Navigation Header */}
       <div className="mb-8 flex items-center justify-between">
         {parent ? (
@@ -103,7 +133,7 @@ export default async function ReportPage({ params }: PageProps) {
           </Link>
         )}
 
-        {/* Sibling Navigation - Only showing Next as requested ("paginador siguiente hermano") */}
+        {/* Sibling Navigation */}
         {nextSibling && (
           <Link
             href={`/informes/${nextSibling.slug}`}
@@ -124,50 +154,65 @@ export default async function ReportPage({ params }: PageProps) {
         )}
       </div>
 
-      <NewsDetail initialData={reportItem} hideSources={true} />
+      <div className="flex flex-col lg:flex-row gap-12">
+        {/* Sidebar */}
+        <ReportSidebar
+          className="lg:w-1/4 shrink-0"
+          headings={headings}
+          childrenReports={children}
+          parentReport={parent}
+          currentSlug={slug}
+        />
 
-      {/* Children List / Menu */}
-      {children.length > 0 && (
-        <div className="mt-16 pt-8 border-t">
-          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-muted-foreground" />
-            Contenido de este informe
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {children.map((child) => {
-              // Isolate description extraction
-              const contenido = child.contenido as any;
-              let description = "Sin descripción";
-              if (contenido?.root?.children) {
-                const firstTextNode = contenido.root.children.find(
-                  (child: any) =>
-                    child.children &&
-                    child.children.length > 0 &&
-                    child.children[0].text,
-                );
-                if (firstTextNode) {
-                  description = firstTextNode.children[0].text;
-                }
-              }
+        {/* Main Content */}
+        <div className="lg:w-3/4 min-w-0">
+          <NewsDetail initialData={reportItem} hideSources={true} />
 
-              return (
-                <Card
-                  key={child.id}
-                  title={child.titulo}
-                  description={description}
-                  date={child.createdAt}
-                  href={`/informes/${child.slug}`}
-                  imageUrl={child.imagen_destacada?.url}
-                  imageAlt={child.imagen_destacada?.alt}
-                />
-              );
-            })}
+          {/* Children List Grid - Keeping it as visual overview at bottom too */}
+          {children.length > 0 && (
+            <div className="mt-16 pt-8 border-t">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+                Secciones
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {children.map((child) => {
+                  const contenido = child.contenido as any;
+                  let description = "Sin descripción";
+                  if (contenido?.root?.children) {
+                    const firstTextNode = contenido.root.children.find(
+                      (child: any) =>
+                        child.children &&
+                        child.children.length > 0 &&
+                        child.children[0].text,
+                    );
+                    if (firstTextNode) {
+                      description = firstTextNode.children[0].text;
+                    }
+                  }
+
+                  return (
+                    <Card
+                      key={child.id}
+                      title={child.titulo}
+                      description={description}
+                      date={child.createdAt}
+                      href={`/informes/${child.slug}`}
+                      imageUrl={child.imagen_destacada?.url}
+                      imageAlt={child.imagen_destacada?.alt}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Sources Section Rendering at the bottom */}
+          <div className="mt-12">
+            <SourcesSection content={reportItem.fuentes} />
           </div>
         </div>
-      )}
-
-      {/* Sources Section Rendering at the bottom */}
-      <SourcesSection content={reportItem.fuentes} />
+      </div>
     </article>
   );
 }
