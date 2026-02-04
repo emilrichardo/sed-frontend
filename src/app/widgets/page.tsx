@@ -6,6 +6,8 @@ import {
   WidgetItem,
 } from "@/lib/api";
 import { WidgetCard } from "@/components/WidgetCard";
+import { PageHeader } from "@/components/PageHeader";
+import { Layout } from "lucide-react";
 import { Metadata } from "next";
 
 export const revalidate = 0;
@@ -120,13 +122,12 @@ export default async function WidgetsPage() {
   const widgets = await Promise.all(rawWidgets.map(resolveWidgetEntries));
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <header className="mb-12">
-        <h1 className="text-3xl font-bold tracking-tight mb-4">Widgets</h1>
-        <p className="text-muted-foreground text-lg max-w-2xl">
-          Visualizaciones rápidas de indicadores clave y comparativas.
-        </p>
-      </header>
+    <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
+      <PageHeader
+        title="Widgets"
+        description="Visualizaciones rápidas de indicadores clave y comparativas."
+        icon={Layout}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {widgets.map((widget) => (

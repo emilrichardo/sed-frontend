@@ -27,9 +27,7 @@ export default function RootLayout({
           <ProtectedRoute>
             <div className="flex min-h-screen">
               <Sidebar />
-              <main className="flex-1 w-full py-8 md:py-12 overflow-x-hidden">
-                {children}
-              </main>
+              <main className="flex-1 w-full min-w-0">{children}</main>
             </div>
           </ProtectedRoute>
         </AuthProvider>

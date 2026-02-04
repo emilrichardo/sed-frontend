@@ -29,7 +29,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Hide global sidebar on Report Detail pages
+  const isReportDetail =
+    pathname.startsWith("/informes/") && pathname.split("/").length > 2;
+
   if (!user) return null;
+  if (isReportDetail) return null;
 
   return (
     <aside

@@ -1,7 +1,8 @@
 import { getReports } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/PageHeader";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, BarChart } from "lucide-react";
 
 export const revalidate = 60;
 
@@ -26,20 +27,14 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
   });
 
   return (
-    <div className="container mx-auto px-4 space-y-8">
-      <header className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <FileText className="h-8 w-8 text-primary" />
-            Informes
-          </h1>
-        </div>
-        <p className="text-muted-foreground">
-          Informes técnicos y análisis detallados de Santiago en Datos.
-        </p>
-      </header>
+    <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
+      <PageHeader
+        title="Informes"
+        description="Informes técnicos y análisis detallados de Santiago en Datos."
+        icon={BarChart}
+      />
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {reports.docs.map((item) => {
           const contenido = item.contenido as any;
 
@@ -65,7 +60,6 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
               href={`/informes/${item.slug}`}
               imageUrl={item.imagen_destacada?.url}
               imageAlt={item.imagen_destacada?.alt}
-              layout="horizontal"
             />
           );
         })}

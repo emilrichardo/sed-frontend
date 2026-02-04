@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
-import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
+import { ChevronRight, LayoutGrid } from "lucide-react";
 import { SourcesSection } from "@/components/SourcesSection";
 import { ReportSidebar } from "@/components/ReportSidebar";
 import { getTextFromNodes } from "@/components/RichTextParser";
@@ -105,70 +105,52 @@ export default async function ReportPage({ params }: PageProps) {
   // 3. Extract Headings for TOC
   const headings = extractHeadings(reportItem.contenido?.root);
 
+  // Determine Back Link
+  const backLink = parent
+    ? { href: `/informes/${parent.slug}`, label: `Volver a ${parent.titulo}` }
+    : { href: "/informes", label: "Volver a Informes" };
+
   return (
-    <article className="max-w-7xl mx-auto pb-12 px-4 sm:px-6">
-      {/* Navigation Header */}
-      <div className="mb-8 flex items-center justify-between">
-        {parent ? (
-          <Link
-            href={`/informes/${parent.slug}`}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group"
-          >
-            <div className="p-1 rounded-full border bg-background group-hover:border-primary/50 transition-colors">
-              <ChevronLeft className="h-4 w-4" />
-            </div>
-            <span className="hidden sm:inline">Volver a {parent.titulo}</span>
-            <span className="sm:hidden">Volver</span>
-          </Link>
-        ) : (
-          <Link
-            href="/informes"
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group"
-          >
-            <div className="p-1 rounded-full border bg-background group-hover:border-primary/50 transition-colors">
-              <ChevronLeft className="h-4 w-4" />
-            </div>
-            <span className="hidden sm:inline">Volver a Informes</span>
-            <span className="sm:hidden">Volver</span>
-          </Link>
-        )}
+    <div className="flex flex-col lg:flex-row min-h-screen">
+      {/* Report Sidebar - Replaces Global Sidebar */}
+      <ReportSidebar
+        headings={headings}
+        childrenReports={children}
+        parentReport={parent}
+        currentSlug={slug}
+        backLink={backLink}
+      />
 
-        {/* Sibling Navigation */}
-        {nextSibling && (
-          <Link
-            href={`/informes/${nextSibling.slug}`}
-            className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-2 group text-right"
-          >
-            <div className="flex flex-col items-end">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                Siguiente
-              </span>
-              <span className="max-w-[150px] truncate">
-                {nextSibling.titulo}
-              </span>
-            </div>
-            <div className="p-1 rounded-full border bg-background group-hover:border-primary/50 transition-colors">
-              <ChevronRight className="h-4 w-4" />
-            </div>
-          </Link>
-        )}
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-12">
-        {/* Sidebar */}
-        <ReportSidebar
-          className="lg:w-1/4 shrink-0"
-          headings={headings}
-          childrenReports={children}
-          parentReport={parent}
-          currentSlug={slug}
-        />
-
-        {/* Main Content */}
-        <div className="lg:w-3/4 min-w-0">
+      {/* Main Content Area */}
+      <main className="flex-1 min-w-0 bg-background">
+        <article className="max-w-4xl mx-auto py-8 px-4 md:py-12 md:px-8">
+          {/* Main Content */}
           <NewsDetail initialData={reportItem} hideSources={true} />
 
-          {/* Children List Grid - Keeping it as visual overview at bottom too */}
+          {/* Sibling Navigation - Moved specific location if needed,
+              but usually handled by Sidebar or specific footer.
+              Keeping specific next link if desired, or relying on sidebar.
+              Original had specific Next Link. I will include it at bottom.
+          */}
+
+          {nextSibling && (
+            <div className="mt-12 flex justify-end border-t pt-6">
+              <Link
+                href={`/informes/${nextSibling.slug}`}
+                className="group flex flex-col items-end text-right"
+              >
+                <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                  Siguiente Informe
+                </span>
+                <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
+                  {nextSibling.titulo}
+                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+            </div>
+          )}
+
+          {/* Children List Grid */}
           {children.length > 0 && (
             <div className="mt-16 pt-8 border-t">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -207,12 +189,12 @@ export default async function ReportPage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Sources Section Rendering at the bottom */}
+          {/* Sources Section */}
           <div className="mt-12">
             <SourcesSection content={reportItem.fuentes} />
           </div>
-        </div>
-      </div>
-    </article>
+        </article>
+      </main>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import { getNews } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { CreateNewsButton } from "@/components/CreateNewsButton";
+import { PageHeader } from "@/components/PageHeader";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
 
@@ -24,19 +25,13 @@ export default async function NewsArchivePage({ searchParams }: PageProps) {
   });
 
   return (
-    <div className="container mx-auto px-4 space-y-8">
-      <header className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Newspaper className="h-8 w-8 text-primary" />
-            Noticias
-          </h1>
-          <CreateNewsButton />
-        </div>
-        <p className="text-muted-foreground">
-          Explora las últimas novedades y artículos de Santiago en Datos.
-        </p>
-      </header>
+    <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
+      <PageHeader
+        title="Noticias"
+        description="Explora las últimas novedades y artículos de Santiago en Datos."
+        icon={Newspaper}
+        actions={<CreateNewsButton />}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.docs.map((item) => {

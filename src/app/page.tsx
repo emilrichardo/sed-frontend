@@ -18,7 +18,7 @@ export default async function Home() {
   const latestBulletin = bulletins.docs[0];
 
   return (
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto px-4 py-8 md:py-12">
       <Stats />
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
