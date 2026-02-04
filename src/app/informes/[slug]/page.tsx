@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { SourcesSection } from "@/components/SourcesSection";
 
-export const revalidate = 60;
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{

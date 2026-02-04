@@ -317,10 +317,15 @@ export async function getNews(
 export async function getNewsItem(slug: string): Promise<NewsItem | null> {
   try {
     // Search by slug
+    const timestamp = Date.now();
     const res = await fetch(
-      `${API_URL}/noticias?where[slug][equals]=${slug}&depth=3&draft=false`,
+      `${API_URL}/noticias?where[slug][equals]=${slug}&depth=2&draft=false&t=${timestamp}`,
       {
         cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
       },
     );
 
@@ -334,7 +339,40 @@ export async function getNewsItem(slug: string): Promise<NewsItem | null> {
       return null;
     }
 
-    return data.docs[0];
+    const news = data.docs[0];
+
+    // Check if author needs to be fetched manually
+    if (news.autor && typeof news.autor !== "object") {
+      try {
+        const authorId = news.autor;
+        console.log(
+          `[getNewsItem] Author is ID (${authorId}), fetching user details...`,
+        );
+        const userRes = await fetch(`${API_URL}/users/${authorId}`, {
+          cache: "no-store",
+        });
+        if (userRes.ok) {
+          const user = await userRes.json();
+          console.log(
+            `[getNewsItem] Author fetched: ${user.nombre} ${user.apellido}`,
+          );
+          news.autor = user;
+        } else {
+          console.error(
+            `[getNewsItem] Failed to fetch author ${authorId}: ${userRes.status}`,
+          );
+        }
+      } catch (err) {
+        console.error(`[getNewsItem] Error fetching author manually:`, err);
+      }
+    }
+
+    console.log(
+      `[getNewsItem] Fetched ${slug}. Autor final:`,
+      JSON.stringify(news.autor, null, 2),
+    );
+
+    return news;
   } catch (error) {
     console.error(`Error fetching news item ${slug}:`, error);
     return null;
@@ -405,10 +443,15 @@ export async function getReports(
 export async function getReportItem(slug: string): Promise<ReportItem | null> {
   try {
     // Search by slug
+    const timestamp = Date.now();
     const res = await fetch(
-      `${API_URL}/informes?where[slug][equals]=${slug}&depth=3&draft=false`,
+      `${API_URL}/informes?where[slug][equals]=${slug}&depth=2&draft=false&t=${timestamp}`,
       {
         cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
       },
     );
 
@@ -417,12 +460,43 @@ export async function getReportItem(slug: string): Promise<ReportItem | null> {
     }
 
     const data: PayloadResponse<ReportItem> = await res.json();
-
     if (data.docs.length === 0) {
       return null;
     }
+    const report = data.docs[0];
 
-    return data.docs[0];
+    // Check if author needs to be fetched manually
+    if (report.autor && typeof report.autor !== "object") {
+      try {
+        const authorId = report.autor;
+        console.log(
+          `[getReportItem] Author is ID (${authorId}), fetching user details...`,
+        );
+        const userRes = await fetch(`${API_URL}/users/${authorId}`, {
+          cache: "no-store",
+        });
+        if (userRes.ok) {
+          const user = await userRes.json();
+          console.log(
+            `[getReportItem] Author fetched: ${user.nombre} ${user.apellido}`,
+          );
+          report.autor = user;
+        } else {
+          console.error(
+            `[getReportItem] Failed to fetch author ${authorId}: ${userRes.status}`,
+          );
+        }
+      } catch (err) {
+        console.error(`[getReportItem] Error fetching author manually:`, err);
+      }
+    }
+
+    console.log(
+      `[getReportItem] Fetched ${slug}. Autor final:`,
+      JSON.stringify(report.autor, null, 2),
+    );
+
+    return report;
   } catch (error) {
     console.error(`Error fetching report item ${slug}:`, error);
     return null;

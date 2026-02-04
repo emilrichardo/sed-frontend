@@ -14,6 +14,7 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
   initialData,
   hideSources = false,
 }) => {
+  console.log(initialData);
   return (
     <>
       <header className="mb-10 border-b border-border pb-8">
@@ -31,44 +32,59 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
               })}
             </time>
 
-            {initialData.autor && typeof initialData.autor === "object" && (
-              <div className="flex items-center gap-3 pl-0 sm:pl-6 sm:border-l border-border/50">
-                {/* Fallback if foto is not present or url is missing */}
-                {initialData.autor.foto?.url ? (
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-border shrink-0 shadow-sm">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={initialData.autor.foto.url}
-                      alt={
-                        initialData.autor.foto.alt ||
-                        `${initialData.autor.nombre} ${initialData.autor.apellido}`
-                      }
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-border shrink-0 bg-muted flex items-center justify-center shadow-sm">
-                    <span className="text-xs font-bold text-muted-foreground">
-                      {(initialData.autor.nombre || "?")[0]}
-                      {(initialData.autor.apellido || "?")[0]}
-                    </span>
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground mb-0.5">
-                    Por
-                  </span>
-                  <span className="font-semibold text-foreground text-sm leading-none">
-                    {initialData.autor.nombre} {initialData.autor.apellido}
-                  </span>
-                  {initialData.autor.cargo && (
-                    <span className="text-xs text-muted-foreground mt-0.5">
-                      {initialData.autor.cargo}
-                    </span>
+            {/* Author Section Logic */}
+            {(() => {
+              // Helper to resolve author object safely
+              // We explicitly cast to any to handle potential runtime type mismatches gracefully,
+              // though the API should return the correct shape.
+              const rawAuthor = initialData.autor as any;
+              const author =
+                typeof rawAuthor === "object" && rawAuthor ? rawAuthor : null;
+
+              if (!author) {
+                return null;
+              }
+
+              return (
+                <div className="flex items-center gap-3 pl-0 sm:pl-6 sm:border-l border-border/50">
+                  {author.foto?.url ? (
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-border shrink-0 shadow-sm">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+
+                      <img
+                        src={author.foto.url}
+                        alt={
+                          author.foto.alt ||
+                          `${author.nombre} ${author.apellido}`
+                        }
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-border shrink-0 bg-muted flex items-center justify-center shadow-sm">
+                      <span className="text-xs font-bold text-muted-foreground">
+                        {(author.nombre || "?")[0]}
+                        {(author.apellido || "?")[0]}
+                      </span>
+                    </div>
                   )}
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground mb-0.5">
+                      Por
+                    </span>
+                    <span className="font-semibold text-foreground text-sm leading-none">
+                      {author.nombre} {author.apellido}
+                    </span>
+                    {author.cargo && (
+                      <span className="text-xs text-muted-foreground mt-0.5">
+                        {author.cargo}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
+
             <EditContentButton
               collection={initialData.parent ? "informes" : "noticias"}
               id={initialData.id}
