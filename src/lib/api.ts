@@ -121,6 +121,80 @@ export interface NewsItem {
   [key: string]: unknown;
 }
 
+export interface WidgetTableChart {
+  id: string;
+  tipo_visualizacion: string;
+  tabla_relacionada: {
+    id: number;
+    titulo: string;
+    data: {
+      rows: any[];
+      columns: any[];
+    };
+  };
+  configuracion_visualizacion?: {
+    eje_principal?: string;
+    eje_valores?: string;
+    eje_secundario?: string;
+    colores?: "default" | "vibrant" | "semaphore" | "heatmap";
+  };
+}
+
+export interface WidgetItem {
+  id: number;
+  title: string;
+  description?: string;
+  image?: { url: string; alt?: string } | null;
+  category?: string;
+  tablas_graficos?: WidgetTableChart[];
+  config?: any;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export async function getWidgets(
+  limit: number = 100,
+): Promise<PayloadResponse<WidgetItem>> {
+  try {
+    const res = await apiFetch(`/widgets?limit=${limit}&sort=-createdAt`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      console.warn(
+        `[getWidgets] Failed to fetch widgets: ${res.status} ${res.statusText}`,
+      );
+      return {
+        docs: [],
+        totalDocs: 0,
+        limit,
+        totalPages: 1,
+        page: 1,
+        pagingCounter: 1,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      };
+    }
+    return res.json();
+  } catch (error) {
+    console.error(`[getWidgets] Error:`, error);
+    return {
+      docs: [],
+      totalDocs: 0,
+      limit,
+      totalPages: 1,
+      page: 1,
+      pagingCounter: 1,
+      hasPrevPage: false,
+      hasNextPage: false,
+      prevPage: null,
+      nextPage: null,
+    };
+  }
+}
+
 export interface PayloadResponse<T> {
   docs: T[];
   totalDocs: number;

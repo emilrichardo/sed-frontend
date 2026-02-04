@@ -304,6 +304,100 @@ export const ChartRenderer = ({
         </ResponsiveContainer>
       );
 
+    case "tornado_chart": {
+      // For Tornado:
+      // xKey (eje_principal per config) will be LEFT (Negative)
+      // yKey (eje_valores per config) will be RIGHT (Positive)
+      // We need to find the specific "Label" column (usually the 3rd one, or the string one)
+      const labelCol = columns.find((c) => c.id !== xKey && c.id !== yKey);
+      const labelKey = labelCol?.id || columns[0]?.id;
+
+      const xLabel = columns.find((c) => c.id === xKey)?.header || "Izquierda";
+      const yLabel = columns.find((c) => c.id === yKey)?.header || "Derecha";
+
+      const tornadoData = chartData.map((d) => ({
+        ...d,
+        _left: -Math.abs(Number(d[xKey]) || 0),
+        _right: Math.abs(Number(d[yKey]) || 0),
+        _label: d[labelKey],
+      }));
+
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart
+            layout="vertical"
+            data={tornadoData}
+            stackOffset="sign"
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              type="number"
+              tickFormatter={(val) => Math.abs(val).toLocaleString()}
+            />
+            <YAxis
+              dataKey="_label"
+              type="category"
+              width={100}
+              tick={{ fontSize: 12 }}
+              interval={0}
+            />
+            <Tooltip
+              cursor={{ fill: "transparent" }}
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-background border px-3 py-2 rounded shadow-md text-sm">
+                      <p className="font-bold mb-1">{label}</p>
+                      <div className="flex flex-col gap-1">
+                        <p style={{ color: colors[0] }}>
+                          {xLabel}:{" "}
+                          {Math.abs(
+                            Number(
+                              payload.find((p) => p.dataKey === "_left")
+                                ?.value || 0,
+                            ),
+                          ).toLocaleString()}
+                        </p>
+                        <p style={{ color: colors[1] }}>
+                          {yLabel}:{" "}
+                          {Number(
+                            payload.find((p) => p.dataKey === "_right")
+                              ?.value || 0,
+                          ).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Legend
+              verticalAlign="top"
+              wrapperStyle={{ paddingBottom: "20px" }}
+              payload={[
+                { value: xLabel, type: "rect", color: colors[0] },
+                { value: yLabel, type: "rect", color: colors[1] },
+              ]}
+            />
+            <Bar
+              dataKey="_left"
+              fill={colors[0]}
+              radius={[4, 0, 0, 4]}
+              name={xLabel}
+            />
+            <Bar
+              dataKey="_right"
+              fill={colors[1]}
+              radius={[0, 4, 4, 0]}
+              name={yLabel}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
     case "kpi_card":
       // Simply take the first row's value
       const kpiValue = chartData[0]?.[yKey] || "-";
