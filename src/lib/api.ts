@@ -136,7 +136,7 @@ export interface WidgetTableChart {
     eje_principal?: string;
     eje_valores?: string;
     eje_secundario?: string;
-    colores?: "default" | "vibrant" | "semaphore" | "heatmap";
+    colores?: "default" | "vibrant" | "slate" | "semaphore" | "heatmap";
   };
 }
 

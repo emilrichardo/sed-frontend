@@ -42,7 +42,7 @@ const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#dc2626"]; // Green, Yellow, Re
 const COLORS_HEATMAP = ["#fee2e2", "#fca5a5", "#ef4444", "#b91c1c", "#7f1d1d"];
 
 type ChartConfig = {
-  colores?: "default" | "slate" | "semaphore" | "heatmap";
+  colores?: "default" | "vibrant" | "slate" | "semaphore" | "heatmap";
   colors?: string[]; // Custom colors array override
   eje_principal?: string; // X Axis (Label) - matches Column Header
   eje_valores?: string; // Y Axis (Value) - matches Column Header
