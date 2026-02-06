@@ -55,6 +55,7 @@ interface UploadItem {
   error?: string;
   isDuplicate?: boolean;
   existingId?: string;
+  slug?: string;
 }
 
 export default function UploadBulletinPage() {
@@ -524,7 +525,13 @@ export default function UploadBulletinPage() {
       setUploads((prev) =>
         prev.map((u) =>
           u.id === item.id
-            ? { ...u, status: "success", error: undefined, isExpanded: false }
+            ? {
+                ...u,
+                status: "success",
+                error: undefined,
+                isExpanded: false,
+                slug: result.doc?.slug || result.slug,
+              }
             : u,
         ),
       );
@@ -550,18 +557,18 @@ export default function UploadBulletinPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 font-sans">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-4 border-black pb-6">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-incompatible uppercase mb-2">
+          <h1 className="text-3xl font-bold tracking-tight mb-2">
             Cargar Boletines
           </h1>
-          <p className="text-lg font-medium text-muted-foreground">
+          <p className="text-muted-foreground">
             Sube múltiples archivos PDF o sincroniza con Google Drive.
           </p>
         </div>
         <Link
           href="/"
-          className="flex items-center gap-2 px-4 py-2 border-2 border-black font-bold uppercase hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none bg-white text-sm"
+          className="flex items-center gap-2 px-4 py-2 border rounded-md font-medium hover:bg-accent transition-colors text-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           Volver al Inicio
@@ -570,15 +577,15 @@ export default function UploadBulletinPage() {
 
       {/* --- Drive Scan & Process Section --- */}
       {/* Tabs */}
-      <div className="flex justify-center mb-12">
-        <div className="bg-black p-1.5 inline-flex shadow-[8px_8px_0px_0px_rgba(0,0,0,0.2)]">
+      <div className="flex justify-center mb-8">
+        <div className="bg-muted p-1 rounded-lg inline-flex">
           <button
             onClick={() => setActiveTab("manual")}
             className={cn(
-              "px-8 py-3 text-sm font-bold uppercase tracking-wide transition-all",
+              "px-6 py-2 text-sm font-medium rounded-md transition-all",
               activeTab === "manual"
-                ? "bg-white text-black shadow-sm"
-                : "text-white hover:bg-white/10",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-background/50",
             )}
           >
             Carga Manual (PDFs)
@@ -586,10 +593,10 @@ export default function UploadBulletinPage() {
           <button
             onClick={() => setActiveTab("drive")}
             className={cn(
-              "px-8 py-3 text-sm font-bold uppercase tracking-wide transition-all",
+              "px-6 py-2 text-sm font-medium rounded-md transition-all",
               activeTab === "drive"
-                ? "bg-white text-black shadow-sm"
-                : "text-white hover:bg-white/10",
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-background/50",
             )}
           >
             Sincronización Drive
@@ -599,37 +606,37 @@ export default function UploadBulletinPage() {
 
       {/* --- Drive Scan & Process Section --- */}
       {activeTab === "drive" && (
-        <div className="mb-8 p-12 bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
-          <div className="bg-black p-4 rounded-full">
-            <Cloud className="w-12 h-12 text-white" />
+        <div className="mb-8 p-8 bg-card border rounded-lg shadow-sm flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
+          <div className="bg-muted p-4 rounded-full border">
+            <Cloud className="w-10 h-10 text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-black uppercase tracking-tight">
+          <h2 className="text-xl font-bold tracking-tight">
             Sincronización Automática (Drive)
           </h2>
 
-          <div className="w-full max-w-lg space-y-4 px-4">
+          <div className="w-full max-w-lg space-y-4">
             <div className="space-y-2 text-left">
-              <label className="text-sm font-bold uppercase">
+              <label className="text-sm font-semibold text-muted-foreground uppercase text-[10px]">
                 ID de Carpeta Drive
               </label>
               <input
-                className="w-full p-3 border-2 border-black text-sm font-mono focus:outline-none focus:ring-4 focus:ring-black/20"
+                className="w-full p-2.5 border rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 placeholder="Ej: 1AbCd..."
                 value={folderId}
                 onChange={(e) => setFolderId(e.target.value)}
               />
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={handleScan}
                 disabled={isScanning || isSyncing}
-                className="flex-1 px-4 py-3 bg-white hover:bg-gray-50 text-black border-2 border-black font-bold uppercase disabled:opacity-50 flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all"
+                className="flex-1 px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium rounded-md shadow-sm border border-transparent transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
               >
                 {isScanning ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Search className="w-5 h-5" />
+                  <Search className="w-4 h-4" />
                 )}
                 {isScanning ? "Escaneando..." : "Escanear"}
               </button>
@@ -637,12 +644,12 @@ export default function UploadBulletinPage() {
               <button
                 onClick={handleSyncAll}
                 disabled={isSyncing || scannedFiles.length === 0}
-                className="flex-1 px-4 py-3 bg-black hover:bg-gray-800 text-white border-2 border-black font-bold uppercase disabled:opacity-50 flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all"
+                className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md shadow-sm border border-transparent transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
               >
                 {isSyncing ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Cloud className="w-5 h-5" />
+                  <Cloud className="w-4 h-4" />
                 )}
                 {isSyncing
                   ? `Sincronizando (${currentSyncIndex + 1}/${scannedFiles.length})`
@@ -653,22 +660,22 @@ export default function UploadBulletinPage() {
 
           <div className="w-full text-left">
             {scannedFiles.length > 0 && (
-              <div className="mt-8 border-2 border-black">
-                <div className="bg-black text-white px-4 py-3 border-b-2 border-black text-sm font-bold uppercase flex justify-between tracking-wider">
+              <div className="mt-8 border rounded-lg shadow-sm overflow-hidden bg-background">
+                <div className="bg-muted/50 px-4 py-3 border-b text-sm font-medium flex justify-between">
                   <span>Archivos ({scannedFiles.length})</span>
                   <span>Acciones</span>
                 </div>
-                <div className="max-h-80 overflow-y-auto divide-y-2 divide-black bg-gray-50">
+                <div className="max-h-80 overflow-y-auto divide-y bg-background">
                   {scannedFiles.map((file, i) => (
                     <div
                       key={file.id}
-                      className="px-4 py-3 text-sm flex justify-between items-center hover:bg-white transition-colors"
+                      className="px-4 py-3 text-sm flex justify-between items-center hover:bg-muted/30 transition-colors"
                     >
                       {/* ... Content of Scanned File Item (Can be styled further later) ... */}
                       <div className="flex flex-col flex-1 overflow-hidden gap-1">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-black flex-shrink-0" />
-                          <span className="truncate max-w-[300px] font-bold font-mono">
+                          <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate max-w-[300px] font-medium font-mono text-sm">
                             {file.name}
                           </span>
 
@@ -731,7 +738,7 @@ export default function UploadBulletinPage() {
                         {(file.status === "synced" || file.extracted) && (
                           <button
                             onClick={() => showInfo(file)}
-                            className="p-1.5 text-black hover:bg-black hover:text-white border border-black transition-colors"
+                            className="p-1.5 text-muted-foreground hover:bg-muted rounded-md transition-colors"
                             title="Ver Información Extraída"
                           >
                             <FileText className="w-4 h-4" />
@@ -743,10 +750,10 @@ export default function UploadBulletinPage() {
                           onClick={() => handleSyncItem(i)}
                           disabled={file.status === "processing" || isSyncing}
                           className={cn(
-                            "px-3 py-1.5 text-[10px] font-bold uppercase border-2 flex items-center gap-1 transition-all",
+                            "px-3 py-1.5 text-[10px] font-semibold border rounded-md flex items-center gap-1 transition-all",
                             file.status === "synced"
-                              ? "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed"
-                              : "bg-white text-black border-black hover:bg-black hover:text-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                              ? "bg-muted text-muted-foreground border-transparent cursor-not-allowed"
+                              : "bg-background hover:bg-muted text-foreground",
                           )}
                         >
                           {file.status === "synced"
@@ -764,12 +771,10 @@ export default function UploadBulletinPage() {
       )}
 
       {activeTab === "manual" && (
-        <div className="pt-4">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-black">
-            <h2 className="text-2xl font-black uppercase flex items-center gap-3">
-              <div className="bg-black text-white p-1">
-                <Upload className="w-6 h-6" />
-              </div>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Upload className="w-5 h-5" />
               Carga Manual (PDFs)
             </h2>
             <button
@@ -778,9 +783,9 @@ export default function UploadBulletinPage() {
                 uploads.filter((u) => u.status === "ready" && !u.isDuplicate)
                   .length === 0
               }
-              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold uppercase border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 flex items-center gap-2"
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md shadow-sm transition-all disabled:opacity-50 flex items-center gap-2 text-sm"
             >
-              <Save className="w-5 h-5" />
+              <Save className="w-4 h-4" />
               Guardar Todo (
               {
                 uploads.filter((u) => u.status === "ready" && !u.isDuplicate)
@@ -795,10 +800,10 @@ export default function UploadBulletinPage() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={cn(
-              "border-4 border-dashed transition-all text-center cursor-pointer mb-8 py-12 bg-gray-50 relative group",
+              "border-2 border-dashed rounded-lg transition-all text-center cursor-pointer py-12 bg-muted/30 hover:bg-muted/50",
               isDragging
-                ? "border-primary bg-primary/10 scale-[0.99]"
-                : "border-gray-300 hover:border-black hover:bg-white hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]",
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-primary/50",
             )}
             onClick={() => fileInputRef.current?.click()}
           >
@@ -811,7 +816,7 @@ export default function UploadBulletinPage() {
               className="hidden"
             />
             <div className="flex flex-col items-center gap-4">
-              <div className="p-4 bg-muted rounded-full">
+              <div className="p-4 bg-background rounded-full border shadow-sm">
                 <Upload className="w-8 h-8 text-muted-foreground" />
               </div>
               <div className="space-y-1">
@@ -828,32 +833,29 @@ export default function UploadBulletinPage() {
           {/* Uploads List */}
           <div className="space-y-4">
             {uploads.length > 0 && (
-              <div className="border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
-                <div className="bg-black text-white px-4 py-3 border-b-2 border-black text-sm font-bold uppercase flex justify-between tracking-wider">
+              <div className="border rounded-lg shadow-sm bg-card overflow-hidden">
+                <div className="bg-muted/50 px-4 py-3 border-b flex justify-between items-center text-sm font-medium">
                   <span>Archivos ({uploads.length})</span>
                   <span>Acciones</span>
                 </div>
-                <div className="max-h-[600px] overflow-y-auto divide-y-2 divide-black">
+                <div className="divide-y max-h-[600px] overflow-y-auto">
                   {uploads.map((item) => (
                     <div
                       key={item.id}
                       className={cn(
-                        "px-4 py-4 text-sm flex flex-col md:flex-row justify-between items-start hover:bg-gray-50 transition-colors gap-4",
-                        item.status === "success" && "bg-green-50/50",
-                        item.status === "error" && "bg-red-50/50",
-                        item.isDuplicate &&
-                          item.status === "ready" &&
-                          "bg-orange-50/30",
+                        "px-4 py-4 flex flex-col md:flex-row justify-between items-start hover:bg-muted/30 transition-colors gap-4",
+                        item.status === "success" && "bg-green-50/30",
+                        item.status === "error" && "bg-red-50/30",
                       )}
                     >
                       <div className="flex flex-col flex-1 gap-3 overflow-hidden w-full">
                         <div className="flex items-center gap-3">
                           <div
                             className={cn(
-                              "p-2 border-2 border-black flex-shrink-0 bg-white",
+                              "p-2 rounded-md flex-shrink-0 bg-muted",
                               item.status === "success"
-                                ? "text-green-600"
-                                : "text-black",
+                                ? "text-green-600 bg-green-100/50"
+                                : "text-muted-foreground",
                             )}
                           >
                             {item.status === "success" ? (
@@ -865,12 +867,12 @@ export default function UploadBulletinPage() {
 
                           <div className="flex flex-col min-w-0">
                             <span
-                              className="font-bold font-mono truncate max-w-[200px] md:max-w-[400px] text-base"
+                              className="font-medium truncate max-w-[200px] md:max-w-[400px] text-sm"
                               title={item.file.name}
                             >
                               {item.file.name}
                             </span>
-                            <span className="text-[10px] font-bold uppercase text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {(item.file.size / 1024 / 1024).toFixed(2)} MB
                             </span>
                           </div>
@@ -878,29 +880,29 @@ export default function UploadBulletinPage() {
                           {/* Status Badges */}
                           <div className="flex flex-wrap gap-2 ml-2">
                             {item.status === "processing" && (
-                              <span className="text-blue-600 border-2 border-blue-600 bg-blue-50 flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5">
+                              <span className="text-blue-600 border border-blue-200 bg-blue-50 flex items-center gap-1 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full">
                                 <Loader2 className="w-3 h-3 animate-spin" />{" "}
                                 Procesando
                               </span>
                             )}
                             {item.status === "saving" && (
-                              <span className="text-orange-600 border-2 border-orange-600 bg-orange-50 flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5">
+                              <span className="text-orange-600 border border-orange-200 bg-orange-50 flex items-center gap-1 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full">
                                 <Loader2 className="w-3 h-3 animate-spin" />{" "}
                                 Guardando
                               </span>
                             )}
                             {item.status === "success" && (
-                              <span className="text-green-600 border-2 border-green-600 bg-green-50 px-2 py-0.5 text-[10px] font-bold uppercase flex items-center gap-1">
+                              <span className="text-green-600 border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase flex items-center gap-1 rounded-full">
                                 <CheckCircle2 className="w-3 h-3" /> Guardado
                               </span>
                             )}
                             {item.status === "error" && (
-                              <span className="text-red-600 border-2 border-red-600 bg-red-50 px-2 py-0.5 text-[10px] font-bold uppercase flex items-center gap-1">
+                              <span className="text-red-600 border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase flex items-center gap-1 rounded-full">
                                 <AlertCircle className="w-3 h-3" /> Error
                               </span>
                             )}
                             {item.isDuplicate && item.status === "ready" && (
-                              <span className="text-orange-600 border-2 border-orange-600 bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase flex items-center gap-1">
+                              <span className="text-orange-600 border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-semibold uppercase flex items-center gap-1 rounded-full">
                                 <AlertCircle className="w-3 h-3" /> Existe
                               </span>
                             )}
@@ -912,7 +914,7 @@ export default function UploadBulletinPage() {
                           item.status === "error") && (
                           <div className="ml-12 mt-1 w-full max-w-4xl">
                             {item.isDuplicate && (
-                              <div className="mb-3 p-3 bg-orange-50 border-2 border-orange-200 text-xs text-orange-900 flex items-start gap-2 font-medium">
+                              <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-md text-xs text-orange-900 flex items-start gap-2 font-medium">
                                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-600" />
                                 <p>
                                   <strong>ADVERTENCIA:</strong> Este boletín ya
@@ -922,13 +924,13 @@ export default function UploadBulletinPage() {
                               </div>
                             )}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                              <div className="flex flex-col gap-1">
-                                <label className="font-bold uppercase text-[10px]">
+                              <div className="flex flex-col gap-1.5">
+                                <label className="font-semibold text-[10px] uppercase text-muted-foreground">
                                   Número
                                 </label>
                                 <input
                                   placeholder="Ej: 12345"
-                                  className="border-2 border-black px-2 py-2 h-9 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-black/20"
+                                  className="border rounded-md px-2 py-1.5 h-8 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                                   value={item.data.numero}
                                   onChange={(e) =>
                                     updateUploadData(
@@ -940,13 +942,13 @@ export default function UploadBulletinPage() {
                                 />
                               </div>
 
-                              <div className="flex flex-col gap-1">
-                                <label className="font-bold uppercase text-[10px]">
+                              <div className="flex flex-col gap-1.5">
+                                <label className="font-semibold text-[10px] uppercase text-muted-foreground">
                                   Fecha Publicación
                                 </label>
                                 <input
                                   type="date"
-                                  className="border-2 border-black px-2 py-2 h-9 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-black/20"
+                                  className="border rounded-md px-2 py-1.5 h-8 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                                   value={item.data.fecha_publicacion}
                                   onChange={(e) =>
                                     updateUploadData(
@@ -958,13 +960,13 @@ export default function UploadBulletinPage() {
                                 />
                               </div>
 
-                              <div className="flex flex-col gap-1">
-                                <label className="font-bold uppercase text-[10px]">
+                              <div className="flex flex-col gap-1.5">
+                                <label className="font-semibold text-[10px] uppercase text-muted-foreground">
                                   Páginas
                                 </label>
                                 <input
                                   placeholder="Cant."
-                                  className="border-2 border-black px-2 py-2 h-9 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-black/20"
+                                  className="border rounded-md px-2 py-1.5 h-8 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                                   value={item.data.cantidad_paginas}
                                   onChange={(e) =>
                                     updateUploadData(
@@ -976,13 +978,13 @@ export default function UploadBulletinPage() {
                                 />
                               </div>
 
-                              <div className="flex flex-col gap-1">
-                                <label className="font-bold uppercase text-[10px]">
+                              <div className="flex flex-col gap-1.5">
+                                <label className="font-semibold text-[10px] uppercase text-muted-foreground">
                                   Año Edición
                                 </label>
                                 <input
                                   placeholder="Ej: CXX"
-                                  className="border-2 border-black px-2 py-2 h-9 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-black/20"
+                                  className="border rounded-md px-2 py-1.5 h-8 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                                   value={item.data.año_edicion}
                                   onChange={(e) =>
                                     updateUploadData(
@@ -1000,43 +1002,55 @@ export default function UploadBulletinPage() {
                         {/* Compact Metadata Display (ReadOnly) for Saved Items */}
                         {(item.status === "success" ||
                           item.status === "saving") && (
-                          <div className="text-xs text-muted-foreground ml-12 flex flex-wrap gap-4 mt-1 font-mono">
-                            <span className="bg-gray-100 px-2 py-1 border border-gray-300">
-                              <span className="font-bold text-black">N°:</span>{" "}
-                              {item.data.numero}
-                            </span>
-                            <span className="bg-gray-100 px-2 py-1 border border-gray-300">
-                              <span className="font-bold text-black">
-                                Fecha:
-                              </span>{" "}
-                              {item.data.fecha_publicacion}
-                            </span>
-                            <span className="bg-gray-100 px-2 py-1 border border-gray-300">
-                              <span className="font-bold text-black">
-                                Págs:
-                              </span>{" "}
-                              {item.data.cantidad_paginas}
-                            </span>
+                          <div className="ml-12 mt-1 space-y-2">
+                            <div className="text-xs text-muted-foreground flex flex-wrap gap-3 font-mono">
+                              <span className="bg-muted/50 px-1.5 py-0.5 rounded border">
+                                <span className="font-bold">N°:</span>{" "}
+                                {item.data.numero}
+                              </span>
+                              <span className="bg-muted/50 px-1.5 py-0.5 rounded border">
+                                <span className="font-bold">Fecha:</span>{" "}
+                                {item.data.fecha_publicacion}
+                              </span>
+                              <span className="bg-muted/50 px-1.5 py-0.5 rounded border">
+                                <span className="font-bold">Págs:</span>{" "}
+                                {item.data.cantidad_paginas}
+                              </span>
+                            </div>
+
+                            {item.status === "success" && item.slug && (
+                              <div className="flex items-center gap-2">
+                                <Link
+                                  href={`/boletines/${item.slug}`}
+                                  target="_blank"
+                                  className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                                >
+                                  Ver Boletín Públicado
+                                  <ArrowLeft className="w-3 h-3 rotate-180" />
+                                </Link>
+                              </div>
+                            )}
                           </div>
                         )}
 
                         {item.error && (
-                          <p className="text-xs text-red-600 ml-12 mt-2 font-bold bg-red-50 border border-red-200 px-2 py-1 inline-block uppercase">
-                            Error: {item.error}
-                          </p>
+                          <div className="text-xs text-red-600 ml-12 mt-2 bg-red-50 border border-red-100 px-3 py-2 rounded-md">
+                            <span className="font-bold">ERROR:</span>{" "}
+                            {item.error}
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         {/* Individual Save Button */}
                         {item.status === "ready" && (
                           <button
                             onClick={() => saveItem(item)}
                             className={cn(
-                              "px-4 py-2 text-xs font-bold uppercase border-2 flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[1px] hover:shadow-none transition-all h-9 whitespace-nowrap",
+                              "px-3 py-1.5 text-xs font-semibold rounded-md border flex items-center gap-1.5 transition-all shadow-sm",
                               item.isDuplicate
-                                ? "bg-orange-50 text-orange-700 border-black hover:bg-orange-100"
-                                : "bg-purple-50 text-purple-700 border-black hover:bg-purple-100",
+                                ? "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                                : "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent",
                             )}
                           >
                             {item.isDuplicate ? (
@@ -1052,17 +1066,17 @@ export default function UploadBulletinPage() {
                         )}
                         <button
                           onClick={() => removeUpload(item.id)}
-                          className="p-2 text-black hover:bg-red-600 hover:text-white border-2 border-transparent hover:border-black transition-all"
+                          className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                           title="Quitar"
                         >
-                          <X className="w-5 h-5" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
                 {/* Footer with Guardar Todo */}
-                <div className="bg-gray-100 px-4 py-4 border-t-2 border-black flex justify-end">
+                <div className="bg-muted/30 px-4 py-3 border-t flex justify-end">
                   <button
                     onClick={saveAllReady}
                     disabled={
@@ -1070,7 +1084,7 @@ export default function UploadBulletinPage() {
                         (u) => u.status === "ready" && !u.isDuplicate,
                       ).length === 0
                     }
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 flex items-center gap-2 text-sm"
+                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md shadow-sm transition-all disabled:opacity-50 flex items-center gap-2 text-sm"
                   >
                     <Save className="w-4 h-4" />
                     Guardar Todo (
