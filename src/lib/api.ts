@@ -1016,6 +1016,30 @@ export async function updateBulletin(
   return res.json();
 }
 
+export async function deleteBulletin(
+  id: string,
+  authToken?: string,
+): Promise<{ message: string }> {
+  const res = await apiFetch(
+    `/boletines/${id}`,
+    {
+      method: "DELETE",
+    },
+    authToken,
+  );
+
+  if (!res.ok) {
+    console.error("API: deleteBulletin error:", res.status, res.statusText);
+    const errorData = await res.json().catch(() => ({}));
+    console.error(
+      "API: deleteBulletin error details:",
+      JSON.stringify(errorData, null, 2),
+    );
+    throw new Error(`Failed to delete bulletin: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 export async function createActoAdministrativo(
   data: Partial<ActoAdministrativo>,
 ): Promise<{ doc: ActoAdministrativo; message: string }> {

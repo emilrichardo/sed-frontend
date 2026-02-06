@@ -1,14 +1,16 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Boletin } from "@/lib/api";
+import { Boletin, deleteBulletin } from "@/lib/api";
 import BulletinFlipbook from "./BulletinFlipbook";
-import { Eye, BookOpen } from "lucide-react";
+import { Eye, BookOpen, Trash2 } from "lucide-react";
 import { ProcessingButton } from "./ProcessingButton";
 
 export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
   const { user } = useAuth();
+  const router = useRouter();
   const [showFlipbook, setShowFlipbook] = React.useState(false);
 
   if (!user || !bulletin.archivo_binario) return null;
@@ -46,6 +48,24 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
       window.open(pdfUrl, "_blank");
     } else {
       alert("No se pudo obtener la URL del archivo.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        `¿Estás seguro de que deseas eliminar el boletín Nº ${bulletin.numero}? Esta acción no se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteBulletin(bulletin.id);
+      router.push("/boletines");
+    } catch (error) {
+      console.error("Error deleting bulletin:", error);
+      alert("Error eliminando el boletín.");
     }
   };
 
@@ -97,6 +117,13 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
         >
           <BookOpen className="w-4 h-4" />
           Modo Lectura
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-2 px-4 py-2 border border-destructive/50 text-destructive bg-background hover:bg-destructive/10 rounded-md text-sm font-medium transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Eliminar
         </button>
       </div>
 

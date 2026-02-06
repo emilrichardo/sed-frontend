@@ -9,6 +9,7 @@ import {
   getAgents,
   Agent,
   createProcesamiento,
+  deleteBulletin,
 } from "@/lib/api";
 import Link from "next/link";
 import {
@@ -19,6 +20,7 @@ import {
   Upload,
   Play,
   Check,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ProcessingButton } from "@/components/ProcessingButton";
@@ -123,6 +125,41 @@ export default function BulletinArchive({
 
     setBulkProcessing(false);
     setOpenCombobox(false);
+  };
+
+  const handleDelete = async (id: string, numero: number) => {
+    if (
+      !confirm(
+        `¿Estás seguro de que deseas eliminar el boletín Nº ${numero}? Esta acción no se puede deshacer.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteBulletin(id);
+      // Refresh list
+      setLoading(true);
+      const queryFilters = { ...filters };
+      const search = queryFilters.search as string;
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete queryFilters.search;
+
+      const data = await getBulletins({
+        page,
+        limit: 10,
+        where: {
+          ...queryFilters,
+          ...(search ? { numero: search } : {}),
+        },
+      });
+      setBulletins(data);
+    } catch (error) {
+      console.error("Error deleting bulletin:", error);
+      alert("Error eliminando el boletín.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -440,13 +477,26 @@ export default function BulletinArchive({
                             </td>
                           )}
                           <td className="px-4 py-3 text-right">
-                            <Link
-                              href={`/boletines/${b.slug}`}
-                              className="text-primary hover:underline font-medium inline-flex items-center gap-1"
-                            >
-                              Ver Detalle
-                              <ChevronRight className="h-4 w-4" />
-                            </Link>
+                            <div className="flex items-center justify-end gap-2">
+                              {isEditing && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleDelete(b.id, b.numero)}
+                                  title="Eliminar boletín"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Link
+                                href={`/boletines/${b.slug}`}
+                                className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                              >
+                                Ver Detalle
+                                <ChevronRight className="h-4 w-4" />
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -562,16 +612,32 @@ export default function BulletinArchive({
                             className="w-full"
                           />
                         )}
-                        <Link href={`/boletines/${b.slug}`} className="w-full">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full justify-between group"
+                        <div className="flex gap-2 w-full">
+                          {isEditing && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
+                              onClick={() => handleDelete(b.id, b.numero)}
+                              title="Eliminar boletín"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Link
+                            href={`/boletines/${b.slug}`}
+                            className="flex-1 w-full"
                           >
-                            Ver Detalle
-                            <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                          </Button>
-                        </Link>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-between group"
+                            >
+                              Ver Detalle
+                              <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   );
