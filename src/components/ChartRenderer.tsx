@@ -46,7 +46,7 @@ type ChartConfig = {
   colors?: string[]; // Custom colors array override
   eje_principal?: string; // X Axis (Label) - matches Column Header
   eje_valores?: string; // Y Axis (Value) - matches Column Header
-  eje_secundario?: string; // Grouping/Stacking - matches Column Header
+  eje_secundario?: string; // Grouping/Stacking/Comparison - matches Column Header
 };
 
 type ChartData = {
@@ -120,20 +120,19 @@ const prepareData = (rows: any[], columns: any[]) => {
   });
 };
 
-const CustomTooltip = ({ active, payload, label, columns, valueKey }: any) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    // Find header name for the value key
-    const valCol = columns.find(
-      (c: any) => c.id === valueKey || c.header === valueKey,
-    );
-    const labelName = valCol?.header || "Valor";
-
     return (
       <div className="bg-background border px-3 py-2 rounded shadow-md text-sm">
         <p className="font-bold mb-1">{label}</p>
-        <p className="text-primary">
-          {labelName}: {payload[0].value}
-        </p>
+        {payload.map((entry: any, i: number) => (
+          <p key={i} style={{ color: entry.color || entry.stroke }}>
+            {entry.name}:{" "}
+            {typeof entry.value === "number"
+              ? entry.value.toLocaleString("es-AR")
+              : entry.value}
+          </p>
+        ))}
       </div>
     );
   }
@@ -164,8 +163,17 @@ export const ChartRenderer = ({
   }
 
   // Resolve Data Keys
-  const xKey = getDataKey(columns, config?.eje_principal) || columns[0]?.id; // Default to first col
-  const yKey = getDataKey(columns, config?.eje_valores) || columns[1]?.id; // Default to second col
+  const xKey = getDataKey(columns, config?.eje_principal) || columns[0]?.id;
+  const yKey = getDataKey(columns, config?.eje_valores) || columns[1]?.id;
+  const secondaryKey = getDataKey(columns, config?.eje_secundario);
+
+  const xLabel =
+    config?.eje_principal || columns.find((c) => c.id === xKey)?.header || "X";
+  const yLabel =
+    config?.eje_valores || columns.find((c) => c.id === yKey)?.header || "Y";
+  const secondaryLabel =
+    config?.eje_secundario ||
+    (secondaryKey ? columns.find((c) => c.id === secondaryKey)?.header : null);
 
   // Only if we found valid keys
   if (!xKey || !yKey)
@@ -199,17 +207,30 @@ export const ChartRenderer = ({
               tick={{ fontSize: 12 }}
               interval={0}
             />
-            <Tooltip
-              content={<CustomTooltip columns={columns} valueKey={yKey} />}
-            />
-            <Bar dataKey={yKey} radius={[0, 4, 4, 0]}>
-              {chartData.map((_, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={colors[index % colors.length]}
-                />
-              ))}
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Bar
+              dataKey={yKey}
+              name={yLabel}
+              radius={[0, 4, 4, 0]}
+              fill={colors[0]}
+            >
+              {!secondaryKey &&
+                chartData.map((_, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colors[index % colors.length]}
+                  />
+                ))}
             </Bar>
+            {secondaryKey && (
+              <Bar
+                dataKey={secondaryKey}
+                name={secondaryLabel}
+                radius={[0, 4, 4, 0]}
+                fill={colors[1] || colors[0]}
+              />
+            )}
           </BarChart>
         </ResponsiveContainer>
       );
@@ -221,17 +242,62 @@ export const ChartRenderer = ({
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
             <YAxis />
-            <Tooltip
-              content={<CustomTooltip columns={columns} valueKey={yKey} />}
-            />
-            <Bar dataKey={yKey} radius={[4, 4, 0, 0]}>
-              {chartData.map((_, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={colors[index % colors.length]}
-                />
-              ))}
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Bar
+              dataKey={yKey}
+              name={yLabel}
+              radius={[4, 4, 0, 0]}
+              fill={colors[0]}
+            >
+              {!secondaryKey &&
+                chartData.map((_, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colors[index % colors.length]}
+                  />
+                ))}
             </Bar>
+            {secondaryKey && (
+              <Bar
+                dataKey={secondaryKey}
+                name={secondaryLabel}
+                radius={[4, 4, 0, 0]}
+                fill={colors[1] || colors[0]}
+              />
+            )}
+          </BarChart>
+        </ResponsiveContainer>
+      );
+
+    case "stacked_bar_chart":
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart layout="vertical" {...commonProps}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={true}
+              horizontal={false}
+            />
+            <XAxis type="number" />
+            <YAxis
+              dataKey={xKey}
+              type="category"
+              width={150}
+              tick={{ fontSize: 12 }}
+              interval={0}
+            />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey={yKey} name={yLabel} stackId="a" fill={colors[0]} />
+            {secondaryKey && (
+              <Bar
+                dataKey={secondaryKey}
+                name={secondaryLabel}
+                stackId="a"
+                fill={colors[1] || colors[0]}
+              />
+            )}
           </BarChart>
         </ResponsiveContainer>
       );
@@ -275,16 +341,26 @@ export const ChartRenderer = ({
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
             <YAxis />
-            <Tooltip
-              content={<CustomTooltip columns={columns} valueKey={yKey} />}
-            />
+            <Tooltip content={<CustomTooltip />} />
+            {secondaryKey && <Legend />}
             <Line
               type="monotone"
               dataKey={yKey}
+              name={yLabel}
               stroke={colors[0]}
               strokeWidth={2}
               activeDot={{ r: 8 }}
             />
+            {secondaryKey && (
+              <Line
+                type="monotone"
+                dataKey={secondaryKey}
+                name={secondaryLabel ?? undefined}
+                stroke={colors[1] || colors[0]}
+                strokeWidth={2}
+                activeDot={{ r: 8 }}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       );
@@ -296,16 +372,26 @@ export const ChartRenderer = ({
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
             <YAxis />
-            <Tooltip
-              content={<CustomTooltip columns={columns} valueKey={yKey} />}
-            />
+            <Tooltip content={<CustomTooltip />} />
+            {secondaryKey && <Legend />}
             <Area
               type="monotone"
               dataKey={yKey}
+              name={yLabel}
               stroke={colors[0]}
               fill={colors[0]}
               fillOpacity={0.3}
             />
+            {secondaryKey && (
+              <Area
+                type="monotone"
+                dataKey={secondaryKey}
+                name={secondaryLabel ?? undefined}
+                stroke={colors[1] || colors[0]}
+                fill={colors[1] || colors[0]}
+                fillOpacity={0.3}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       );
@@ -318,33 +404,63 @@ export const ChartRenderer = ({
             <PolarAngleAxis dataKey={xKey} tick={{ fontSize: 11 }} />
             <PolarRadiusAxis />
             <Radar
-              name="Valor"
+              name={yLabel}
               dataKey={yKey}
               stroke={colors[0]}
               fill={colors[0]}
               fillOpacity={0.6}
             />
+            {secondaryKey && (
+              <Radar
+                name={secondaryLabel}
+                dataKey={secondaryKey}
+                stroke={colors[1] || colors[0]}
+                fill={colors[1] || colors[0]}
+                fillOpacity={0.6}
+              />
+            )}
             <Tooltip />
+            <Legend />
           </RadarChart>
         </ResponsiveContainer>
       );
 
-    case "tornado_chart": {
-      // For Tornado:
-      // xKey (eje_principal per config) will be LEFT (Negative)
-      // yKey (eje_valores per config) will be RIGHT (Positive)
-      // We need to find the specific "Label" column (usually the 3rd one, or the string one)
-      const labelCol = columns.find((c) => c.id !== xKey && c.id !== yKey);
-      const labelKey = labelCol?.id || columns[0]?.id;
+    case "treemap_chart":
+    case "treemap":
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <Treemap
+            data={chartData}
+            dataKey={yKey}
+            nameKey={xKey}
+            stroke="#fff"
+            fill={colors[0]}
+          >
+            <Tooltip />
+          </Treemap>
+        </ResponsiveContainer>
+      );
 
-      const xLabel = columns.find((c) => c.id === xKey)?.header || "Izquierda";
-      const yLabel = columns.find((c) => c.id === yKey)?.header || "Derecha";
+    case "pyramid_chart":
+    case "tornado_chart": {
+      // For Tornado/Pyramid:
+      // xKey (eje_principal per config) will be the LABEL axis in Recharts layout="vertical"
+      // yKey will be LEFT
+      // secondaryKey will be RIGHT
+
+      const leftKey = yKey;
+      const rightKey =
+        secondaryKey || columns.find((c) => c.id !== xKey && c.id !== yKey)?.id;
+
+      const leftLabel =
+        columns.find((c) => c.id === leftKey)?.header || "Izquierda";
+      const rightLabel =
+        columns.find((c) => c.id === rightKey)?.header || "Derecha";
 
       const tornadoData = chartData.map((d) => ({
         ...d,
-        _left: -Math.abs(Number(d[xKey]) || 0),
-        _right: Math.abs(Number(d[yKey]) || 0),
-        _label: d[labelKey],
+        _left: -Math.abs(Number(d[leftKey]) || 0),
+        _right: Math.abs(Number(d[rightKey]) || 0),
       }));
 
       return (
@@ -366,7 +482,7 @@ export const ChartRenderer = ({
               tickFormatter={(val) => Math.abs(val).toLocaleString()}
             />
             <YAxis
-              dataKey="_label"
+              dataKey={xKey}
               type="category"
               width={100}
               tick={{ fontSize: 12 }}
@@ -381,7 +497,7 @@ export const ChartRenderer = ({
                       <p className="font-bold mb-1">{label}</p>
                       <div className="flex flex-col gap-1">
                         <p style={{ color: colors[0] }}>
-                          {xLabel}:{" "}
+                          {leftLabel}:{" "}
                           {Math.abs(
                             Number(
                               payload.find((p) => p.dataKey === "_left")
@@ -389,8 +505,8 @@ export const ChartRenderer = ({
                             ),
                           ).toLocaleString()}
                         </p>
-                        <p style={{ color: colors[1] }}>
-                          {yLabel}:{" "}
+                        <p style={{ color: colors[1] || colors[0] }}>
+                          {rightLabel}:{" "}
                           {Number(
                             payload.find((p) => p.dataKey === "_right")
                               ?.value || 0,
@@ -408,8 +524,12 @@ export const ChartRenderer = ({
               wrapperStyle={{ paddingBottom: "20px" }}
               {...({
                 payload: [
-                  { value: xLabel, type: "rect", color: colors[0] },
-                  { value: yLabel, type: "rect", color: colors[1] },
+                  { value: leftLabel, type: "rect", color: colors[0] },
+                  {
+                    value: rightLabel,
+                    type: "rect",
+                    color: colors[1] || colors[0],
+                  },
                 ],
               } as any)}
             />
@@ -417,33 +537,344 @@ export const ChartRenderer = ({
               dataKey="_left"
               fill={colors[0]}
               radius={[4, 0, 0, 4]}
-              name={xLabel}
+              name={leftLabel}
             />
             <Bar
               dataKey="_right"
-              fill={colors[1]}
+              fill={colors[1] || colors[0]}
               radius={[0, 4, 4, 0]}
-              name={yLabel}
+              name={rightLabel}
             />
           </BarChart>
         </ResponsiveContainer>
       );
     }
 
-    case "kpi_card":
+    case "kpi_card": {
       // Simply take the first row's value
-      const kpiValue = chartData[0]?.[yKey] || "-";
-      const kpiLabel = chartData[0]?.[xKey] || "KPI";
+      const kpiValue = chartData[0]?.[yKey] ?? "-";
+      const kpiLabel = chartData[0]?.[xKey] || yLabel || "KPI";
       return (
-        <div className="flex flex-col items-center justify-center h-[200px] border rounded-xl bg-card">
-          <span className="text-sm text-muted-foreground uppercase tracking-widest">
+        <div className="flex flex-col items-center justify-center h-[200px] border rounded-xl bg-card shadow-sm">
+          <span className="text-sm text-muted-foreground uppercase tracking-widest font-semibold">
             {kpiLabel}
           </span>
-          <span className="text-5xl font-black text-primary mt-2">
-            {kpiValue}
+          <span className="text-6xl font-black text-primary mt-2">
+            {typeof kpiValue === "number"
+              ? kpiValue.toLocaleString()
+              : kpiValue}
           </span>
         </div>
       );
+    }
+
+    case "gauge_chart": {
+      const value = Number(chartData[0]?.[yKey]) || 0;
+      const target = 100; // Default max 100
+      const data = [
+        { name: "Progress", value: Math.min(value, target) },
+        { name: "Remaining", value: Math.max(0, target - value) },
+      ];
+
+      return (
+        <div className="flex flex-col items-center pt-8">
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="100%"
+                startAngle={180}
+                endAngle={0}
+                innerRadius={80}
+                outerRadius={120}
+                paddingAngle={0}
+                dataKey="value"
+              >
+                <Cell fill={colors[0]} />
+                <Cell fill="hsl(var(--muted)/0.3)" />
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="mt-[-40px] text-center">
+            <span className="text-4xl font-black text-foreground">
+              {value}
+              {yLabel?.includes("%") ? "%" : ""}
+            </span>
+            <p className="text-muted-foreground text-sm uppercase tracking-wider font-medium mt-1">
+              {xLabel !== "Categoría" ? chartData[0]?.[xKey] : yLabel}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    case "status_light": {
+      const value = chartData[0]?.[yKey];
+      const label = chartData[0]?.[xKey] || yLabel;
+      // Heuristic for status: green if starts with 'ok' or number > 0, etc.
+      // But usually this would be mapped to semaphore colors.
+      let lightColor = colors[0];
+      if (config?.colores === "semaphore") {
+        const valNum = Number(value);
+        if (!isNaN(valNum)) {
+          if (valNum > 80) lightColor = COLORS_SEMAPHORE[0];
+          else if (valNum > 40) lightColor = COLORS_SEMAPHORE[1];
+          else lightColor = COLORS_SEMAPHORE[2];
+        }
+      }
+
+      return (
+        <div className="flex items-center gap-4 p-6 border rounded-xl bg-card">
+          <div
+            className="w-12 h-12 rounded-full shadow-lg animate-pulse"
+            style={{
+              backgroundColor: lightColor,
+              boxShadow: `0 0 20px ${lightColor}66`,
+            }}
+          />
+          <div>
+            <p className="text-2xl font-bold">{value}</p>
+            <p className="text-sm text-muted-foreground uppercase tracking-tight">
+              {label}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    case "waterfall_chart": {
+      let running = 0;
+      const wfData = chartData.map((d) => {
+        const value = Number(d[yKey]) || 0;
+        const isPos = value >= 0;
+        const base = isPos ? running : running + value;
+        running += value;
+        return { ...d, _base: base, _bar: Math.abs(value), _positive: isPos, _value: value };
+      });
+
+      const allTops = wfData.map((d) => d._base + d._bar);
+      const allBases = wfData.map((d) => d._base);
+      const minDomain = Math.min(0, ...allBases);
+      const maxDomain = Math.max(...allTops);
+      const pad = (maxDomain - minDomain) * 0.1 || 10;
+
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={wfData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
+            <YAxis domain={[minDomain - pad, maxDomain + pad]} />
+            <Tooltip
+              content={({ active, payload, label }) => {
+                if (!active || !label) return null;
+                const entry = wfData.find((d) => String(d[xKey]) === String(label));
+                if (!entry) return null;
+                const v = entry._value;
+                const col = entry._positive ? colors[0] : colors[2] || "#dc2626";
+                return (
+                  <div className="bg-background border px-3 py-2 rounded shadow-md text-sm">
+                    <p className="font-bold mb-1">{label}</p>
+                    <p style={{ color: col }}>
+                      {yLabel}: {v > 0 ? "+" : ""}
+                      {v.toLocaleString("es-AR")}
+                    </p>
+                  </div>
+                );
+              }}
+            />
+            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.4} />
+            {/* Invisible spacer bar */}
+            <Bar dataKey="_base" stackId="wf" fill="transparent" legendType="none" name="" />
+            {/* Visible change bar */}
+            <Bar dataKey="_bar" stackId="wf" radius={[4, 4, 0, 0]} name={yLabel}>
+              {wfData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry._positive ? colors[0] : colors[2] || "#dc2626"}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    case "sankey_chart": {
+      // eje_principal = source, eje_secundario = target, eje_valores = numeric value
+      const tgtKey =
+        secondaryKey ||
+        columns.find((c) => c.id !== xKey && c.id !== yKey)?.id;
+
+      if (!tgtKey) {
+        return (
+          <div className="p-4 text-center text-muted-foreground text-sm">
+            Sankey requiere 3 columnas: origen (eje_principal), destino (eje_secundario) y valor
+            numérico (eje_valores).
+          </div>
+        );
+      }
+
+      const SVG_W = 560;
+      const SVG_H = 300;
+      const NODE_W = 14;
+      const GAP = 8;
+      const LABEL_W = 130;
+
+      const srcNames = [
+        ...new Set(chartData.map((d) => String(d[xKey] ?? "")).filter(Boolean)),
+      ];
+      const tgtNames = [
+        ...new Set(chartData.map((d) => String(d[tgtKey] ?? "")).filter(Boolean)),
+      ];
+
+      const srcTotals: Record<string, number> = {};
+      const tgtTotals: Record<string, number> = {};
+      chartData.forEach((d) => {
+        const v = Number(d[yKey]) || 0;
+        const s = String(d[xKey] ?? "");
+        const t = String(d[tgtKey] ?? "");
+        srcTotals[s] = (srcTotals[s] || 0) + v;
+        tgtTotals[t] = (tgtTotals[t] || 0) + v;
+      });
+
+      const totalFlow = Object.values(srcTotals).reduce((a, b) => a + b, 0);
+      if (totalFlow === 0) {
+        return <div className="p-4 text-muted-foreground text-sm text-center">Sin datos para Sankey</div>;
+      }
+
+      const innerW = SVG_W - 2 * LABEL_W;
+      const leftX = LABEL_W;
+      const rightX = LABEL_W + innerW;
+
+      const usableSrcH = SVG_H - Math.max(0, srcNames.length - 1) * GAP;
+      const usableTgtH = SVG_H - Math.max(0, tgtNames.length - 1) * GAP;
+
+      let acc = 0;
+      const srcLayout: Record<string, { y: number; h: number; off: number }> = {};
+      srcNames.forEach((name) => {
+        const h = Math.max(4, (srcTotals[name] / totalFlow) * usableSrcH);
+        srcLayout[name] = { y: acc, h, off: 0 };
+        acc += h + GAP;
+      });
+
+      acc = 0;
+      const tgtLayout: Record<string, { y: number; h: number; off: number }> = {};
+      tgtNames.forEach((name) => {
+        const h = Math.max(4, (tgtTotals[name] / totalFlow) * usableTgtH);
+        tgtLayout[name] = { y: acc, h, off: 0 };
+        acc += h + GAP;
+      });
+
+      const cx = (leftX + NODE_W + rightX) / 2;
+      const paths = chartData
+        .map((d, i) => {
+          const v = Number(d[yKey]) || 0;
+          if (v === 0) return null;
+          const flowH = (v / totalFlow) * SVG_H;
+          const src = srcLayout[String(d[xKey] ?? "")];
+          const tgt = tgtLayout[String(d[tgtKey] ?? "")];
+          if (!src || !tgt) return null;
+
+          const x1 = leftX + NODE_W;
+          const x2 = rightX;
+          const y1 = src.y + src.off;
+          const y2 = tgt.y + tgt.off;
+          src.off += flowH;
+          tgt.off += flowH;
+
+          const pathD = [
+            `M ${x1} ${y1}`,
+            `C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`,
+            `L ${x2} ${y2 + flowH}`,
+            `C ${cx} ${y2 + flowH}, ${cx} ${y1 + flowH}, ${x1} ${y1 + flowH}`,
+            "Z",
+          ].join(" ");
+
+          return {
+            d: pathD,
+            color: colors[i % colors.length],
+            title: `${d[xKey]} → ${d[tgtKey]}: ${v.toLocaleString("es-AR")}`,
+          };
+        })
+        .filter(Boolean);
+
+      return (
+        <div className="w-full overflow-x-auto">
+          <svg
+            viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+            className="w-full"
+            style={{ height: 350 }}
+          >
+            {paths.map((p, i) =>
+              p ? (
+                <path
+                  key={i}
+                  d={p.d}
+                  fill={p.color}
+                  fillOpacity={0.4}
+                  stroke={p.color}
+                  strokeWidth={0.5}
+                >
+                  <title>{p.title}</title>
+                </path>
+              ) : null,
+            )}
+            {srcNames.map((name, i) => {
+              const n = srcLayout[name];
+              return (
+                <g key={`src-${i}`}>
+                  <rect
+                    x={leftX}
+                    y={n.y}
+                    width={NODE_W}
+                    height={n.h}
+                    fill={colors[i % colors.length]}
+                    rx={2}
+                  />
+                  <text
+                    x={leftX - 6}
+                    y={n.y + n.h / 2}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    fontSize={10}
+                    className="fill-foreground"
+                  >
+                    {name}
+                  </text>
+                </g>
+              );
+            })}
+            {tgtNames.map((name, i) => {
+              const n = tgtLayout[name];
+              const colIdx = (i + srcNames.length) % colors.length;
+              return (
+                <g key={`tgt-${i}`}>
+                  <rect
+                    x={rightX}
+                    y={n.y}
+                    width={NODE_W}
+                    height={n.h}
+                    fill={colors[colIdx]}
+                    rx={2}
+                  />
+                  <text
+                    x={rightX + NODE_W + 6}
+                    y={n.y + n.h / 2}
+                    dominantBaseline="middle"
+                    fontSize={10}
+                    className="fill-foreground"
+                  >
+                    {name}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      );
+    }
 
     default:
       return (
