@@ -78,8 +78,7 @@ export interface PayloadBlock {
   [key: string]: unknown;
 }
 
-// Reports share the same structure as News
-// Reports share the same structure as News but can have a parent
+// Publications share the same structure as News but can have a parent
 export interface ReportItem extends NewsItem {
   parent?: ReportItem | number | null;
 }
@@ -252,13 +251,13 @@ export async function fetchEntriesForCollection(
           },
         }));
       }
-      case "informes": {
+      case "publicaciones": {
         const result = await getReports({
           limit,
           where: { parent: { exists: false } },
         });
         return result.docs.map((item) => ({
-          relationTo: "informes",
+          relationTo: "publicaciones",
           value: { id: item.id, titulo: item.titulo, slug: item.slug },
         }));
       }
@@ -622,7 +621,7 @@ export async function getReports(
   } = {},
 ): Promise<PayloadResponse<ReportItem>> {
   const { page = 1, limit = 10, sort = "-createdAt", where } = params;
-  let url = `${API_URL}/informes?page=${page}&limit=${limit}&sort=${sort}&draft=false`;
+  let url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=${sort}&draft=false`;
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
@@ -645,7 +644,7 @@ export async function getReports(
     });
 
     if (!res.ok) {
-      throw new Error("Failed to fetch reports");
+      throw new Error("Failed to fetch publications");
     }
 
     return res.json();
@@ -667,14 +666,14 @@ export async function getReports(
 }
 
 /**
- * Fetches a single report by slug
+ * Fetches a single publication by slug
  */
 export async function getReportItem(slug: string): Promise<ReportItem | null> {
   try {
     // Search by slug
     const timestamp = Date.now();
     const res = await fetch(
-      `${API_URL}/informes?where[slug][equals]=${slug}&depth=2&draft=false&t=${timestamp}`,
+      `${API_URL}/publicaciones?where[slug][equals]=${slug}&depth=2&draft=false&t=${timestamp}`,
       {
         cache: "no-store",
         headers: {

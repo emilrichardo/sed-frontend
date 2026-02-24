@@ -31,7 +31,7 @@ export async function generateMetadata({
 
   if (!reportItem) {
     return {
-      title: "Informe no encontrado",
+      title: "Publicación no encontrada",
     };
   }
 
@@ -65,7 +65,7 @@ function extractHeadings(
   return headings;
 }
 
-export default async function ReportPage({ params }: PageProps) {
+export default async function PublicationPage({ params }: PageProps) {
   const { slug } = await params;
   const reportItem = await getReportItem(slug);
 
@@ -123,8 +123,11 @@ export default async function ReportPage({ params }: PageProps) {
 
   // Determine Back Link
   const backLink = parent
-    ? { href: `/informes/${parent.slug}`, label: `Volver a ${parent.titulo}` }
-    : { href: "/informes", label: "Volver a Informes" };
+    ? {
+        href: `/publicaciones/${parent.slug}`,
+        label: `Volver a ${parent.titulo}`,
+      }
+    : { href: "/publicaciones", label: "Volver a Publicaciones" };
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
@@ -153,11 +156,11 @@ export default async function ReportPage({ params }: PageProps) {
             <div className="mt-12 flex items-center justify-between border-t pt-6 gap-4">
               {prevSibling ? (
                 <Link
-                  href={`/informes/${prevSibling.slug}`}
+                  href={`/publicaciones/${prevSibling.slug}`}
                   className="group flex flex-col items-start text-left"
                 >
                   <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                    Anterior Informe
+                    Anterior Publicación
                   </span>
                   <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
                     <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
@@ -170,11 +173,11 @@ export default async function ReportPage({ params }: PageProps) {
 
               {nextSibling && (
                 <Link
-                  href={`/informes/${nextSibling.slug}`}
+                  href={`/publicaciones/${nextSibling.slug}`}
                   className="group flex flex-col items-end text-right"
                 >
                   <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                    Siguiente Informe
+                    Siguiente Publicación
                   </span>
                   <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
                     {nextSibling.titulo}
@@ -214,7 +217,7 @@ export default async function ReportPage({ params }: PageProps) {
                       title={child.titulo}
                       description={description}
                       date={child.createdAt}
-                      href={`/informes/${child.slug}`}
+                      href={`/publicaciones/${child.slug}`}
                       imageUrl={child.imagen_destacada?.url}
                       imageAlt={child.imagen_destacada?.alt}
                     />

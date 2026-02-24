@@ -20,7 +20,7 @@ const navLinks = [
   { name: "Inicio", href: "/", icon: Home },
   { name: "Noticias", href: "/noticias", icon: Newspaper },
   { name: "Boletines", href: "/boletines", icon: FileText },
-  { name: "Informes", href: "/informes", icon: BarChart },
+  { name: "Publicaciones", href: "/publicaciones", icon: BarChart },
   { name: "Widgets", href: "/widgets", icon: Layout },
 ];
 
@@ -31,7 +31,7 @@ export function Sidebar() {
 
   // Hide global sidebar on Report Detail pages
   const isReportDetail =
-    pathname.startsWith("/informes/") && pathname.split("/").length > 2;
+    pathname.startsWith("/publicaciones/") && pathname.split("/").length > 2;
 
   if (!user) return null;
   if (isReportDetail) return null;

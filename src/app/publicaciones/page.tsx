@@ -12,7 +12,9 @@ interface PageProps {
   }>;
 }
 
-export default async function ReportsArchivePage({ searchParams }: PageProps) {
+export default async function PublicationsArchivePage({
+  searchParams,
+}: PageProps) {
   const { page: pageParam } = await searchParams;
   const page = parseInt(pageParam || "1", 10);
   const limit = 10;
@@ -29,8 +31,8 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
       <PageHeader
-        title="Informes"
-        description="Informes técnicos y análisis detallados de Santiago en Datos."
+        title="Publicaciones"
+        description="Publicaciones técnicas y análisis detallados de Santiago en Datos."
         icon={BarChart}
       />
 
@@ -57,7 +59,7 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
               title={item.titulo}
               description={description}
               date={item.createdAt}
-              href={`/informes/${item.slug}`}
+              href={`/publicaciones/${item.slug}`}
               imageUrl={item.imagen_destacada?.url}
               imageAlt={item.imagen_destacada?.alt}
             />
@@ -68,7 +70,7 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
       {reports.docs.length === 0 && (
         <div className="text-center py-20 border rounded-xl border-dashed">
           <p className="text-muted-foreground italic">
-            No hay informes disponibles.
+            No hay publicaciones disponibles.
           </p>
         </div>
       )}
@@ -77,7 +79,7 @@ export default async function ReportsArchivePage({ searchParams }: PageProps) {
       {reports.totalPages > 1 && (
         <div className="flex items-center justify-between pt-8 border-t">
           <p className="text-sm text-muted-foreground">
-            Mostrando {reports.docs.length} de {reports.totalDocs} informes
+            Mostrando {reports.docs.length} de {reports.totalDocs} publicaciones
           </p>
           <div className="flex gap-2">
             <Link
