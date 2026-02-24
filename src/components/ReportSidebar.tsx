@@ -118,13 +118,13 @@ function SidebarContent({
         <div className="pt-6 border-t border-border/50">
           <h3 className="font-semibold mb-4 text-sm text-foreground uppercase tracking-wider flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Contenido del Informe
+            Contenido de la Publicación
           </h3>
 
           <nav className="flex flex-col space-y-1">
             {parentReport && (
               <Link
-                href={`/informes/${parentReport.slug}`}
+                href={`/publicaciones/${parentReport.slug}`}
                 className={cn(
                   "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
                   currentSlug === parentReport.slug
@@ -142,7 +142,7 @@ function SidebarContent({
             {childrenReports.map((item) => (
               <Link
                 key={item.id}
-                href={`/informes/${item.slug}`}
+                href={`/publicaciones/${item.slug}`}
                 className={cn(
                   "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ml-2",
                   currentSlug === item.slug
@@ -338,7 +338,9 @@ export function ReportSidebar({
             side="left"
             className="w-[85vw] sm:w-[350px] overflow-y-auto"
           >
-            <SheetTitle className="sr-only">Navegación del Informe</SheetTitle>
+            <SheetTitle className="sr-only">
+              Navegación de la Publicación
+            </SheetTitle>
             <div className="mt-6">
               <SidebarContent
                 headings={headings}

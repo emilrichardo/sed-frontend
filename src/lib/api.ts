@@ -230,13 +230,6 @@ export async function fetchEntriesForCollection(
 
   try {
     switch (collection) {
-      case "noticias": {
-        const result = await getNews({ limit, sort: "-createdAt" });
-        return result.docs.map((item) => ({
-          relationTo: "noticias",
-          value: { id: item.id, titulo: item.titulo, slug: item.slug },
-        }));
-      }
       case "boletines": {
         const result = await getBulletins({
           limit,
@@ -496,117 +489,6 @@ export interface LearningRecord {
   updatedAt: string;
 }
 
-export async function getNews(
-  params: {
-    page?: number;
-    limit?: number;
-    sort?: string;
-    where?: Record<string, unknown>;
-  } = {},
-): Promise<PayloadResponse<NewsItem>> {
-  const { page = 1, limit = 10, sort = "-createdAt", where } = params;
-  let url = `${API_URL}/noticias?page=${page}&limit=${limit}&sort=${sort}&draft=false`;
-
-  if (where) {
-    Object.entries(where).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        url += `&where[${key}][equals]=${value}`;
-      }
-    });
-  }
-
-  try {
-    const res = await fetch(url, {
-      next: { revalidate: 60 },
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch news");
-    }
-
-    return res.json();
-  } catch (error) {
-    console.error("Error fetching news:", error);
-    return {
-      docs: [],
-      totalDocs: 0,
-      limit: 10,
-      totalPages: 0,
-      page: 1,
-      pagingCounter: 0,
-      hasPrevPage: false,
-      hasNextPage: false,
-      prevPage: null,
-      nextPage: null,
-    };
-  }
-}
-
-export async function getNewsItem(slug: string): Promise<NewsItem | null> {
-  try {
-    // Search by slug
-    const timestamp = Date.now();
-    const res = await fetch(
-      `${API_URL}/noticias?where[slug][equals]=${slug}&depth=2&draft=false&t=${timestamp}`,
-      {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-        },
-      },
-    );
-
-    if (!res.ok) {
-      return null;
-    }
-
-    const data: PayloadResponse<NewsItem> = await res.json();
-
-    if (data.docs.length === 0) {
-      return null;
-    }
-
-    const news = data.docs[0];
-
-    // Check if author needs to be fetched manually
-    if (news.autor && typeof news.autor !== "object") {
-      try {
-        const authorId = news.autor;
-        console.log(
-          `[getNewsItem] Author is ID (${authorId}), fetching user details...`,
-        );
-        const userRes = await fetch(`${API_URL}/users/${authorId}`, {
-          cache: "no-store",
-        });
-        if (userRes.ok) {
-          const user = await userRes.json();
-          console.log(
-            `[getNewsItem] Author fetched: ${user.nombre} ${user.apellido}`,
-          );
-          news.autor = user;
-        } else {
-          console.error(
-            `[getNewsItem] Failed to fetch author ${authorId}: ${userRes.status}`,
-          );
-        }
-      } catch (err) {
-        console.error(`[getNewsItem] Error fetching author manually:`, err);
-      }
-    }
-
-    console.log(
-      `[getNewsItem] Fetched ${slug}. Autor final:`,
-      JSON.stringify(news.autor, null, 2),
-    );
-
-    return news;
-  } catch (error) {
-    console.error(`Error fetching news item ${slug}:`, error);
-    return null;
-  }
-}
-
 // --- Report Functions ---
 
 /**
@@ -621,7 +503,10 @@ export async function getReports(
   } = {},
 ): Promise<PayloadResponse<ReportItem>> {
   const { page = 1, limit = 10, sort = "-createdAt", where } = params;
-  let url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=${sort}&draft=false`;
+  let url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=${sort}`;
+
+  // Re-add draft=false if we want only published, but for now let's see why it's empty
+  // url += "&draft=false";
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
@@ -637,6 +522,8 @@ export async function getReports(
       }
     });
   }
+
+  console.log(`[getReports] Fetching: ${url}`);
 
   try {
     const res = await fetch(url, {
@@ -1197,8 +1084,8 @@ export interface Procesamiento {
   nombre: string;
   status: "en_cola" | "procesando" | "completado" | "error" | "cancelado";
   documento_relacionado: {
-    relationTo: "boletines" | "noticias" | "actos-administrativos";
-    value: string | number | Boletin | NewsItem | ActoAdministrativo;
+    relationTo: "boletines" | "actos-administrativos";
+    value: string | number | Boletin | ActoAdministrativo;
   };
   agente?: string | number | Agent;
   resultado?: any;

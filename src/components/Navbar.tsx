@@ -8,9 +8,8 @@ import { Menu, X, LogIn, LogOut, User, Edit3 } from "lucide-react";
 
 const navLinks = [
   { name: "Inicio", href: "/" },
-  { name: "Noticias", href: "/noticias" },
   { name: "Boletines", href: "/boletines" },
-  { name: "Informes", href: "/informes" },
+  { name: "Publicaciones", href: "/publicaciones" },
   { name: "Widgets", href: "/widgets" },
 ];
 

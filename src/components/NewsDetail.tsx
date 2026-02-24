@@ -87,7 +87,7 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
             })()}
 
             <EditContentButton
-              collection={initialData.parent ? "informes" : "noticias"}
+              collection="publicaciones"
               id={initialData.id}
             />
           </div>

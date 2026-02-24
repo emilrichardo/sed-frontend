@@ -23,9 +23,9 @@ export default async function PublicationsArchivePage({
     page,
     limit,
     sort: "-createdAt",
-    where: {
-      parent: { exists: false },
-    },
+    // where: {
+    //   parent: { exists: false },
+    // },
   });
 
   return (
@@ -83,7 +83,7 @@ export default async function PublicationsArchivePage({
           </p>
           <div className="flex gap-2">
             <Link
-              href={`/informes?page=${reports.prevPage}`}
+              href={`/publicaciones?page=${reports.prevPage}`}
               className={`p-2 border rounded-md transition-colors ${
                 !reports.hasPrevPage
                   ? "opacity-50 pointer-events-none"
@@ -96,7 +96,7 @@ export default async function PublicationsArchivePage({
               Página {reports.page} de {reports.totalPages}
             </div>
             <Link
-              href={`/informes?page=${reports.nextPage}`}
+              href={`/publicaciones?page=${reports.nextPage}`}
               className={`p-2 border rounded-md transition-colors ${
                 !reports.hasNextPage
                   ? "opacity-50 pointer-events-none"

@@ -1,6 +1,5 @@
-import { getNews, getBulletins, getReports } from "@/lib/api";
+import { getBulletins, getReports } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
-import { CreateNewsButton } from "@/components/CreateNewsButton";
 import { Stats } from "@/components/Stats";
 
 import Link from "next/link";
@@ -9,8 +8,7 @@ import { FileText, ArrowRight, BookOpen } from "lucide-react";
 export const revalidate = 60;
 
 export default async function Home() {
-  const [news, bulletins, reports] = await Promise.all([
-    getNews(),
+  const [bulletins, reports] = await Promise.all([
     getBulletins({ limit: 1 }),
     getReports({ limit: 4, where: { parent: { exists: false } } }),
   ]);
@@ -80,10 +78,10 @@ export default async function Home() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold flex items-center gap-2">
             <BookOpen className="h-6 w-6" />
-            Informes
+            Publicaciones
           </h2>
           <Link
-            href="/informes"
+            href="/publicaciones"
             className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
           >
             Ver todos
@@ -113,7 +111,7 @@ export default async function Home() {
                 title={item.titulo}
                 description={description}
                 date={item.createdAt}
-                href={`/informes/${item.slug}`}
+                href={`/publicaciones/${item.slug}`}
                 imageUrl={item.imagen_destacada?.url}
                 imageAlt={item.imagen_destacada?.alt}
                 // layout="horizontal" removed to use default vertical layout for grid
@@ -123,59 +121,7 @@ export default async function Home() {
         </div>
         {reports.docs.length === 0 && (
           <p className="text-muted-foreground italic">
-            No hay informes disponibles.
-          </p>
-        )}
-      </section>
-
-      <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold">Últimas Noticias</h2>
-          <div className="flex items-center gap-4">
-            <CreateNewsButton />
-            <Link
-              href="/noticias"
-              className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
-            >
-              Ver todas
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {news.docs.map((item) => {
-            const contenido = item.contenido as any;
-
-            let description = "Sin descripción";
-            if (contenido?.root?.children) {
-              const firstTextNode = contenido.root.children.find(
-                (child: any) =>
-                  child.children &&
-                  child.children.length > 0 &&
-                  child.children[0].text,
-              );
-              if (firstTextNode) {
-                description = firstTextNode.children[0].text;
-              }
-            }
-
-            return (
-              <Card
-                key={item.id}
-                title={item.titulo}
-                description={description}
-                date={item.createdAt}
-                href={`/noticias/${item.slug}`}
-                imageUrl={item.imagen_destacada?.url}
-                imageAlt={item.imagen_destacada?.alt}
-              />
-            );
-          })}
-        </div>
-
-        {news.docs.length === 0 && (
-          <p className="text-muted-foreground italic">
-            No hay noticias disponibles.
+            No hay publicaciones disponibles.
           </p>
         )}
       </section>

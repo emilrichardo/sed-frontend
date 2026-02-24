@@ -15,12 +15,10 @@ interface WidgetCardProps {
 // Helper to get URL based on collection type
 const getEntryUrl = (relationTo: string, slug: string): string => {
   switch (relationTo) {
-    case "noticias":
-      return `/noticias/${slug}`;
     case "boletines":
       return `/boletines/${slug}`;
-    case "informes":
-      return `/informes/${slug}`;
+    case "publicaciones":
+      return `/publicaciones/${slug}`;
     default:
       return `/${relationTo}/${slug}`;
   }

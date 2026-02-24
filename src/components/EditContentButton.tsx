@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Edit } from "lucide-react";
 
 interface EditContentButtonProps {
-  collection: "noticias" | "informes" | "boletines";
+  collection: "publicaciones" | "boletines";
   id: number | string;
 }
 

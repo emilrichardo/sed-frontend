@@ -208,10 +208,7 @@ export const RichTextParser = ({ content }: { content: any }) => {
       let displayTitle = titulo;
       let displayDate = createdAt || fecha_publicacion;
 
-      if (content.relationTo === "noticias") {
-        linkHref = `/noticias/${slug}`;
-        typeLabel = "Noticia Relacionada";
-      } else if (content.relationTo === "boletines") {
+      if (content.relationTo === "boletines") {
         linkHref = `/boletines/${slug}`;
         typeLabel = "Boletín Relacionado";
         displayTitle = `Boletín Oficial Nº ${numero}`;
