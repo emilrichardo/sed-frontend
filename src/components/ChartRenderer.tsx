@@ -28,6 +28,7 @@ import {
 
 // Color Palettes
 const COLORS_DEFAULT = [
+  "#dc2626", // Red (Institutional)
   "#2563eb", // Blue
   "#db2777", // Pink
   "#ea580c", // Orange
@@ -35,11 +36,34 @@ const COLORS_DEFAULT = [
   "#9333ea", // Purple
   "#0891b2", // Cyan
   "#ca8a04", // Yellow
-  "#dc2626", // Red
 ];
 const COLORS_SLATE = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
 const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#dc2626"]; // Green, Yellow, Red
 const COLORS_HEATMAP = ["#fee2e2", "#fca5a5", "#ef4444", "#b91c1c", "#7f1d1d"];
+
+const SANTIAGO_RED = "#dc2626";
+
+const getItemColor = (
+  name: string | number | undefined,
+  index: number,
+  palette: string[],
+) => {
+  const strName = String(name || "").toLowerCase();
+  if (strName.includes("santiago del estero")) {
+    return SANTIAGO_RED;
+  }
+  // Try to avoid duplicate red if it's already the institutional color and not SDE
+  const color = palette[index % palette.length];
+  if (
+    color === SANTIAGO_RED &&
+    !strName.includes("santiago del estero") &&
+    palette === COLORS_DEFAULT
+  ) {
+    // If it's the first institutional color but not SDE, use the second one to prioritize SDE as Red
+    return palette[(index + 1) % palette.length];
+  }
+  return color;
+};
 
 type ChartConfig = {
   colores?: "default" | "vibrant" | "slate" | "semaphore" | "heatmap";
@@ -213,13 +237,13 @@ export const ChartRenderer = ({
               dataKey={yKey}
               name={yLabel}
               radius={[0, 4, 4, 0]}
-              fill={colors[0]}
+              fill={getItemColor(yLabel, 0, colors)}
             >
               {!secondaryKey &&
                 chartData.map((_, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={colors[index % colors.length]}
+                    fill={getItemColor(chartData[index][xKey], index, colors)}
                   />
                 ))}
             </Bar>
@@ -228,7 +252,7 @@ export const ChartRenderer = ({
                 dataKey={secondaryKey}
                 name={secondaryLabel}
                 radius={[0, 4, 4, 0]}
-                fill={colors[1] || colors[0]}
+                fill={getItemColor(secondaryLabel, 1, colors)}
               />
             )}
           </BarChart>
@@ -248,13 +272,13 @@ export const ChartRenderer = ({
               dataKey={yKey}
               name={yLabel}
               radius={[4, 4, 0, 0]}
-              fill={colors[0]}
+              fill={getItemColor(yLabel, 0, colors)}
             >
               {!secondaryKey &&
                 chartData.map((_, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={colors[index % colors.length]}
+                    fill={getItemColor(chartData[index][xKey], index, colors)}
                   />
                 ))}
             </Bar>
@@ -263,7 +287,7 @@ export const ChartRenderer = ({
                 dataKey={secondaryKey}
                 name={secondaryLabel}
                 radius={[4, 4, 0, 0]}
-                fill={colors[1] || colors[0]}
+                fill={getItemColor(secondaryLabel, 1, colors)}
               />
             )}
           </BarChart>
@@ -287,15 +311,20 @@ export const ChartRenderer = ({
               tick={{ fontSize: 12 }}
               interval={0}
             />
-            <Tooltip />
+            <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar dataKey={yKey} name={yLabel} stackId="a" fill={colors[0]} />
+            <Bar
+              dataKey={yKey}
+              name={yLabel}
+              stackId="a"
+              fill={getItemColor(yLabel, 0, colors)}
+            />
             {secondaryKey && (
               <Bar
                 dataKey={secondaryKey}
                 name={secondaryLabel}
                 stackId="a"
-                fill={colors[1] || colors[0]}
+                fill={getItemColor(secondaryLabel, 1, colors)}
               />
             )}
           </BarChart>
@@ -325,7 +354,7 @@ export const ChartRenderer = ({
               {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={colors[index % colors.length]}
+                  fill={getItemColor(entry[xKey], index, colors)}
                 />
               ))}
             </Pie>
@@ -347,7 +376,7 @@ export const ChartRenderer = ({
               type="monotone"
               dataKey={yKey}
               name={yLabel}
-              stroke={colors[0]}
+              stroke={getItemColor(yLabel, 0, colors)}
               strokeWidth={2}
               activeDot={{ r: 8 }}
             />
@@ -356,7 +385,7 @@ export const ChartRenderer = ({
                 type="monotone"
                 dataKey={secondaryKey}
                 name={secondaryLabel ?? undefined}
-                stroke={colors[1] || colors[0]}
+                stroke={getItemColor(secondaryLabel, 1, colors)}
                 strokeWidth={2}
                 activeDot={{ r: 8 }}
               />
@@ -378,8 +407,8 @@ export const ChartRenderer = ({
               type="monotone"
               dataKey={yKey}
               name={yLabel}
-              stroke={colors[0]}
-              fill={colors[0]}
+              stroke={getItemColor(yLabel, 0, colors)}
+              fill={getItemColor(yLabel, 0, colors)}
               fillOpacity={0.3}
             />
             {secondaryKey && (
@@ -387,8 +416,8 @@ export const ChartRenderer = ({
                 type="monotone"
                 dataKey={secondaryKey}
                 name={secondaryLabel ?? undefined}
-                stroke={colors[1] || colors[0]}
-                fill={colors[1] || colors[0]}
+                stroke={getItemColor(secondaryLabel, 1, colors)}
+                fill={getItemColor(secondaryLabel, 1, colors)}
                 fillOpacity={0.3}
               />
             )}
@@ -406,20 +435,20 @@ export const ChartRenderer = ({
             <Radar
               name={yLabel}
               dataKey={yKey}
-              stroke={colors[0]}
-              fill={colors[0]}
+              stroke={getItemColor(yLabel, 0, colors)}
+              fill={getItemColor(yLabel, 0, colors)}
               fillOpacity={0.6}
             />
             {secondaryKey && (
               <Radar
                 name={secondaryLabel}
                 dataKey={secondaryKey}
-                stroke={colors[1] || colors[0]}
-                fill={colors[1] || colors[0]}
+                stroke={getItemColor(secondaryLabel, 1, colors)}
+                fill={getItemColor(secondaryLabel, 1, colors)}
                 fillOpacity={0.6}
               />
             )}
-            <Tooltip />
+            <Tooltip content={<CustomTooltip />} />
             <Legend />
           </RadarChart>
         </ResponsiveContainer>
@@ -436,7 +465,13 @@ export const ChartRenderer = ({
             stroke="#fff"
             fill={colors[0]}
           >
-            <Tooltip />
+            {chartData.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={getItemColor(entry[xKey], index, colors)}
+              />
+            ))}
+            <Tooltip content={<CustomTooltip />} />
           </Treemap>
         </ResponsiveContainer>
       );
@@ -490,58 +525,35 @@ export const ChartRenderer = ({
             />
             <Tooltip
               cursor={{ fill: "transparent" }}
-              content={({ active, payload, label }) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div className="bg-background border px-3 py-2 rounded shadow-md text-sm">
-                      <p className="font-bold mb-1">{label}</p>
-                      <div className="flex flex-col gap-1">
-                        <p style={{ color: colors[0] }}>
-                          {leftLabel}:{" "}
-                          {Math.abs(
-                            Number(
-                              payload.find((p) => p.dataKey === "_left")
-                                ?.value || 0,
-                            ),
-                          ).toLocaleString()}
-                        </p>
-                        <p style={{ color: colors[1] || colors[0] }}>
-                          {rightLabel}:{" "}
-                          {Number(
-                            payload.find((p) => p.dataKey === "_right")
-                              ?.value || 0,
-                          ).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              }}
+              content={<CustomTooltip />}
             />
             <Legend
               verticalAlign="top"
               wrapperStyle={{ paddingBottom: "20px" }}
               {...({
                 payload: [
-                  { value: leftLabel, type: "rect", color: colors[0] },
+                  {
+                    value: leftLabel,
+                    type: "rect",
+                    color: getItemColor(leftLabel, 0, colors),
+                  },
                   {
                     value: rightLabel,
                     type: "rect",
-                    color: colors[1] || colors[0],
+                    color: getItemColor(rightLabel, 1, colors),
                   },
                 ],
               } as any)}
             />
             <Bar
               dataKey="_left"
-              fill={colors[0]}
+              fill={getItemColor(leftLabel, 0, colors)}
               radius={[4, 0, 0, 4]}
               name={leftLabel}
             />
             <Bar
               dataKey="_right"
-              fill={colors[1] || colors[0]}
+              fill={getItemColor(rightLabel, 1, colors)}
               radius={[0, 4, 4, 0]}
               name={rightLabel}
             />
@@ -591,7 +603,9 @@ export const ChartRenderer = ({
                 paddingAngle={0}
                 dataKey="value"
               >
-                <Cell fill={colors[0]} />
+                <Cell
+                  fill={getItemColor(chartData[0]?.[xKey] || yLabel, 0, colors)}
+                />
                 <Cell fill="hsl(var(--muted)/0.3)" />
               </Pie>
               <Tooltip />
@@ -645,13 +659,20 @@ export const ChartRenderer = ({
     }
 
     case "waterfall_chart": {
-      let running = 0;
-      const wfData = chartData.map((d) => {
+      const wfData: any[] = [];
+      let currentRunning = 0;
+      chartData.forEach((d) => {
         const value = Number(d[yKey]) || 0;
         const isPos = value >= 0;
-        const base = isPos ? running : running + value;
-        running += value;
-        return { ...d, _base: base, _bar: Math.abs(value), _positive: isPos, _value: value };
+        const base = isPos ? currentRunning : currentRunning + value;
+        currentRunning += value;
+        wfData.push({
+          ...d,
+          _base: base,
+          _bar: Math.abs(value),
+          _positive: isPos,
+          _value: value,
+        });
       });
 
       const allTops = wfData.map((d) => d._base + d._bar);
@@ -662,17 +683,24 @@ export const ChartRenderer = ({
 
       return (
         <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={wfData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <BarChart
+            data={wfData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
             <YAxis domain={[minDomain - pad, maxDomain + pad]} />
             <Tooltip
-              content={({ active, payload, label }) => {
+              content={({ active, label }) => {
                 if (!active || !label) return null;
-                const entry = wfData.find((d) => String(d[xKey]) === String(label));
+                const entry = wfData.find(
+                  (d) => String(d[xKey]) === String(label),
+                );
                 if (!entry) return null;
                 const v = entry._value;
-                const col = entry._positive ? colors[0] : colors[2] || "#dc2626";
+                const col = entry._positive
+                  ? SANTIAGO_RED
+                  : colors[2] || "#dc2626";
                 return (
                   <div className="bg-background border px-3 py-2 rounded shadow-md text-sm">
                     <p className="font-bold mb-1">{label}</p>
@@ -684,15 +712,34 @@ export const ChartRenderer = ({
                 );
               }}
             />
-            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.4} />
+            <ReferenceLine
+              y={0}
+              stroke="hsl(var(--muted-foreground))"
+              strokeOpacity={0.4}
+            />
             {/* Invisible spacer bar */}
-            <Bar dataKey="_base" stackId="wf" fill="transparent" legendType="none" name="" />
+            <Bar
+              dataKey="_base"
+              stackId="wf"
+              fill="transparent"
+              legendType="none"
+              name=""
+            />
             {/* Visible change bar */}
-            <Bar dataKey="_bar" stackId="wf" radius={[4, 4, 0, 0]} name={yLabel}>
+            <Bar
+              dataKey="_bar"
+              stackId="wf"
+              radius={[4, 4, 0, 0]}
+              name={yLabel}
+            >
               {wfData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={entry._positive ? colors[0] : colors[2] || "#dc2626"}
+                  fill={
+                    entry._positive
+                      ? getItemColor(entry[xKey], index, colors)
+                      : colors[2] || "#dc2626"
+                  }
                 />
               ))}
             </Bar>
@@ -704,14 +751,13 @@ export const ChartRenderer = ({
     case "sankey_chart": {
       // eje_principal = source, eje_secundario = target, eje_valores = numeric value
       const tgtKey =
-        secondaryKey ||
-        columns.find((c) => c.id !== xKey && c.id !== yKey)?.id;
+        secondaryKey || columns.find((c) => c.id !== xKey && c.id !== yKey)?.id;
 
       if (!tgtKey) {
         return (
           <div className="p-4 text-center text-muted-foreground text-sm">
-            Sankey requiere 3 columnas: origen (eje_principal), destino (eje_secundario) y valor
-            numérico (eje_valores).
+            Sankey requiere 3 columnas: origen (eje_principal), destino
+            (eje_secundario) y valor numérico (eje_valores).
           </div>
         );
       }
@@ -726,7 +772,9 @@ export const ChartRenderer = ({
         ...new Set(chartData.map((d) => String(d[xKey] ?? "")).filter(Boolean)),
       ];
       const tgtNames = [
-        ...new Set(chartData.map((d) => String(d[tgtKey] ?? "")).filter(Boolean)),
+        ...new Set(
+          chartData.map((d) => String(d[tgtKey] ?? "")).filter(Boolean),
+        ),
       ];
 
       const srcTotals: Record<string, number> = {};
@@ -741,7 +789,11 @@ export const ChartRenderer = ({
 
       const totalFlow = Object.values(srcTotals).reduce((a, b) => a + b, 0);
       if (totalFlow === 0) {
-        return <div className="p-4 text-muted-foreground text-sm text-center">Sin datos para Sankey</div>;
+        return (
+          <div className="p-4 text-muted-foreground text-sm text-center">
+            Sin datos para Sankey
+          </div>
+        );
       }
 
       const innerW = SVG_W - 2 * LABEL_W;
@@ -752,7 +804,8 @@ export const ChartRenderer = ({
       const usableTgtH = SVG_H - Math.max(0, tgtNames.length - 1) * GAP;
 
       let acc = 0;
-      const srcLayout: Record<string, { y: number; h: number; off: number }> = {};
+      const srcLayout: Record<string, { y: number; h: number; off: number }> =
+        {};
       srcNames.forEach((name) => {
         const h = Math.max(4, (srcTotals[name] / totalFlow) * usableSrcH);
         srcLayout[name] = { y: acc, h, off: 0 };
@@ -760,7 +813,8 @@ export const ChartRenderer = ({
       });
 
       acc = 0;
-      const tgtLayout: Record<string, { y: number; h: number; off: number }> = {};
+      const tgtLayout: Record<string, { y: number; h: number; off: number }> =
+        {};
       tgtNames.forEach((name) => {
         const h = Math.max(4, (tgtTotals[name] / totalFlow) * usableTgtH);
         tgtLayout[name] = { y: acc, h, off: 0 };
