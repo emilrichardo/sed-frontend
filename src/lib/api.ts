@@ -95,6 +95,11 @@ export interface NewsItem {
       children?: Array<{ type?: string; children?: Array<{ text?: string }> }>;
     };
   } | null;
+  taxonomias?: Array<{
+    id: number | string;
+    nombre: string;
+    slug?: string;
+  }>;
   autor?:
     | {
         id: number | string;
@@ -370,6 +375,13 @@ export interface TipoActo {
 export interface Organismo {
   id: string;
   nombre: string;
+}
+
+export interface Taxonomy {
+  id: string;
+  nombre: string;
+  slug?: string;
+  descripcion?: string;
 }
 
 export interface Boletin {
