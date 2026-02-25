@@ -345,11 +345,22 @@ export const TableBlock = ({
     if (!selectedMetric || numericColumns.length <= 1) {
       return fields.configuracion_visualizacion;
     }
+    
+    // For grouped bar charts, pass all numeric columns
+    const isGroupedChart = selectedChartType === "column_chart" || selectedChartType === "bar_chart";
+    if (isGroupedChart && numericColumns.length > 1) {
+      return {
+        ...fields.configuracion_visualizacion,
+        eje_valores: numericColumns.map((col: any) => col.id).join(","),
+        colores: "default",
+      };
+    }
+    
     return {
       ...fields.configuracion_visualizacion,
       eje_valores: selectedMetric,
     };
-  }, [selectedMetric, numericColumns.length, fields.configuracion_visualizacion]);
+  }, [selectedMetric, numericColumns.length, fields.configuracion_visualizacion, selectedChartType]);
 
   // JSON display payload
   const jsonDisplay = {
