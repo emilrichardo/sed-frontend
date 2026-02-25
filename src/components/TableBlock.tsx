@@ -19,6 +19,8 @@ import {
   ArrowLeftRight,
   Hash,
   Gauge,
+  Map,
+  MapPin,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
 
@@ -172,6 +174,22 @@ const CHART_CATALOG: ChartTypeDef[] = [
     minRows: 1,
     maxRows: 1,
   },
+  {
+    id: "map_argentina",
+    label: "Mapa Argentina",
+    Icon: Map,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 1,
+  },
+  {
+    id: "map_santiago_del_estero",
+    label: "Mapa Santiago Estero",
+    Icon: MapPin,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 1,
+  },
 ];
 
 function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
@@ -179,7 +197,7 @@ function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
   const stringCount = columns.length - numericCount;
   const rowCount = rows.length;
 
-  return CHART_CATALOG.filter(
+  const chartTypes = CHART_CATALOG.filter(
     ({ minNumeric, maxNumeric, minRows, maxRows, minStringCols }) => {
       if (numericCount < minNumeric) return false;
       if (maxNumeric !== undefined && numericCount > maxNumeric) return false;
@@ -189,6 +207,52 @@ function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
       return true;
     },
   ).map((ct) => ct.id);
+
+  // Auto-detect provinces and departments for maps
+  const firstColId = columns[0]?.id;
+  if (firstColId && rows.length > 0) {
+    const firstColumnValues = rows
+      .map((row) => {
+        if (row.cells && Array.isArray(row.cells)) {
+          return row.cells.find((c: any) => c.columnId === firstColId)?.value;
+        }
+        return row[firstColId];
+      })
+      .filter(Boolean)
+      .map((v: any) => String(v).toLowerCase());
+
+    const hasProvinces = firstColumnValues.some((v: string) => 
+      v.includes("provincia") || 
+      v.includes("ciudad de buenos aires") ||
+      v.includes("santa fe") ||
+      v.includes("córdoba") ||
+      v.includes("chaco") ||
+      v.includes("mendoza") ||
+      v.includes("tucumán") ||
+      v.includes("salta") ||
+      v.includes("santiago del estero") ||
+      (firstColumnValues.length >= 5 && firstColumnValues.length <= 24)
+    );
+
+    const hasSantiagoDepts = firstColumnValues.some((v: string) => 
+      v.includes("departamento") ||
+      v.includes("la banda") ||
+      v.includes("santiago del estero") ||
+      (v.includes("capital") && firstColumnValues.length <= 30)
+    );
+
+    // If it looks like provinces data, add map options
+    if (hasProvinces && !hasSantiagoDepts) {
+      chartTypes.push("map_argentina");
+    }
+    
+    // If it looks like Santiago del Estero departments
+    if (hasSantiagoDepts) {
+      chartTypes.push("map_santiago_del_estero");
+    }
+  }
+
+  return chartTypes;
 }
 
 // --- Main component ---
@@ -238,19 +302,54 @@ export const TableBlock = ({
   columns = columns || [];
   rows = rows || [];
 
+  // Detect numeric columns for metric selection
+  const numericColumns = useMemo(() => {
+    return columns.filter((col: any) => isNumericColumn(col.id, rows));
+  }, [columns, rows]);
+
   // Chart type switcher
+  const allChartTypeIds = useMemo(() => 
+    CHART_CATALOG.filter((ct) => ct.id !== "table").map((ct) => ct.id),
+  []);
+  
   const compatibleTypes = useMemo(
     () => getCompatibleChartTypes(columns, rows),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(columns), JSON.stringify(rows)],
   );
 
+  // Allow any chart type from catalog, prioritize tipo_visualizacion from CMS or compatible types
+  const availableTypes = [...new Set([...compatibleTypes, ...allChartTypeIds])];
+  
   const defaultChartType =
-    fields.tipo_visualizacion && compatibleTypes.includes(fields.tipo_visualizacion)
+    fields.tipo_visualizacion && allChartTypeIds.includes(fields.tipo_visualizacion)
       ? fields.tipo_visualizacion
-      : compatibleTypes[0] ?? "table";
+      : availableTypes.includes("column_chart")
+        ? "column_chart"
+        : availableTypes[0] ?? "bar_chart";
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
+  
+  // State for selected metric (numeric column)
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  
+  // Set default metric when numeric columns change
+  useMemo(() => {
+    if (numericColumns.length > 0 && !selectedMetric) {
+      setSelectedMetric(numericColumns[0].id);
+    }
+  }, [numericColumns, selectedMetric]);
+
+  // Build config with selected metric
+  const chartConfig = useMemo(() => {
+    if (!selectedMetric || numericColumns.length <= 1) {
+      return fields.configuracion_visualizacion;
+    }
+    return {
+      ...fields.configuracion_visualizacion,
+      eje_valores: selectedMetric,
+    };
+  }, [selectedMetric, numericColumns.length, fields.configuracion_visualizacion]);
 
   // JSON display payload
   const jsonDisplay = {
@@ -317,10 +416,10 @@ export const TableBlock = ({
         </div>
       </div>
 
-      {/* Chart type switcher — only when more than one option exists */}
-      {activeTab === "visualizacion" && compatibleTypes.length > 1 && (
+      {/* Chart type switcher — show all chart types when in visualization mode */}
+      {activeTab === "visualizacion" && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 bg-muted/10 border-b flex-wrap">
-          {CHART_CATALOG.filter((ct) => compatibleTypes.includes(ct.id)).map(
+          {CHART_CATALOG.filter((ct) => ct.id !== "table").map(
             ({ id, label, Icon }) => (
               <button
                 key={id}
@@ -339,6 +438,26 @@ export const TableBlock = ({
         </div>
       )}
 
+      {/* Metric selector tabs - when multiple numeric columns exist */}
+      {activeTab === "visualizacion" && showChart && numericColumns.length > 1 && (
+        <div className="flex items-center gap-0.5 px-3 py-2 bg-muted/10 border-b overflow-x-auto">
+          <span className="text-xs text-muted-foreground mr-2 whitespace-nowrap">Mostrar:</span>
+          {numericColumns.map((col: any) => (
+            <button
+              key={col.id}
+              onClick={() => setSelectedMetric(col.id)}
+              className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap transition-all ${
+                selectedMetric === col.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
+            >
+              {col.header}
+            </button>
+          ))}
+        </div>
+      )}
+
       {activeTab === "json" ? (
         <div className="p-0">
           <pre className="p-4 text-xs font-mono bg-slate-950 text-slate-50 overflow-auto max-h-[500px] rounded-b-lg">
@@ -352,7 +471,7 @@ export const TableBlock = ({
               <div className="p-4 bg-card mb-6 border-b">
                 <ChartRenderer
                   type={selectedChartType}
-                  config={fields.configuracion_visualizacion}
+                  config={chartConfig}
                   data={rows}
                   columns={columns}
                 />

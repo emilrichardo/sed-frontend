@@ -25,6 +25,8 @@ import {
   Treemap,
   ReferenceLine,
 } from "recharts";
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import { scaleQuantile } from "d3-scale";
 
 // Color Palettes
 const COLORS_DEFAULT = [
@@ -42,6 +44,7 @@ const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#dc2626"]; // Green, Yellow, Re
 const COLORS_HEATMAP = ["#fee2e2", "#fca5a5", "#ef4444", "#b91c1c", "#7f1d1d"];
 
 const SANTIAGO_RED = "#dc2626";
+const BLACK = "#000000";
 
 const getItemColor = (
   name: string | number | undefined,
@@ -49,20 +52,19 @@ const getItemColor = (
   palette: string[],
 ) => {
   const strName = String(name || "").toLowerCase();
-  if (strName.includes("santiago del estero")) {
+  const isSantiago = strName.includes("santiago del estero");
+  
+  if (isSantiago) {
     return SANTIAGO_RED;
   }
-  // Try to avoid duplicate red if it's already the institutional color and not SDE
-  const color = palette[index % palette.length];
-  if (
-    color === SANTIAGO_RED &&
-    !strName.includes("santiago del estero") &&
-    palette === COLORS_DEFAULT
-  ) {
-    // If it's the first institutional color but not SDE, use the second one to prioritize SDE as Red
-    return palette[(index + 1) % palette.length];
+  
+  // If any Santiago del Estero exists in data, make all others black
+  const hasSantiagoInData = palette === COLORS_DEFAULT;
+  if (hasSantiagoInData) {
+    return BLACK;
   }
-  return color;
+  
+  return palette[index % palette.length];
 };
 
 type ChartConfig = {
@@ -95,10 +97,14 @@ const getColors = (palette?: string) => {
  * But typically the manual data has random IDs for keys.
  * We need to map the "User-facing Header" (e.g. "Jurisdicción") to the data key (e.g. "5mj779v10")
  */
-const getDataKey = (columns: any[], headerName?: string) => {
-  if (!headerName) return null;
-  const col = columns.find((c) => c.header === headerName);
-  return col ? col.id : null; // Fallback to null if not found
+const getDataKey = (columns: any[], headerNameOrId?: string) => {
+  if (!headerNameOrId) return null;
+  // First check if it's already a valid column ID
+  const colById = columns.find((c) => c.id === headerNameOrId);
+  if (colById) return colById.id;
+  // Otherwise try to find by header name
+  const col = columns.find((c) => c.header === headerNameOrId);
+  return col ? col.id : null;
 };
 
 const prepareData = (rows: any[], columns: any[]) => {
@@ -191,13 +197,17 @@ export const ChartRenderer = ({
   const yKey = getDataKey(columns, config?.eje_valores) || columns[1]?.id;
   const secondaryKey = getDataKey(columns, config?.eje_secundario);
 
+  // Get proper labels - look up column header if eje_valores is a column ID
+  const getColumnHeader = (colId: string | undefined) => {
+    if (!colId) return "Y";
+    const col = columns.find((c) => c.id === colId);
+    return col?.header || colId;
+  };
+
   const xLabel =
     config?.eje_principal || columns.find((c) => c.id === xKey)?.header || "X";
-  const yLabel =
-    config?.eje_valores || columns.find((c) => c.id === yKey)?.header || "Y";
-  const secondaryLabel =
-    config?.eje_secundario ||
-    (secondaryKey ? columns.find((c) => c.id === secondaryKey)?.header : null);
+  const yLabel = getColumnHeader(yKey);
+  const secondaryLabel = secondaryKey ? getColumnHeader(secondaryKey) : null;
 
   // Only if we found valid keys
   if (!xKey || !yKey)
@@ -238,6 +248,7 @@ export const ChartRenderer = ({
               name={yLabel}
               radius={[0, 4, 4, 0]}
               fill={getItemColor(yLabel, 0, colors)}
+              barSize={20}
             >
               {!secondaryKey &&
                 chartData.map((_, index) => (
@@ -253,6 +264,7 @@ export const ChartRenderer = ({
                 name={secondaryLabel}
                 radius={[0, 4, 4, 0]}
                 fill={getItemColor(secondaryLabel, 1, colors)}
+                barSize={20}
               />
             )}
           </BarChart>
@@ -273,6 +285,7 @@ export const ChartRenderer = ({
               name={yLabel}
               radius={[4, 4, 0, 0]}
               fill={getItemColor(yLabel, 0, colors)}
+              barSize={20}
             >
               {!secondaryKey &&
                 chartData.map((_, index) => (
@@ -288,6 +301,7 @@ export const ChartRenderer = ({
                 name={secondaryLabel}
                 radius={[4, 4, 0, 0]}
                 fill={getItemColor(secondaryLabel, 1, colors)}
+                barSize={20}
               />
             )}
           </BarChart>
@@ -318,6 +332,7 @@ export const ChartRenderer = ({
               name={yLabel}
               stackId="a"
               fill={getItemColor(yLabel, 0, colors)}
+              barSize={20}
             />
             {secondaryKey && (
               <Bar
@@ -325,6 +340,7 @@ export const ChartRenderer = ({
                 name={secondaryLabel}
                 stackId="a"
                 fill={getItemColor(secondaryLabel, 1, colors)}
+                barSize={20}
               />
             )}
           </BarChart>
@@ -343,8 +359,8 @@ export const ChartRenderer = ({
               nameKey={xKey}
               cx="50%"
               cy="50%"
-              innerRadius={isDonut ? 60 : 0}
-              outerRadius={100}
+              innerRadius={isDonut ? 40 : 0}
+              outerRadius={70}
               fill="#8884d8"
               label={({ name, percent }: { name?: string; percent?: number }) =>
                 `${name || ""} ${((percent || 0) * 100).toFixed(0)}%`
@@ -926,6 +942,113 @@ export const ChartRenderer = ({
               );
             })}
           </svg>
+        </div>
+      );
+    }
+
+    case "map_argentina": {
+      const geoUrl = "https://raw.githubusercontent.com/ArgentinaData/georef-ar-api/master/out/geojson/provincias.geo.json";
+      
+      const getValue = (name: string) => {
+        const row = chartData.find((d) => {
+          const xVal = String(d[xKey] || "").toLowerCase();
+          return xVal.includes(name.toLowerCase()) || name.toLowerCase().includes(xVal);
+        });
+        return row ? Number(String(row[yKey]).replace(/[^0-9.-]/g, "")) : null;
+      };
+
+      const colorScale = scaleQuantile<string>()
+        .domain(chartData.map((d) => Number(String(d[yKey]).replace(/[^0-9.-]/g, ""))).filter((v) => !isNaN(v)))
+        .range(["#fef2f2", "#fecaca", "#f87171", "#dc2626", "#991b1b"]);
+
+      return (
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={500}>
+            <ComposableMap projection="geoMercator" projectionConfig={{ scale: 350, center: [-64, -34] }}>
+              <ZoomableGroup>
+                <Geographies geography={geoUrl}>
+                  {({ geographies }) =>
+                    geographies.map((geo) => {
+                      const name = geo.properties.name || geo.properties.nombre || "";
+                      const value = getValue(name);
+                      const isSantiago = name.toLowerCase().includes("santiago");
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          fill={isSantiago ? SANTIAGO_RED : value ? colorScale(value) : "#e5e7eb"}
+                          stroke="#fff"
+                          strokeWidth={0.5}
+                          style={{
+                            default: { outline: "none" },
+                            hover: { outline: "none", opacity: 0.8 },
+                            pressed: { outline: "none" },
+                          }}
+                        />
+                      );
+                    })
+                  }
+                </Geographies>
+              </ZoomableGroup>
+            </ComposableMap>
+          </ResponsiveContainer>
+          <div className="mt-2 flex flex-wrap gap-2 justify-center text-xs">
+            <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#fef2f2] border"></span> Bajo</div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#fecaca] border"></span></div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#f87171] border"></span></div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#dc2626] border"></span></div>
+            <div className="flex items-center gap-1"><span className="w-3 h-3 bg-[#991b1b] border"></span> Alto</div>
+          </div>
+        </div>
+      );
+    }
+
+    case "map_santiago_del_estero": {
+      const geoUrl = "https://raw.githubusercontent.com/ArgentinaData/georef-ar-api/master/out/geojson/departamentos%3Fprovincia%3D22.geo.json";
+      
+      const getValue = (name: string) => {
+        const row = chartData.find((d) => {
+          const xVal = String(d[xKey] || "").toLowerCase();
+          return xVal.includes(name.toLowerCase()) || name.toLowerCase().includes(xVal);
+        });
+        return row ? Number(String(row[yKey]).replace(/[^0-9.-]/g, "")) : null;
+      };
+
+      const values = chartData.map((d) => Number(String(d[yKey]).replace(/[^0-9.-]/g, ""))).filter((v) => !isNaN(v));
+      const colorScale = scaleQuantile<string>()
+        .domain(values.length ? values : [0])
+        .range(["#fef2f2", "#fecaca", "#f87171", "#dc2626", "#991b1b"]);
+
+      return (
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={500}>
+            <ComposableMap projection="geoMercator" projectionConfig={{ scale: 2200, center: [-63.5, -27.5] }}>
+              <ZoomableGroup>
+                <Geographies geography={geoUrl}>
+                  {({ geographies }) =>
+                    geographies.map((geo) => {
+                      const name = geo.properties.name || geo.properties.nombre || "";
+                      const value = getValue(name);
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          fill={value ? colorScale(value) : "#e5e7eb"}
+                          stroke="#fff"
+                          strokeWidth={0.5}
+                          style={{
+                            default: { outline: "none" },
+                            hover: { outline: "none", opacity: 0.8 },
+                            pressed: { outline: "none" },
+                          }}
+                        />
+                      );
+                    })
+                  }
+                </Geographies>
+              </ZoomableGroup>
+            </ComposableMap>
+          </ResponsiveContainer>
         </div>
       );
     }

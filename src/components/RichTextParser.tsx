@@ -254,7 +254,10 @@ export const RichTextParser = ({ content }: { content: any }) => {
       );
 
     case "block":
-      if (content.fields?.blockType === "table") {
+      if (
+        content.fields?.blockType === "table" ||
+        content.fields?.blockType === "tabla"
+      ) {
         return <TableBlock fields={content.fields} />;
       }
       if (

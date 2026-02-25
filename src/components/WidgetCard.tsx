@@ -70,7 +70,11 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
         item.tipo_visualizacion &&
         item.tipo_visualizacion !== "table" &&
         item.tipo_visualizacion !== "list_view" &&
-        item.configuracion_visualizacion,
+        (item.configuracion_visualizacion || 
+         item.tipo_visualizacion.startsWith("map_") ||
+         item.tipo_visualizacion === "kpi_card" ||
+         item.tipo_visualizacion === "gauge_chart" ||
+         item.tipo_visualizacion === "status_light"),
     );
 
   // Get image URL
@@ -150,10 +154,13 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
             {widget.tablas_graficos!.map((item) => {
               const type = item.tipo_visualizacion;
 
-              if (
-                item.configuracion_visualizacion &&
-                item.tabla_relacionada?.data
-              ) {
+              const hasConfig = item.configuracion_visualizacion || 
+                type?.startsWith("map_") ||
+                type === "kpi_card" ||
+                type === "gauge_chart" ||
+                type === "status_light";
+
+              if (hasConfig && item.tabla_relacionada?.data) {
                 return (
                   <div key={item.id} className="w-full min-h-[300px]">
                     <ChartRenderer
