@@ -25,11 +25,14 @@ import { ChartRenderer } from "./ChartRenderer";
 
 // --- Column type detection ---
 
-function isNumericColumn(colId: string, rows: any[]): boolean {
+function isNumericColumn(
+  colId: string,
+  rows: { [key: string]: any; cells?: { columnId: string; value: any }[] }[],
+): boolean {
   const values = rows
     .map((row) =>
       row.cells && Array.isArray(row.cells)
-        ? row.cells.find((c: any) => c.columnId === colId)?.value
+        ? row.cells.find((c) => c.columnId === colId)?.value
         : row[colId],
     )
     .filter((v) => v !== undefined && v !== null && v !== "");
@@ -183,7 +186,10 @@ const CHART_CATALOG: ChartTypeDef[] = [
   },
 ];
 
-function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
+function getCompatibleChartTypes(
+  columns: { id: string; header?: string }[],
+  rows: any[],
+): string[] {
   const numericCount = columns.filter((c) =>
     isNumericColumn(c.id, rows),
   ).length;
@@ -335,8 +341,8 @@ export const TableBlock = ({
     notas: fieldNotas,
   } = fields;
   let title = fieldTitle;
-  let fuente = fieldFuente;
-  let notas = fieldNotas;
+  const fuente = fieldFuente;
+  const notas = fieldNotas;
   let columns = fieldCols;
   let rows = fieldRows;
 
@@ -357,14 +363,13 @@ export const TableBlock = ({
 
   // Detect numeric columns for metric selection
   const numericColumns = useMemo(() => {
-    return columns.filter((col: any) => isNumericColumn(col.id, rows));
+    return columns.filter((col: { id: string }) =>
+      isNumericColumn(col.id, rows),
+    );
   }, [columns, rows]);
 
   // Chart type switcher
-  const allChartTypeIds = useMemo(
-    () => CHART_CATALOG.filter((ct) => ct.id !== "table").map((ct) => ct.id),
-    [],
-  );
+  const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
 
   const compatibleTypes = useMemo(
     () => getCompatibleChartTypes(columns, rows),
@@ -500,22 +505,20 @@ export const TableBlock = ({
       {/* Chart type switcher — show all chart types when in visualization mode */}
       {activeTab === "visualizacion" && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 bg-muted/10 border-b flex-wrap">
-          {CHART_CATALOG.filter((ct) => ct.id !== "table").map(
-            ({ id, label, Icon }) => (
-              <button
-                key={id}
-                title={label}
-                onClick={() => setSelectedChartType(id)}
-                className={`p-1.5 rounded transition-all ${
-                  selectedChartType === id
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            ),
-          )}
+          {CHART_CATALOG.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              title={label}
+              onClick={() => setSelectedChartType(id)}
+              className={`p-1.5 rounded transition-all ${
+                selectedChartType === id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          ))}
         </div>
       )}
 
@@ -573,41 +576,46 @@ export const TableBlock = ({
               </div>
             )}
 
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 border-b">
-                  {columns?.map((col: any, i: number) => (
-                    <th
-                      key={col.id || i}
-                      className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap"
-                    >
-                      {col.header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {rows?.map((row: any, i: number) => (
-                  <tr key={i} className="hover:bg-muted/50 transition-colors">
-                    {columns?.map((col: any, j: number) => {
-                      let cellValue;
-                      if (row.cells && Array.isArray(row.cells)) {
-                        cellValue = row.cells.find(
-                          (c: any) => c.columnId === col.id,
-                        )?.value;
-                      } else {
-                        cellValue = row[col.id];
-                      }
-                      return (
-                        <td key={col.id || j} className="px-4 py-3">
-                          {cellValue}
-                        </td>
-                      );
-                    })}
+            {selectedChartType === "table" && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50 border-b">
+                    {columns?.map(
+                      (col: { id: string; header?: string }, i: number) => (
+                        <th
+                          key={col.id || i}
+                          className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap"
+                        >
+                          {col.header}
+                        </th>
+                      ),
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {rows?.map((row: any, i: number) => (
+                    <tr key={i} className="hover:bg-muted/50 transition-colors">
+                      {columns?.map((col: { id: string }, j: number) => {
+                        let cellValue;
+                        if (row.cells && Array.isArray(row.cells)) {
+                          cellValue = row.cells.find(
+                            (c: { columnId: string; value: any }) =>
+                              c.columnId === col.id,
+                          )?.value;
+                        } else {
+                          cellValue = row[col.id];
+                        }
+                        return (
+                          <td key={col.id || j} className="px-4 py-3">
+                            {cellValue}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Footer Metadata */}
