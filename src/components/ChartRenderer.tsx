@@ -29,7 +29,7 @@ import { geoMercator, geoPath } from "d3-geo";
 
 // Color Palettes
 const COLORS_DEFAULT = [
-  "#dc2626",
+  "#c95b4a",
   "#2563eb",
   "#db2777",
   "#ea580c",
@@ -39,7 +39,7 @@ const COLORS_DEFAULT = [
   "#ca8a04",
 ];
 const COLORS_SLATE = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
-const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#dc2626"];
+const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#c95b4a"];
 const COLORS_HEATMAP = ["#fee2e2", "#fca5a5", "#ef4444", "#b91c1c", "#7f1d1d"];
 // Multicolor: no red — red is reserved for Santiago del Estero
 const COLORS_MULTICOLOR = [
@@ -55,7 +55,7 @@ const COLORS_MULTICOLOR = [
   "#6d28d9",
 ];
 
-const SANTIAGO_RED = "#dc2626";
+const SANTIAGO_RED = "#c95b4a";
 const BLACK = "#000000";
 
 // Province name mappings
@@ -254,13 +254,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const MAP_GRADIENT = [
-  "#fef2f2",
-  "#fecaca",
-  "#f87171",
-  "#ef4444",
-  "#dc2626",
-  "#b91c1c",
-  "#991b1b",
+  "#fdf4f3",
+  "#f5c8c3",
+  "#e8958d",
+  "#db6358",
+  "#c95b4a",
+  "#a8433a",
+  "#862e27",
 ];
 // Blue gradient for multicolor mode (Santiago stays red, others in blue)
 const MAP_GRADIENT_MULTI = [
