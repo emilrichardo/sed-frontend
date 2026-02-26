@@ -95,11 +95,10 @@ export interface NewsItem {
       children?: Array<{ type?: string; children?: Array<{ text?: string }> }>;
     };
   } | null;
-  taxonomias?: Array<{
-    id: number | string;
-    nombre: string;
-    slug?: string;
-  }>;
+  taxonomias?: Array<{ id: number | string; nombre: string; slug?: string }>;
+  categorias?: Array<{ id: number | string; nombre: string; slug?: string }>;
+  tags?: Array<{ id: number | string; nombre: string; slug?: string }>;
+  tipo_publicacion?: { id: number | string; nombre: string; slug?: string } | number | null;
   autor?:
     | {
         id: number | string;
@@ -511,11 +510,13 @@ export async function getReports(
     page?: number;
     limit?: number;
     sort?: string;
+    depth?: number;
     where?: Record<string, unknown>;
   } = {},
 ): Promise<PayloadResponse<ReportItem>> {
-  const { page = 1, limit = 10, sort = "-createdAt", where } = params;
+  const { page = 1, limit = 10, sort = "-createdAt", depth, where } = params;
   let url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=${sort}`;
+  if (depth !== undefined) url += `&depth=${depth}`;
 
   // Re-add draft=false if we want only published, but for now let's see why it's empty
   // url += "&draft=false";
