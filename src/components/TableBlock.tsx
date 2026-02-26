@@ -341,8 +341,8 @@ export const TableBlock = ({
     notas: fieldNotas,
   } = fields;
   let title = fieldTitle;
-  const fuente = fieldFuente;
-  const notas = fieldNotas;
+  let fuente = fieldFuente || tabla_relacionada?.fuente;
+  let notas = fieldNotas || tabla_relacionada?.notas || tabla_relacionada?.nota;
   let columns = fieldCols;
   let rows = fieldRows;
 
@@ -361,12 +361,41 @@ export const TableBlock = ({
   columns = columns || [];
   rows = rows || [];
 
+  // Data cleaning: Extract notes or sources from rows if missing in metadata
+  // Look for rows where the first cell starts with "Nota" or "Fuente"
+  let extractedNotas = "";
+  let extractedFuente = "";
+
+  const filteredRows = rows.filter((row: any) => {
+    let firstCellVal = "";
+    if (row.cells && Array.isArray(row.cells)) {
+      firstCellVal = String(row.cells[0]?.value || "");
+    } else {
+      const firstColId = columns[0]?.id;
+      firstCellVal = String(row[firstColId] || "");
+    }
+
+    const lowerVal = firstCellVal.trim().toLowerCase();
+    if (lowerVal.startsWith("nota")) {
+      extractedNotas = firstCellVal;
+      return false;
+    }
+    if (lowerVal.startsWith("fuente")) {
+      extractedFuente = firstCellVal;
+      return false;
+    }
+    return true;
+  });
+
+  if (!notas && extractedNotas) notas = extractedNotas;
+  if (!fuente && extractedFuente) fuente = extractedFuente;
+
   // Detect numeric columns for metric selection
   const numericColumns = useMemo(() => {
     return columns.filter((col: { id: string }) =>
-      isNumericColumn(col.id, rows),
+      isNumericColumn(col.id, filteredRows),
     );
-  }, [columns, rows]);
+  }, [columns, filteredRows]);
 
   // Chart type switcher
   const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
@@ -443,7 +472,7 @@ export const TableBlock = ({
     source_type,
     tipo_visualizacion: fields.tipo_visualizacion,
     configuracion_visualizacion: fields.configuracion_visualizacion,
-    data: { columns, rows },
+    data: { columns, rows: filteredRows },
     ...(source_type === "collection" && tabla_relacionada
       ? {
           tabla_relacionada: {
@@ -570,13 +599,20 @@ export const TableBlock = ({
                 <ChartRenderer
                   type={selectedChartType}
                   config={chartConfig}
-                  data={rows}
+                  data={filteredRows}
                   columns={columns}
                 />
               </div>
             )}
 
-            {selectedChartType === "table" && (
+            {selectedChartType !== "table" && notas && (
+              <div className="px-4 pt-0 pb-3 text-xs text-muted-foreground italic flex gap-1.5 items-start">
+                <span className="font-semibold not-italic shrink-0">Nota:</span>
+                <span>{typeof notas === "string" ? notas : (notas as any).text || ""}</span>
+              </div>
+            )}
+
+          {selectedChartType === "table" && (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/50 border-b">
@@ -616,40 +652,26 @@ export const TableBlock = ({
                 </tbody>
               </table>
             )}
+          {selectedChartType === "table" && notas && (
+              <div className="px-4 pt-3 pb-1 text-xs text-muted-foreground italic flex gap-1.5 items-start border-t">
+                <span className="font-semibold not-italic shrink-0">Nota:</span>
+                <span>{typeof notas === "string" ? notas : (notas as any).text || ""}</span>
+              </div>
+            )}
           </div>
 
           {/* Footer Metadata */}
-          {(fields.tipo_visualizacion ||
-            fuente ||
-            notas ||
-            tabla_relacionada?.fuente ||
-            tabla_relacionada?.actualizacion) && (
+          {(fuente || tabla_relacionada?.actualizacion) && (
             <div className="bg-muted/10 px-4 py-3 border-t text-xs text-muted-foreground flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
               <div className="flex flex-col gap-1">
-                {fields.tipo_visualizacion && (
-                  <div>
-                    <span className="font-semibold block sm:inline mr-1">
-                      Visualización:
-                    </span>
-                    <span className="capitalize">
-                      {fields.tipo_visualizacion.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                )}
-                {(fuente || tabla_relacionada?.fuente) && (
+                {fuente && (
                   <div>
                     <span className="font-semibold block sm:inline mr-1">
                       Fuente:
                     </span>
-                    {fuente || tabla_relacionada?.fuente}
-                  </div>
-                )}
-                {notas && (
-                  <div>
-                    <span className="font-semibold block sm:inline mr-1">
-                      Notas:
-                    </span>
-                    {notas}
+                    {typeof fuente === "string"
+                      ? fuente
+                      : (fuente as any).text || ""}
                   </div>
                 )}
               </div>

@@ -30,10 +30,10 @@ import { geoMercator, geoPath } from "d3-geo";
 // Color Palettes
 const COLORS_DEFAULT = [
   "#c95b4a",
-  "#2563eb",
-  "#db2777",
-  "#ea580c",
-  "#16a34a",
+  "#161616ff",
+  "#383838ff",
+  "#7c897aff",
+  "#575f77ff",
   "#9333ea",
   "#0891b2",
   "#ca8a04",
@@ -450,9 +450,6 @@ const MapArgentina = ({
           {geoData.features.map((feature: any, i: number) => {
             const name = feature.properties?.name || "";
             const value = getValue(name);
-            const isSantiago = normalizeName(name).includes(
-              "santiago del estero",
-            );
             const isHovered = hoveredProvince
               ? matchProvince(name, hoveredProvince)
               : false;
@@ -462,13 +459,7 @@ const MapArgentina = ({
               <path
                 key={i}
                 d={d}
-                fill={
-                  isSantiago
-                    ? SANTIAGO_RED
-                    : value != null
-                      ? colorScale(value)
-                      : "#e5e7eb"
-                }
+                fill={value != null ? colorScale(value) : "#e5e7eb"}
                 fillOpacity={hoveredProvince ? (isHovered ? 1 : 0.4) : 1}
                 stroke={isHovered ? "#333" : "#aaa"}
                 strokeWidth={isHovered ? 1.5 : 0.7}
