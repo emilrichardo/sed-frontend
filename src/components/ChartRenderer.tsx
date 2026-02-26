@@ -18,8 +18,8 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { scaleQuantile } from "d3-scale";
+import { geoMercator, geoPath } from "d3-geo";
 
 // Color Palettes
 const COLORS_DEFAULT = [
@@ -236,6 +236,18 @@ const MAP_GRADIENT = [
   "#991b1b",
 ];
 
+// Shared hook for loading GeoJSON
+function useGeoData(url: string) {
+  const [data, setData] = React.useState<any>(null);
+  React.useEffect(() => {
+    fetch(url)
+      .then((r) => r.json())
+      .then(setData)
+      .catch(console.error);
+  }, [url]);
+  return data;
+}
+
 const MapArgentina = ({
   chartData,
   xKey,
@@ -247,6 +259,7 @@ const MapArgentina = ({
   yKey: string;
   yLabel: string;
 }) => {
+  const geoData = useGeoData("/argentina-provinces.json");
   const [tooltip, setTooltip] = React.useState<{
     name: string;
     value: number | null;
@@ -256,6 +269,15 @@ const MapArgentina = ({
   const [hoveredProvince, setHoveredProvince] = React.useState<string | null>(
     null,
   );
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const W = 480;
+  const H = 680;
+
+  const pathGen = React.useMemo(() => {
+    if (!geoData) return null;
+    return geoPath(geoMercator().fitSize([W, H], geoData));
+  }, [geoData]);
 
   const getValue = (name: string) =>
     findMatchingValue(name, chartData, xKey, yKey);
@@ -285,22 +307,44 @@ const MapArgentina = ({
     const n1 = normalizeName(name1);
     const n2 = normalizeName(name2);
     if (n1 === n2) return true;
-
-    // Check aliases
     const aliases1 = PROVINCE_ALIASES[n1] || [];
     if (aliases1.some((a) => normalizeName(a) === n2)) return true;
-
     const aliases2 = PROVINCE_ALIASES[n2] || [];
     if (aliases2.some((a) => normalizeName(a) === n1)) return true;
-
-    // Avoid false positives for very short names
     if (n1.length > 3 && n2.length > 3) {
       if (n1.includes(n2) || n2.includes(n1)) return true;
     }
     return false;
   };
 
-  // Prepare sorted data for the bar chart
+  const handleMouseEnter = (
+    e: React.MouseEvent,
+    name: string,
+    value: number | null,
+  ) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    setTooltip({
+      name,
+      value,
+      x: e.clientX - (rect?.left ?? 0),
+      y: e.clientY - (rect?.top ?? 0),
+    });
+    setHoveredProvince(name);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    setTooltip((prev) =>
+      prev
+        ? {
+            ...prev,
+            x: e.clientX - (rect?.left ?? 0),
+            y: e.clientY - (rect?.top ?? 0),
+          }
+        : null,
+    );
+  };
+
   const barData = chartData
     .map((d) => {
       const val =
@@ -325,22 +369,23 @@ const MapArgentina = ({
         shortName = "CABA";
       else if (shortName.length > 15)
         shortName = shortName.substring(0, 12) + "...";
-
-      return {
-        ...d,
-        displayValue: val,
-        name: name,
-        shortName: shortName,
-      };
+      return { ...d, displayValue: val, name, shortName };
     })
     .filter((d) => !isNaN(d.displayValue))
     .sort((a, b) => b.displayValue - a.displayValue);
 
+  if (!geoData || !pathGen) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+        Cargando mapa...
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
-      {/* Left Column: Map */}
       <div
-        data-map-container
+        ref={containerRef}
         className="relative flex-1 w-full max-w-[500px] mx-auto lg:mx-0"
       >
         {tooltip && (
@@ -358,87 +403,46 @@ const MapArgentina = ({
             )}
           </div>
         )}
-        <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{ scale: 1000, center: [-64, -38] }}
-          width={480}
-          height={680}
-          style={{ width: "100%", height: "auto" }}
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width: "100%", height: "auto", display: "block" }}
         >
-          <Geographies geography="/argentina-provinces.json">
-            {({ geographies }: { geographies: any[] }) =>
-              geographies.map((geo) => {
-                const name = geo.properties?.name || "";
-                const value = getValue(name);
-                const isSantiago = normalizeName(name).includes(
-                  "santiago del estero",
-                );
-                const isHovered = hoveredProvince
-                  ? matchProvince(name, hoveredProvince)
-                  : false;
-
-                return (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill={
-                      isSantiago
-                        ? SANTIAGO_RED
-                        : value != null
-                          ? colorScale(value)
-                          : "#e5e7eb"
-                    }
-                    fillOpacity={hoveredProvince ? (isHovered ? 1 : 0.4) : 1}
-                    stroke={isHovered ? "#333" : "#aaa"}
-                    strokeWidth={isHovered ? 1.5 : 0.7}
-                    style={{
-                      default: { outline: "none" },
-                      hover: {
-                        outline: "none",
-                        opacity: 0.8,
-                        cursor: "pointer",
-                      },
-                      pressed: { outline: "none" },
-                    }}
-                    onMouseEnter={(e: React.MouseEvent) => {
-                      const container = (e.currentTarget as SVGElement).closest(
-                        "[data-map-container]",
-                      ) as HTMLElement | null;
-                      const rect = container?.getBoundingClientRect();
-                      setTooltip({
-                        name,
-                        value,
-                        x: e.clientX - (rect?.left ?? 0),
-                        y: e.clientY - (rect?.top ?? 0),
-                      });
-                      setHoveredProvince(name);
-                    }}
-                    onMouseMove={(e: React.MouseEvent) => {
-                      const container = (e.currentTarget as SVGElement).closest(
-                        "[data-map-container]",
-                      ) as HTMLElement | null;
-                      const rect = container?.getBoundingClientRect();
-                      setTooltip((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              x: e.clientX - (rect?.left ?? 0),
-                              y: e.clientY - (rect?.top ?? 0),
-                            }
-                          : null,
-                      );
-                    }}
-                    onMouseLeave={() => {
-                      setTooltip(null);
-                      setHoveredProvince(null);
-                    }}
-                  />
-                );
-              })
-            }
-          </Geographies>
-        </ComposableMap>
-        {/* Legend */}
+          {geoData.features.map((feature: any, i: number) => {
+            const name = feature.properties?.name || "";
+            const value = getValue(name);
+            const isSantiago = normalizeName(name).includes(
+              "santiago del estero",
+            );
+            const isHovered = hoveredProvince
+              ? matchProvince(name, hoveredProvince)
+              : false;
+            const d = pathGen(feature as any);
+            if (!d) return null;
+            return (
+              <path
+                key={i}
+                d={d}
+                fill={
+                  isSantiago
+                    ? SANTIAGO_RED
+                    : value != null
+                      ? colorScale(value)
+                      : "#e5e7eb"
+                }
+                fillOpacity={hoveredProvince ? (isHovered ? 1 : 0.4) : 1}
+                stroke={isHovered ? "#333" : "#aaa"}
+                strokeWidth={isHovered ? 1.5 : 0.7}
+                style={{ cursor: "pointer", outline: "none" }}
+                onMouseEnter={(e) => handleMouseEnter(e, name, value)}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                  setHoveredProvince(null);
+                }}
+              />
+            );
+          })}
+        </svg>
         <div className="flex flex-col items-start gap-1 absolute bottom-4 left-0 bg-background/80 p-2 rounded border text-[10px]">
           <span className="font-semibold mb-1">Escala ({yLabel})</span>
           <div className="flex h-3 w-32 rounded overflow-hidden mb-1">
@@ -453,7 +457,6 @@ const MapArgentina = ({
         </div>
       </div>
 
-      {/* Right Column: Bar Chart */}
       <div className="flex-1 w-full min-h-[400px] lg:min-h-[600px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -513,6 +516,247 @@ const MapArgentina = ({
   );
 };
 
+const MapSantiago = ({
+  chartData,
+  xKey,
+  yKey,
+  yLabel,
+}: {
+  chartData: any[];
+  xKey: string;
+  yKey: string;
+  yLabel: string;
+}) => {
+  const geoData = useGeoData("/santiago-del-estero-departamentos.json");
+  const [tooltip, setTooltip] = React.useState<{
+    name: string;
+    value: number | null;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [hoveredDept, setHoveredDept] = React.useState<string | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const W = 480;
+  const H = 560;
+
+  const pathGen = React.useMemo(() => {
+    if (!geoData) return null;
+    return geoPath(geoMercator().fitSize([W, H], geoData));
+  }, [geoData]);
+
+  const getValue = (name: string) => {
+    const norm = normalizeName(name);
+    for (const row of chartData) {
+      const xNorm = normalizeName(String(row[xKey] || ""));
+      if (
+        xNorm === norm ||
+        (xNorm.length > 3 && norm.includes(xNorm)) ||
+        (norm.length > 3 && xNorm.includes(norm))
+      ) {
+        const val = parseFloat(
+          String(row[yKey] || "")
+            .replace(/[^0-9.,%-]/g, "")
+            .replace("%", "")
+            .replace(",", "."),
+        );
+        if (!isNaN(val)) return val;
+      }
+    }
+    return null;
+  };
+
+  const numericValues = chartData
+    .map((d) => {
+      const raw = d[yKey];
+      if (typeof raw === "number") return raw;
+      return parseFloat(
+        String(raw)
+          .replace(/[^0-9.,%-]/g, "")
+          .replace(",", ".")
+          .replace("%", ""),
+      );
+    })
+    .filter((v) => !isNaN(v));
+
+  const minVal = numericValues.length ? Math.min(...numericValues) : 0;
+  const maxVal = numericValues.length ? Math.max(...numericValues) : 0;
+
+  const colorScale = scaleQuantile<string>()
+    .domain(numericValues.length ? numericValues : [0])
+    .range(MAP_GRADIENT);
+
+  const handleMouseEnter = (
+    e: React.MouseEvent,
+    name: string,
+    value: number | null,
+  ) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    setTooltip({
+      name,
+      value,
+      x: e.clientX - (rect?.left ?? 0),
+      y: e.clientY - (rect?.top ?? 0),
+    });
+    setHoveredDept(name);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    setTooltip((prev) =>
+      prev
+        ? {
+            ...prev,
+            x: e.clientX - (rect?.left ?? 0),
+            y: e.clientY - (rect?.top ?? 0),
+          }
+        : null,
+    );
+  };
+
+  const barData = chartData
+    .map((d) => {
+      const val =
+        typeof d[yKey] === "number"
+          ? d[yKey]
+          : parseFloat(
+              String(d[yKey])
+                .replace(/[^0-9.,%-]/g, "")
+                .replace(",", ".")
+                .replace("%", ""),
+            );
+      const name = String(d[xKey] || "");
+      const shortName =
+        name.length > 14 ? name.substring(0, 12) + "…" : name;
+      return { ...d, displayValue: val, name, shortName };
+    })
+    .filter((d) => !isNaN(d.displayValue))
+    .sort((a, b) => b.displayValue - a.displayValue);
+
+  if (!geoData || !pathGen) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+        Cargando mapa...
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
+      <div
+        ref={containerRef}
+        className="relative flex-1 w-full max-w-[500px] mx-auto lg:mx-0"
+      >
+        {tooltip && (
+          <div
+            className="pointer-events-none absolute z-10 bg-background border px-3 py-2 rounded shadow-md text-sm"
+            style={{ left: tooltip.x + 10, top: tooltip.y - 40 }}
+          >
+            <p className="font-bold">{tooltip.name}</p>
+            {tooltip.value != null ? (
+              <p className="text-muted-foreground">
+                {yLabel}: {tooltip.value.toLocaleString("es-AR")}
+              </p>
+            ) : (
+              <p className="text-muted-foreground italic">Sin datos</p>
+            )}
+          </div>
+        )}
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width: "100%", height: "auto", display: "block" }}
+        >
+          {geoData.features.map((feature: any, i: number) => {
+            const name = feature.properties?.nam || "";
+            const value = getValue(name);
+            const isHovered = hoveredDept === name;
+            const d = pathGen(feature as any);
+            if (!d) return null;
+            return (
+              <path
+                key={i}
+                d={d}
+                fill={value != null ? colorScale(value) : "#e5e7eb"}
+                fillOpacity={hoveredDept ? (isHovered ? 1 : 0.5) : 1}
+                stroke={isHovered ? "#333" : "#aaa"}
+                strokeWidth={isHovered ? 1.5 : 0.5}
+                style={{ cursor: "pointer", outline: "none" }}
+                onMouseEnter={(e) => handleMouseEnter(e, name, value)}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                  setHoveredDept(null);
+                }}
+              />
+            );
+          })}
+        </svg>
+        <div className="flex flex-col items-start gap-1 absolute bottom-4 left-0 bg-background/80 p-2 rounded border text-[10px]">
+          <span className="font-semibold mb-1">Escala ({yLabel})</span>
+          <div className="flex h-3 w-32 rounded overflow-hidden mb-1">
+            {MAP_GRADIENT.map((c) => (
+              <div key={c} style={{ background: c, flex: 1 }} />
+            ))}
+          </div>
+          <div className="flex justify-between w-32 text-muted-foreground">
+            <span>{minVal.toLocaleString("es-AR")}</span>
+            <span>{maxVal.toLocaleString("es-AR")}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 w-full min-h-[400px] lg:min-h-[500px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            layout="vertical"
+            data={barData}
+            margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
+            onMouseLeave={() => setHoveredDept(null)}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={false}
+              strokeOpacity={0.2}
+            />
+            <XAxis type="number" hide />
+            <YAxis
+              dataKey="shortName"
+              type="category"
+              width={90}
+              tick={{ fontSize: 10 }}
+              interval={0}
+            />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{ fill: "transparent" }}
+            />
+            <Bar
+              dataKey="displayValue"
+              name={yLabel}
+              radius={[0, 2, 2, 0]}
+              barSize={13}
+              onMouseEnter={(data) => setHoveredDept(data.name || null)}
+            >
+              {barData.map((entry, index) => {
+                const isHovered = hoveredDept === entry.name;
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colorScale(entry.displayValue)}
+                    fillOpacity={hoveredDept ? (isHovered ? 1 : 0.4) : 1}
+                    stroke={isHovered ? "#333" : "none"}
+                    strokeWidth={1}
+                  />
+                );
+              })}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 export const ChartRenderer = ({
   type,
   config,
@@ -556,8 +800,6 @@ export const ChartRenderer = ({
     return col?.header || colId;
   };
 
-  const xLabel =
-    config?.eje_principal || columns.find((c) => c.id === xKey)?.header || "X";
   const yLabel = getColumnHeader(yKey);
 
   if (!xKey || !yKey) {
@@ -813,6 +1055,17 @@ export const ChartRenderer = ({
     case "map_argentina":
       return (
         <MapArgentina
+          chartData={chartData}
+          xKey={xKey}
+          yKey={yKey}
+          yLabel={getColumnHeader(yKey)}
+        />
+      );
+
+    case "map_santiago":
+    case "map_santiago_del_estero":
+      return (
+        <MapSantiago
           chartData={chartData}
           xKey={xKey}
           yKey={yKey}
