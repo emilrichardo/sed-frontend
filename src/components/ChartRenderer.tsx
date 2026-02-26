@@ -457,8 +457,8 @@ const MapArgentina = ({
         </div>
       </div>
 
-      <div className="flex-1 w-full min-h-[400px] lg:min-h-[600px]">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="flex-1 w-full">
+        <ResponsiveContainer width="100%" height={Math.max(barData.length * 22 + 20, 300)}>
           <BarChart
             layout="vertical"
             data={barData}
@@ -705,8 +705,8 @@ const MapSantiago = ({
         </div>
       </div>
 
-      <div className="flex-1 w-full min-h-[400px] lg:min-h-[500px]">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="flex-1 w-full">
+        <ResponsiveContainer width="100%" height={Math.max(barData.length * 22 + 20, 300)}>
           <BarChart
             layout="vertical"
             data={barData}
