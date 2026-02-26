@@ -23,9 +23,39 @@ import {
   PolarRadiusAxis,
   Radar,
   Treemap,
+  ScatterChart,
+  Scatter,
+  ZAxis,
+  ComposedChart,
+  RadialBarChart,
+  RadialBar,
 } from "recharts";
+import {
+  Hash,
+  Disc2,
+  Grid2x2,
+  Hexagon,
+  ArrowLeftRight,
+  Gauge,
+  Map,
+  CircleDot,
+  Pointer,
+  Waves,
+  Sun,
+  Flame,
+  Target,
+  Table2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Search,
+  X,
+} from "lucide-react";
 import { scaleQuantile } from "d3-scale";
 import { geoMercator, geoPath } from "d3-geo";
+import { useReactTable, getCoreRowModel, getSortedRowModel, getFilteredRowModel, flexRender, SortingState, ColumnDef } from "@tanstack/react-table";
+import { useState, useMemo } from "react";
+import Plot from "react-plotly.js";
 
 // Color Palettes
 const COLORS_DEFAULT = [
@@ -232,6 +262,79 @@ const prepareData = (rows: any[], columns: any[]) => {
     });
     return newRow;
   });
+};
+
+// Custom KPI Card component
+const KPICard = ({
+  value,
+  label,
+  unit,
+}: {
+  value: any;
+  label: string;
+  unit?: string;
+}) => {
+  return (
+    <div className="flex flex-col items-center justify-center p-8 bg-card border rounded-xl shadow-sm h-full min-h-[250px] animate-in zoom-in duration-500">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 text-center">
+        {label}
+      </h3>
+      <div className="flex items-baseline gap-1">
+        <span className="text-6xl font-black tracking-tighter text-primary">
+          {typeof value === "number" ? value.toLocaleString("es-AR") : value}
+        </span>
+        {unit && (
+          <span className="text-xl font-bold text-muted-foreground">
+            {unit}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Simplified Waterfall Chart using regular BarChart
+const WaterfallChart = ({ data, xKey, yKey, colors }: any) => {
+  const waterfallData = data.reduce((acc: any[], d: any) => {
+    const val = Number(d[yKey]) || 0;
+    const start = acc.length > 0 ? acc[acc.length - 1].end : 0;
+    const end = start + val;
+    acc.push({
+      ...d,
+      displayValue: val,
+      start,
+      end,
+      range: [start, end],
+    });
+    return acc;
+  }, []);
+
+  return (
+    <ResponsiveContainer width="100%" height={400}>
+      <BarChart
+        data={waterfallData}
+        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey={xKey} />
+        <YAxis />
+        <Tooltip
+          formatter={(value: any, name: any, props: any) => [
+            props.payload.displayValue.toLocaleString("es-AR"),
+            name,
+          ]}
+        />
+        <Bar dataKey="range" name={yKey} fill={colors[0]} radius={[4, 4, 0, 0]}>
+          {waterfallData.map((entry: any, index: number) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={entry.displayValue >= 0 ? "#16a34a" : "#c95b4a"}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -1393,6 +1496,168 @@ export const ChartRenderer = ({
           yLabel={getColumnHeader(yKey)}
           colors={colors}
         />
+      );
+
+    case "gauge_chart": {
+      const value = Number(chartData[0]?.[yKey]) || 0;
+      const target = 100; // Default target
+      const data = [
+        { name: "Value", value: value, fill: colors[0] },
+        {
+          name: "Remaining",
+          value: Math.max(0, target - value),
+          fill: "#e2e8f0",
+        },
+      ];
+      return (
+        <div className="flex flex-col items-center justify-center h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="100%"
+                startAngle={180}
+                endAngle={0}
+                innerRadius={80}
+                outerRadius={120}
+                paddingAngle={0}
+                dataKey="value"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="text-4xl font-black -mt-16 text-primary">
+            {value}%
+          </div>
+          <div className="text-sm font-medium text-muted-foreground mt-2 uppercase tracking-widest">
+            {yLabel}
+          </div>
+        </div>
+      );
+    }
+
+    case "kpi_card": {
+      const lastRow = chartData[chartData.length - 1];
+      return <KPICard value={lastRow?.[yKey]} label={yLabel} unit={""} />;
+    }
+
+    case "waterfall_chart":
+      return (
+        <WaterfallChart
+          data={chartData}
+          xKey={xKey}
+          yKey={yKey}
+          colors={colors}
+        />
+      );
+
+    case "scatter_chart":
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart {...commonProps}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={xKey} name={getColumnHeader(xKey)} />
+            <YAxis dataKey={yKey} name={yLabel} />
+            <ZAxis range={[60, 400]} />
+            <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+            <Legend />
+            <Scatter
+              name={yLabel}
+              data={chartData}
+              fill={colors[0]}
+              line
+              shape="circle"
+            />
+            {secondaryKey && (
+              <Scatter
+                name={getColumnHeader(secondaryKey)}
+                data={chartData}
+                fill={colors[1]}
+                shape="triangle"
+              />
+            )}
+          </ScatterChart>
+        </ResponsiveContainer>
+      );
+
+    case "radial_bar_chart":
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <RadialBarChart
+            cx="50%"
+            cy="50%"
+            innerRadius="10%"
+            outerRadius="80%"
+            barSize={20}
+            data={chartData}
+          >
+            <RadialBar
+              label={{ position: "insideStart", fill: "#fff", fontSize: 10 }}
+              background
+              dataKey={yKey}
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={getItemColor(entry[xKey], index, colors)}
+                />
+              ))}
+            </RadialBar>
+            <Legend
+              iconSize={10}
+              layout="vertical"
+              verticalAlign="middle"
+              align="right"
+            />
+            <Tooltip />
+          </RadialBarChart>
+        </ResponsiveContainer>
+      );
+
+    case "composed_chart":
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <ComposedChart {...commonProps}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey={xKey} />
+            <YAxis />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Bar
+              dataKey={yKey}
+              name={yLabel}
+              fill={colors[0]}
+              radius={[4, 4, 0, 0]}
+              barSize={40}
+            />
+            {secondaryKey && (
+              <Line
+                type="monotone"
+                dataKey={secondaryKey}
+                name={getColumnHeader(secondaryKey)}
+                stroke={colors[1] || SANTIAGO_RED}
+                strokeWidth={3}
+                dot={{ r: 6 }}
+              />
+            )}
+            {yKeys.slice(2).map((yk, idx) => (
+              <Area
+                key={yk}
+                type="monotone"
+                dataKey={yk}
+                name={getColumnHeader(yk)}
+                fill={colors[(idx + 2) % colors.length]}
+                stroke={colors[(idx + 2) % colors.length]}
+                fillOpacity={0.1}
+              />
+            ))}
+          </ComposedChart>
+        </ResponsiveContainer>
       );
 
     default:

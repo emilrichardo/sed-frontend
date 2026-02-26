@@ -20,6 +20,10 @@ import {
   Hash,
   Gauge,
   Map,
+  CircleDot,
+  Pointer,
+  Waves,
+  TableProperties,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
 import { getTextFromNodes } from "./RichTextParser";
@@ -90,6 +94,13 @@ const CHART_CATALOG: ChartTypeDef[] = [
     minRows: 1,
   },
   {
+    id: "composed_chart",
+    label: "Combinado",
+    Icon: Waves,
+    minNumeric: 2,
+    minRows: 1,
+  },
+  {
     id: "line_chart",
     label: "Líneas",
     Icon: ChartLine,
@@ -135,6 +146,13 @@ const CHART_CATALOG: ChartTypeDef[] = [
     minRows: 3,
   },
   {
+    id: "radial_bar_chart",
+    label: "Radial",
+    Icon: Pointer,
+    minNumeric: 1,
+    minRows: 2,
+  },
+  {
     id: "tornado_chart",
     label: "Tornado",
     Icon: ArrowLeftRight,
@@ -148,6 +166,13 @@ const CHART_CATALOG: ChartTypeDef[] = [
     Icon: ChartBarDecreasing,
     minNumeric: 1,
     maxNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "scatter_chart",
+    label: "Dispersión",
+    Icon: CircleDot,
+    minNumeric: 2,
     minRows: 2,
   },
   {
@@ -170,7 +195,7 @@ const CHART_CATALOG: ChartTypeDef[] = [
   },
   {
     id: "gauge_chart",
-    label: "Gauge",
+    label: "Medidor",
     Icon: Gauge,
     minNumeric: 1,
     maxNumeric: 1,
@@ -460,6 +485,52 @@ export const TableBlock = ({
         : (availableTypes[0] ?? "bar_chart");
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
+  const [useHeatmap, setUseHeatmap] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
+
+  // Sorting logic
+  const sortedRows = useMemo(() => {
+    const sortableRows = [...filteredRows];
+    if (sortConfig !== null) {
+      sortableRows.sort((a: any, b: any) => {
+        const aVal =
+          a.cells?.[
+            columns.findIndex((c: { id: string }) => c.id === sortConfig.key)
+          ]?.value ?? a[sortConfig.key];
+        const bVal =
+          b.cells?.[
+            columns.findIndex((c: { id: string }) => c.id === sortConfig.key)
+          ]?.value ?? b[sortConfig.key];
+
+        const aNum = parseFloat(String(aVal).replace(/[^0-9.-]/g, ""));
+        const bNum = parseFloat(String(bVal).replace(/[^0-9.-]/g, ""));
+
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return sortConfig.direction === "asc" ? aNum - bNum : bNum - aNum;
+        }
+
+        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableRows;
+  }, [filteredRows, sortConfig, columns]);
+
+  const requestSort = (key: string) => {
+    let direction: "asc" | "desc" = "asc";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "asc"
+    ) {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
 
   // State for selected metric (numeric column)
   const [selectedMetric, setSelectedMetric] = useState<string | null>(
@@ -579,6 +650,21 @@ export const TableBlock = ({
               <Icon className="h-4 w-4" />
             </button>
           ))}
+          {selectedChartType === "table" && (
+            <div className="ml-auto flex items-center gap-2 px-2">
+              <button
+                onClick={() => setUseHeatmap(!useHeatmap)}
+                className={`flex items-center gap-2 px-2 py-1 text-[10px] uppercase font-bold border rounded transition-all ${
+                  useHeatmap
+                    ? "bg-orange-100 text-orange-700 border-orange-200"
+                    : "text-muted-foreground border-transparent hover:bg-muted"
+                }`}
+              >
+                <TableProperties className="h-3 w-3" />
+                Heatmap
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -637,24 +723,37 @@ export const TableBlock = ({
             )}
 
             {selectedChartType === "table" && (
-              <table className="w-full text-sm">
+              <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-muted/50 border-b">
                     {columns?.map(
                       (col: { id: string; header?: string }, i: number) => (
                         <th
                           key={col.id || i}
-                          className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap"
+                          onClick={() => requestSort(col.id)}
+                          className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap cursor-pointer hover:bg-muted/80 transition-colors group"
                         >
-                          {col.header}
+                          <div className="flex items-center justify-between">
+                            {col.header}
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                              {sortConfig?.key === col.id
+                                ? sortConfig.direction === "asc"
+                                  ? "↑"
+                                  : "↓"
+                                : "⇅"}
+                            </span>
+                          </div>
                         </th>
                       ),
                     )}
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredRows?.map((row: any, i: number) => (
-                    <tr key={i} className="hover:bg-muted/50 transition-colors">
+                  {sortedRows?.map((row: any, i: number) => (
+                    <tr
+                      key={i}
+                      className="hover:bg-muted/50 transition-colors group"
+                    >
                       {columns?.map((col: { id: string }, j: number) => {
                         let cellValue;
                         if (row.cells && Array.isArray(row.cells)) {
@@ -665,8 +764,46 @@ export const TableBlock = ({
                         } else {
                           cellValue = row[col.id];
                         }
+
+                        // Heatmap logic
+                        let style = {};
+                        if (
+                          useHeatmap &&
+                          isNumericColumn(col.id, filteredRows)
+                        ) {
+                          const num = parseFloat(
+                            String(cellValue).replace(/[^0-9.-]/g, ""),
+                          );
+                          const colValues = filteredRows
+                            .map((r: any) => {
+                              const v = r.cells
+                                ? r.cells.find(
+                                    (c: { columnId: string; value: any }) =>
+                                      c.columnId === col.id,
+                                  )?.value
+                                : r[col.id];
+                              return parseFloat(
+                                String(v).replace(/[^0-9.-]/g, ""),
+                              );
+                            })
+                            .filter((v: number) => !isNaN(v));
+                          const min = Math.min(...colValues);
+                          const max = Math.max(...colValues);
+                          const ratio =
+                            max - min === 0 ? 0.5 : (num - min) / (max - min);
+                          style = {
+                            backgroundColor: `rgba(201, 91, 74, ${ratio * 0.2})`,
+                            color: ratio > 0.8 ? "#000" : "inherit",
+                            fontWeight: ratio > 0.8 ? "600" : "inherit",
+                          };
+                        }
+
                         return (
-                          <td key={col.id || j} className="px-4 py-3">
+                          <td
+                            key={col.id || j}
+                            className="px-4 py-3 border-r last:border-0 border-border/20"
+                            style={style}
+                          >
                             {cellValue}
                           </td>
                         );
