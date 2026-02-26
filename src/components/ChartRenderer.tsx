@@ -264,6 +264,119 @@ const prepareData = (rows: any[], columns: any[]) => {
   });
 };
 
+// Advanced Table component (must be a component to use hooks)
+const AdvancedTableChart = ({ chartData, columns }: { chartData: any[]; columns: any[] }) => {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+
+  const tableColumns = useMemo<ColumnDef<any, any>[]>(
+    () =>
+      columns.map((col: any) => ({
+        accessorKey: col.id,
+        header: ({ column }: any) => {
+          const isSorted = column.getIsSorted();
+          return (
+            <button
+              className="flex items-center gap-1 font-semibold hover:text-primary"
+              onClick={() => column.toggleSorting(isSorted === "asc" ? false : true)}
+            >
+              {col.header}
+              {isSorted === "asc" ? (
+                <ArrowUp className="h-3 w-3" />
+              ) : isSorted === "desc" ? (
+                <ArrowDown className="h-3 w-3" />
+              ) : (
+                <ArrowUpDown className="h-3 w-3 opacity-30" />
+              )}
+            </button>
+          );
+        },
+        cell: ({ getValue }: any) => {
+          const val = getValue();
+          return typeof val === "number" ? val.toLocaleString("es-AR") : String(val ?? "");
+        },
+      })),
+    [columns],
+  );
+
+  const tableData = useMemo(
+    () =>
+      chartData.map((row: any) => {
+        const newRow: any = {};
+        columns.forEach((col: any) => {
+          newRow[col.id] = row[col.id];
+        });
+        return newRow;
+      }),
+    [chartData, columns],
+  );
+
+  const table = useReactTable({
+    data: tableData,
+    columns: tableColumns,
+    state: { sorting, globalFilter },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Buscar en la tabla..."
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="w-full pl-10 pr-10 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        {globalFilter && (
+          <button
+            onClick={() => setGlobalFilter("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+          >
+            <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+          </button>
+        )}
+      </div>
+      <div className="overflow-x-auto border rounded-lg">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b">
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id} className="px-4 py-3 text-left">
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y">
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-4 py-3">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="text-xs text-muted-foreground text-right">
+        {table.getFilteredRowModel().rows.length} filas
+      </div>
+    </div>
+  );
+};
+
 // Custom KPI Card component
 const KPICard = ({
   value,
@@ -970,7 +1083,7 @@ export const ChartRenderer = ({
           height={Math.max(chartData.length * 25, 300)}
         >
           <BarChart layout="vertical" {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" vertical horizontal={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis type="number" />
             <YAxis
               dataKey={xKey}
@@ -1028,12 +1141,19 @@ export const ChartRenderer = ({
         </ResponsiveContainer>
       );
 
-    case "column_chart":
+    case "column_chart": {
+      const manyCategories = chartData.length > 8;
       return (
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart {...commonProps}>
+        <ResponsiveContainer width="100%" height={manyCategories ? 460 : 400}>
+          <BarChart {...commonProps} margin={{ top: 20, right: 30, left: 20, bottom: manyCategories ? 80 : 20 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
+            <XAxis
+              dataKey={xKey}
+              tick={{ fontSize: manyCategories ? 10 : 12 }}
+              angle={manyCategories ? -40 : 0}
+              textAnchor={manyCategories ? "end" : "middle"}
+              interval={0}
+            />
             <YAxis />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
@@ -1083,6 +1203,7 @@ export const ChartRenderer = ({
           </BarChart>
         </ResponsiveContainer>
       );
+    }
 
     case "stacked_bar_chart":
       return (
@@ -1091,7 +1212,7 @@ export const ChartRenderer = ({
           height={Math.max(chartData.length * 25, 300)}
         >
           <BarChart layout="vertical" {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" vertical horizontal={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis type="number" />
             <YAxis
               dataKey={xKey}
@@ -1291,9 +1412,9 @@ export const ChartRenderer = ({
               <Radar
                 name={yLabel}
                 dataKey={yKey}
-                stroke={SANTIAGO_RED}
-                fill={SANTIAGO_RED}
-                fillOpacity={0.6}
+                stroke={colors[0]}
+                fill={colors[0]}
+                fillOpacity={0.5}
               />
             )}
             <Tooltip content={<CustomTooltip />} />
@@ -1500,21 +1621,25 @@ export const ChartRenderer = ({
 
     case "gauge_chart": {
       const value = Number(chartData[0]?.[yKey]) || 0;
-      const target = 100; // Default target
-      const data = [
+      // Detect if value is a percentage: use 100 as max; otherwise use max from all rows
+      const allValues = chartData.map((d) => Number(d[yKey]) || 0).filter((v) => !isNaN(v));
+      const maxDataVal = allValues.length ? Math.max(...allValues) : 100;
+      // If value ≤ 100 and the column name suggests percentage, treat as %
+      const isPercent = value <= 100 && maxDataVal <= 100;
+      const target = isPercent ? 100 : maxDataVal;
+      const displayValue = isPercent
+        ? `${value.toLocaleString("es-AR")}%`
+        : value.toLocaleString("es-AR");
+      const gaugeData = [
         { name: "Value", value: value, fill: colors[0] },
-        {
-          name: "Remaining",
-          value: Math.max(0, target - value),
-          fill: "#e2e8f0",
-        },
+        { name: "Remaining", value: Math.max(0, target - value), fill: "#e2e8f0" },
       ];
       return (
         <div className="flex flex-col items-center justify-center h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={data}
+                data={gaugeData}
                 cx="50%"
                 cy="100%"
                 startAngle={180}
@@ -1524,15 +1649,15 @@ export const ChartRenderer = ({
                 paddingAngle={0}
                 dataKey="value"
               >
-                {data.map((entry, index) => (
+                {gaugeData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(v: any, name: any) => name === "Value" ? [displayValue, yLabel] : null} />
             </PieChart>
           </ResponsiveContainer>
           <div className="text-4xl font-black -mt-16 text-primary">
-            {value}%
+            {displayValue}
           </div>
           <div className="text-sm font-medium text-muted-foreground mt-2 uppercase tracking-widest">
             {yLabel}
@@ -1542,8 +1667,23 @@ export const ChartRenderer = ({
     }
 
     case "kpi_card": {
-      const lastRow = chartData[chartData.length - 1];
-      return <KPICard value={lastRow?.[yKey]} label={yLabel} unit={""} />;
+      // Show up to 5 KPIs — one per row, using the label from xKey and value from yKey
+      const kpiRows = chartData.slice(0, 5);
+      if (kpiRows.length === 1) {
+        return <KPICard value={kpiRows[0]?.[yKey]} label={xKey ? String(kpiRows[0]?.[xKey] || yLabel) : yLabel} unit={""} />;
+      }
+      return (
+        <div className={`grid gap-4 ${kpiRows.length <= 2 ? "grid-cols-2" : kpiRows.length === 3 ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`}>
+          {kpiRows.map((row, i) => (
+            <KPICard
+              key={i}
+              value={row?.[yKey]}
+              label={xKey ? String(row?.[xKey] || yLabel) : yLabel}
+              unit={""}
+            />
+          ))}
+        </div>
+      );
     }
 
     case "waterfall_chart":
@@ -1659,6 +1799,341 @@ export const ChartRenderer = ({
           </ComposedChart>
         </ResponsiveContainer>
       );
+
+    case "sunburst_chart": {
+      const sunburstData = chartData.map((d) => ({
+        id: String(d[xKey]),
+        value: Number(d[yKey]) || 0,
+        color: getItemColor(d[xKey], chartData.indexOf(d), colors),
+      }));
+      return (
+        <div className="h-[500px] w-full">
+          <Plot
+            data={[{
+              type: "sunburst",
+              labels: sunburstData.map(d => d.id),
+              parents: sunburstData.map(() => ""),
+              values: sunburstData.map(d => d.value),
+              marker: { colors: sunburstData.map(d => d.color) },
+              textinfo: "label+percent parent",
+              hoverinfo: "label+value+percent",
+            }]}
+            layout={{
+              margin: { t: 20, l: 20, r: 20, b: 20 },
+              height: 480,
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
+
+    case "heatmap_chart": {
+      // Build 2D matrix: rows = numeric columns, columns = xKey categories
+      const numericHeatCols = columns.filter(
+        (c: any) => c.id !== xKey && chartData.some((d) => typeof d[c.id] === "number"),
+      );
+      const heatCols = numericHeatCols.length > 0 ? numericHeatCols : [columns.find((c: any) => c.id === yKey)].filter(Boolean);
+      const zMatrix = heatCols.map((col: any) =>
+        chartData.map((d) => Number(d[col.id]) || 0),
+      );
+      const yHeatLabels = heatCols.map((c: any) => c.header || c.id);
+      const xHeatLabels = chartData.map((d) => String(d[xKey]));
+      const heatHeight = Math.max(300, heatCols.length * 40 + 100);
+      return (
+        <div className="w-full" style={{ height: heatHeight }}>
+          <Plot
+            data={[{
+              type: "heatmap",
+              z: zMatrix,
+              x: xHeatLabels,
+              y: yHeatLabels,
+              colorscale: "Reds",
+              showscale: true,
+              hoverongaps: false,
+            }]}
+            layout={{
+              margin: { t: 40, l: 120, r: 40, b: 80 },
+              height: heatHeight - 20,
+              xaxis: { tickangle: -45 },
+            }}
+            config={{ displayModeBar: false }}
+            style={{ width: "100%" }}
+          />
+        </div>
+      );
+    }
+
+    case "sankey_chart": {
+      // Use xKey as source, secondaryKey (or columns[1]) as target, yKey as value
+      const targetKey = secondaryKey || columns.find((c: any) => c.id !== xKey && c.id !== yKey)?.id;
+      if (!targetKey) {
+        return (
+          <div className="p-8 text-center bg-muted/20 border-2 border-dashed rounded-lg italic text-muted-foreground">
+            Sankey requiere columnas: origen, destino y valor (eje_principal, eje_secundario, eje_valores)
+          </div>
+        );
+      }
+
+      // Build unique node list preserving order (sources first, then targets)
+      const nodeSet = new Set<string>();
+      chartData.forEach((d) => {
+        nodeSet.add(String(d[xKey] ?? ""));
+        nodeSet.add(String(d[targetKey] ?? ""));
+      });
+      const nodeList = Array.from(nodeSet).filter(Boolean);
+
+      const sankeySourceIndices: number[] = [];
+      const sankeyTargetIndices: number[] = [];
+      const sankeyValues: number[] = [];
+
+      chartData.forEach((d) => {
+        const src = String(d[xKey] ?? "");
+        const tgt = String(d[targetKey] ?? "");
+        const val = Number(d[yKey]) || 0;
+        const srcIdx = nodeList.indexOf(src);
+        const tgtIdx = nodeList.indexOf(tgt);
+        if (srcIdx !== -1 && tgtIdx !== -1 && val > 0 && srcIdx !== tgtIdx) {
+          sankeySourceIndices.push(srcIdx);
+          sankeyTargetIndices.push(tgtIdx);
+          sankeyValues.push(val);
+        }
+      });
+
+      if (sankeyValues.length === 0) {
+        return (
+          <div className="p-8 text-center bg-muted/20 border-2 border-dashed rounded-lg italic text-muted-foreground">
+            No hay flujos válidos para el gráfico Sankey
+          </div>
+        );
+      }
+
+      return (
+        <div className="h-[500px] w-full">
+          <Plot
+            data={[{
+              type: "sankey",
+              orientation: "h",
+              node: {
+                pad: 15,
+                thickness: 20,
+                label: nodeList,
+                color: nodeList.map((_, i) => colors[i % colors.length]),
+              },
+              link: {
+                source: sankeySourceIndices,
+                target: sankeyTargetIndices,
+                value: sankeyValues,
+              },
+            }]}
+            layout={{
+              margin: { t: 20, l: 20, r: 20, b: 20 },
+              height: 480,
+              font: { size: 10 },
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
+
+    case "bubble_plotly": {
+      // x: use numeric value if available, else use row index (for categorical xKey)
+      const xNumeric = chartData.every(d => typeof d[xKey] === "number");
+      const bubbleX = xNumeric
+        ? chartData.map(d => Number(d[xKey]) || 0)
+        : chartData.map((_, i) => i);
+      const bubbleXLabels = chartData.map(d => String(d[xKey]));
+      const bubbleY = chartData.map(d => Number(d[yKey]) || 0);
+      // Scale bubble sizes relative to the data range to avoid extreme sizes
+      const rawSizes = chartData.map(d => (secondaryKey ? Number(d[secondaryKey]) || 1 : 1));
+      const maxRawSize = Math.max(...rawSizes.map(Math.abs), 1);
+      const bubbleSize = rawSizes.map(s => Math.max(8, (Math.abs(s) / maxRawSize) * 60 + 8));
+      return (
+        <div className="h-[450px] w-full">
+          <Plot
+            data={[{
+              type: "scatter",
+              mode: "markers",
+              x: bubbleX,
+              y: bubbleY,
+              marker: {
+                size: bubbleSize,
+                color: colors.map((c, i) => colors[i % colors.length]),
+                sizemode: "diameter",
+              },
+              text: bubbleXLabels,
+              hovertemplate: "<b>%{text}</b><br>" + yLabel + ": %{y}<extra></extra>",
+            }]}
+            layout={{
+              margin: { t: 40, l: 60, r: 40, b: 60 },
+              height: 430,
+              xaxis: xNumeric
+                ? { title: getColumnHeader(xKey) }
+                : { tickvals: bubbleX, ticktext: bubbleXLabels, title: getColumnHeader(xKey) },
+              yaxis: { title: yLabel },
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
+
+    case "treemap_plotly": {
+      const treemapLabels = chartData.map(d => String(d[xKey]));
+      const treemapValues = chartData.map(d => Number(d[yKey]) || 0);
+      return (
+        <div className="h-[450px] w-full">
+          <Plot
+            data={[{
+              type: "treemap",
+              labels: treemapLabels,
+              parents: treemapLabels.map(() => ""),
+              values: treemapValues,
+              textinfo: "label+value+percent parent",
+              marker: { colors: treemapValues, colorscale: "Reds", showscale: false },
+            }]}
+            layout={{
+              margin: { t: 20, l: 20, r: 20, b: 20 },
+              height: 430,
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
+
+    case "funnel_chart": {
+      return (
+        <div className="h-[450px] w-full">
+          <Plot
+            data={[{
+              type: "funnel",
+              y: chartData.map(d => String(d[xKey])),
+              x: chartData.map(d => Number(d[yKey]) || 0),
+              textinfo: "value+percent initial",
+              marker: { color: colors[0] },
+            }]}
+            layout={{
+              margin: { t: 40, l: 120, r: 40, b: 40 },
+              height: 430,
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
+
+    case "polar_chart": {
+      return (
+        <div className="h-[450px] w-full">
+          <Plot
+            data={[{
+              type: "barpolar",
+              r: chartData.map(d => Number(d[yKey]) || 0),
+              theta: chartData.map(d => String(d[xKey])),
+              marker: { color: chartData.map((_, i) => colors[i % colors.length]) },
+            }]}
+            layout={{
+              margin: { t: 40, l: 40, r: 40, b: 40 },
+              height: 430,
+              polar: { bgcolor: "white" },
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
+
+    case "box_plot": {
+      return (
+        <div className="h-[450px] w-full">
+          <Plot
+            data={[{
+              type: "box",
+              y: chartData.map(d => Number(d[yKey]) || 0),
+              name: yLabel,
+              marker: { color: colors[0] },
+              boxpoints: "all",
+              jitter: 0.3,
+              pointpos: -1.8,
+            }]}
+            layout={{
+              margin: { t: 40, l: 60, r: 40, b: 60 },
+              height: 430,
+              showlegend: false,
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
+
+    case "advanced_table":
+      return <AdvancedTableChart chartData={chartData} columns={columns} />;
+
+    case "sparkline": {
+      const sparkData = chartData.slice(-10).map(d => Number(d[yKey]) || 0);
+      return (
+        <div className="h-[100px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sparkData.map((v, i) => ({ value: v, index: i }))}>
+              <defs>
+                <linearGradient id="sparkGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={colors[0]} stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor={colors[0]} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke={colors[0]} 
+                fill="url(#sparkGradient)" 
+                strokeWidth={2}
+              />
+              <Tooltip content={<CustomTooltip />} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      );
+    }
+
+    case "candlestick_chart": {
+      // Use yKey as close; if secondaryKey exists use as open; derive high/low from open/close
+      const ohlcData = chartData.slice(0, 20).map((d, i) => {
+        const close = Number(d[yKey]) || 0;
+        const open = secondaryKey ? Number(d[secondaryKey]) || close : (i > 0 ? Number(chartData[i - 1]?.[yKey]) || close : close);
+        return {
+          date: String(d[xKey]) || `Período ${i + 1}`,
+          open,
+          high: Math.max(open, close),
+          low: Math.min(open, close),
+          close,
+        };
+      });
+      return (
+        <div className="h-[450px] w-full">
+          <Plot
+            data={[{
+              type: "candlestick",
+              x: ohlcData.map(d => d.date),
+              open: ohlcData.map(d => d.open),
+              high: ohlcData.map(d => d.high),
+              low: ohlcData.map(d => d.low),
+              close: ohlcData.map(d => d.close),
+              increasing: { line: { color: colors[0] } },
+              decreasing: { line: { color: "#ef4444" } },
+            }]}
+            layout={{
+              margin: { t: 40, l: 60, r: 40, b: 80 },
+              height: 430,
+              xaxis: { tickangle: -45 },
+            }}
+            config={{ displayModeBar: false }}
+          />
+        </div>
+      );
+    }
 
     default:
       return (
