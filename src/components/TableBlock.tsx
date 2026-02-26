@@ -22,6 +22,7 @@ import {
   Map,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
+import { getTextFromNodes } from "./RichTextParser";
 
 // --- Column type detection ---
 
@@ -363,8 +364,8 @@ export const TableBlock = ({
 
   // Data cleaning: Extract notes or sources from rows if missing in metadata
   // Look for rows where the first cell starts with "Nota" or "Fuente"
-  let extractedNotas = "";
-  let extractedFuente = "";
+  const rowExtractedNotas: string[] = [];
+  const rowExtractedFuente: string[] = [];
 
   const filteredRows = rows.filter((row: any) => {
     let firstCellVal = "";
@@ -376,19 +377,35 @@ export const TableBlock = ({
     }
 
     const lowerVal = firstCellVal.trim().toLowerCase();
-    if (lowerVal.startsWith("nota")) {
-      extractedNotas = firstCellVal;
+    if (
+      lowerVal.startsWith("nota") ||
+      lowerVal.startsWith("metodología") ||
+      lowerVal.startsWith("metodologia")
+    ) {
+      rowExtractedNotas.push(firstCellVal);
       return false;
     }
     if (lowerVal.startsWith("fuente")) {
-      extractedFuente = firstCellVal;
+      rowExtractedFuente.push(firstCellVal);
       return false;
     }
     return true;
   });
 
-  if (!notas && extractedNotas) notas = extractedNotas;
-  if (!fuente && extractedFuente) fuente = extractedFuente;
+  // Helper to check if a value is effectively empty
+  const isValueEmpty = (val: any) => {
+    if (!val) return true;
+    if (typeof val === "string") return val.trim() === "";
+    if (typeof val === "object") return getTextFromNodes(val).trim() === "";
+    return false;
+  };
+
+  if (isValueEmpty(notas) && rowExtractedNotas.length > 0) {
+    notas = rowExtractedNotas.join(". ");
+  }
+  if (isValueEmpty(fuente) && rowExtractedFuente.length > 0) {
+    fuente = rowExtractedFuente.join(". ");
+  }
 
   // Determine X-axis column (excluded from metric selection)
   const xAxisColId =
@@ -604,7 +621,7 @@ export const TableBlock = ({
         <>
           <div className="overflow-x-auto">
             {showChart && (
-              <div className="p-4 bg-card mb-6 border-b">
+              <div className="p-4 bg-card border-b">
                 <ChartRenderer
                   type={selectedChartType}
                   config={chartConfig}
@@ -614,14 +631,7 @@ export const TableBlock = ({
               </div>
             )}
 
-            {selectedChartType !== "table" && notas && (
-              <div className="px-4 pt-0 pb-3 text-xs text-muted-foreground italic flex gap-1.5 items-start">
-                <span className="font-semibold not-italic shrink-0">Nota:</span>
-                <span>{typeof notas === "string" ? notas : (notas as any).text || ""}</span>
-              </div>
-            )}
-
-          {selectedChartType === "table" && (
+            {selectedChartType === "table" && (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/50 border-b">
@@ -638,7 +648,7 @@ export const TableBlock = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {rows?.map((row: any, i: number) => (
+                  {filteredRows?.map((row: any, i: number) => (
                     <tr key={i} className="hover:bg-muted/50 transition-colors">
                       {columns?.map((col: { id: string }, j: number) => {
                         let cellValue;
@@ -661,37 +671,60 @@ export const TableBlock = ({
                 </tbody>
               </table>
             )}
-          {selectedChartType === "table" && notas && (
-              <div className="px-4 pt-3 pb-1 text-xs text-muted-foreground italic flex gap-1.5 items-start border-t">
-                <span className="font-semibold not-italic shrink-0">Nota:</span>
-                <span>{typeof notas === "string" ? notas : (notas as any).text || ""}</span>
-              </div>
-            )}
           </div>
 
           {/* Footer Metadata */}
-          {(fuente || tabla_relacionada?.actualizacion) && (
+          {(fields.tipo_visualizacion ||
+            fuente ||
+            notas ||
+            tabla_relacionada?.actualizacion) && (
             <div className="bg-muted/10 px-4 py-3 border-t text-xs text-muted-foreground flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
               <div className="flex flex-col gap-1">
+                {fields.tipo_visualizacion && (
+                  <div>
+                    <span className="font-semibold block sm:inline mr-1">
+                      Visualización:
+                    </span>
+                    <span className="capitalize text-muted-foreground/80">
+                      {fields.tipo_visualizacion.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                )}
                 {fuente && (
                   <div>
                     <span className="font-semibold block sm:inline mr-1">
                       Fuente:
                     </span>
-                    {typeof fuente === "string"
-                      ? fuente
-                      : (fuente as any).text || ""}
+                    <span className="text-muted-foreground/80">
+                      {typeof fuente === "string"
+                        ? fuente
+                        : getTextFromNodes(fuente)}
+                    </span>
+                  </div>
+                )}
+                {notas && (
+                  <div>
+                    <span className="font-semibold block sm:inline mr-1">
+                      Nota:
+                    </span>
+                    <span className="italic text-muted-foreground/80">
+                      {typeof notas === "string"
+                        ? notas
+                        : getTextFromNodes(notas)}
+                    </span>
                   </div>
                 )}
               </div>
               {tabla_relacionada?.actualizacion && (
-                <div className="text-right">
+                <div className="text-right whitespace-nowrap">
                   <span className="font-semibold block sm:inline mr-1">
                     Actualizado:
                   </span>
-                  {new Date(
-                    tabla_relacionada.actualizacion,
-                  ).toLocaleDateString()}
+                  <span className="text-muted-foreground/80">
+                    {new Date(
+                      tabla_relacionada.actualizacion,
+                    ).toLocaleDateString()}
+                  </span>
                 </div>
               )}
             </div>
