@@ -331,8 +331,12 @@ export const TableBlock = ({
     rows: fieldRows,
     source_type,
     tabla_relacionada,
+    fuente: fieldFuente,
+    notas: fieldNotas,
   } = fields;
   let title = fieldTitle;
+  let fuente = fieldFuente;
+  let notas = fieldNotas;
   let columns = fieldCols;
   let rows = fieldRows;
 
@@ -429,6 +433,8 @@ export const TableBlock = ({
   const jsonDisplay = {
     id: fields.id,
     titulo: title,
+    fuente: fuente,
+    notas: notas,
     source_type,
     tipo_visualizacion: fields.tipo_visualizacion,
     configuracion_visualizacion: fields.configuracion_visualizacion,
@@ -606,6 +612,8 @@ export const TableBlock = ({
 
           {/* Footer Metadata */}
           {(fields.tipo_visualizacion ||
+            fuente ||
+            notas ||
             tabla_relacionada?.fuente ||
             tabla_relacionada?.actualizacion) && (
             <div className="bg-muted/10 px-4 py-3 border-t text-xs text-muted-foreground flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
@@ -620,12 +628,20 @@ export const TableBlock = ({
                     </span>
                   </div>
                 )}
-                {tabla_relacionada?.fuente && (
+                {(fuente || tabla_relacionada?.fuente) && (
                   <div>
                     <span className="font-semibold block sm:inline mr-1">
                       Fuente:
                     </span>
-                    {tabla_relacionada.fuente}
+                    {fuente || tabla_relacionada?.fuente}
+                  </div>
+                )}
+                {notas && (
+                  <div>
+                    <span className="font-semibold block sm:inline mr-1">
+                      Notas:
+                    </span>
+                    {notas}
                   </div>
                 )}
               </div>
