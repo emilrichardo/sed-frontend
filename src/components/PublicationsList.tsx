@@ -42,7 +42,9 @@ function getItemTags(item: ReportItem): TaxItem[] {
 }
 
 function getImg(item: ReportItem) {
-  const img = item.imagen_destacada as { url?: string; alt?: string } | undefined;
+  const img = item.imagen_destacada as
+    | { url?: string; alt?: string }
+    | undefined;
   return img?.url ? img : null;
 }
 
@@ -68,7 +70,7 @@ function GridCard({ item }: { item: FlatPublication }) {
             fill
             unoptimized
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, 50vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10" />
@@ -214,7 +216,9 @@ function GroupedCard({ node }: { node: GroupedNode }) {
 
 export function PublicationsList({ items, allCategories }: Props) {
   const [search, setSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<Set<string | number>>(new Set());
+  const [selectedCategories, setSelectedCategories] = useState<
+    Set<string | number>
+  >(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const matchesFilters = (item: FlatPublication) => {
@@ -241,7 +245,10 @@ export function PublicationsList({ items, allCategories }: Props) {
         const rootMatches = matchesFilters(root);
         const matchingChildren = children.filter(matchesFilters);
         if (!rootMatches && matchingChildren.length === 0) return null;
-        return { ...root, children: rootMatches ? children : matchingChildren } as GroupedNode;
+        return {
+          ...root,
+          children: rootMatches ? children : matchingChildren,
+        } as GroupedNode;
       })
       .filter(Boolean) as GroupedNode[];
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,14 +257,22 @@ export function PublicationsList({ items, allCategories }: Props) {
   const toggleCategory = (id: string | number) => {
     setSelectedCategories((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
   const hasActiveFilters = !!search || selectedCategories.size > 0;
-  const clearAll = () => { setSearch(""); setSelectedCategories(new Set()); };
-  const resultCount = viewMode === "grid" ? filteredGrid.length : filteredGrouped.length;
+  const clearAll = () => {
+    setSearch("");
+    setSelectedCategories(new Set());
+  };
+  const resultCount =
+    viewMode === "grid" ? filteredGrid.length : filteredGrouped.length;
 
   return (
     <div className="space-y-4">
@@ -274,7 +289,10 @@ export function PublicationsList({ items, allCategories }: Props) {
             className="w-full pl-8 pr-7 py-1.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
               <X className="h-3.5 w-3.5" />
             </button>
           )}
@@ -336,7 +354,10 @@ export function PublicationsList({ items, allCategories }: Props) {
           {hasActiveFilters && " encontrados"}
         </span>
         {hasActiveFilters && (
-          <button onClick={clearAll} className="flex items-center gap-1 text-primary hover:underline">
+          <button
+            onClick={clearAll}
+            className="flex items-center gap-1 text-primary hover:underline"
+          >
             <X className="h-3 w-3" />
             Limpiar filtros
           </button>
@@ -351,7 +372,7 @@ export function PublicationsList({ items, allCategories }: Props) {
           </p>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredGrid.map((item) => (
             <GridCard key={item.id} item={item} />
           ))}

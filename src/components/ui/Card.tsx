@@ -68,7 +68,7 @@ export function Card({
               })}
             </time>
           )}
-          <h3 className="text-2xl font-bold tracking-tight group-hover:underline decoration-2 underline-offset-4 mb-2">
+          <h3 className="text-lg font-bold tracking-tight group-hover:underline decoration-2 underline-offset-4 mb-1">
             {title}
           </h3>
           {description && (
