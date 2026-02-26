@@ -20,7 +20,6 @@ import {
   Hash,
   Gauge,
   Map,
-  MapPin,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
 
@@ -175,17 +174,9 @@ const CHART_CATALOG: ChartTypeDef[] = [
     maxRows: 1,
   },
   {
-    id: "map_argentina",
-    label: "Mapa Argentina",
+    id: "choropleth_map",
+    label: "Mapa",
     Icon: Map,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 1,
-  },
-  {
-    id: "map_santiago_del_estero",
-    label: "Mapa Santiago Estero",
-    Icon: MapPin,
     minNumeric: 1,
     maxNumeric: 1,
     minRows: 1,
@@ -208,47 +199,58 @@ function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
     },
   ).map((ct) => ct.id);
 
-  // Auto-detect provinces and departments for maps
-  const firstColId = columns[0]?.id;
-  if (firstColId && rows.length > 0) {
-    const firstColumnValues = rows
-      .map((row) => {
-        if (row.cells && Array.isArray(row.cells)) {
-          return row.cells.find((c: any) => c.columnId === firstColId)?.value;
-        }
-        return row[firstColId];
-      })
-      .filter(Boolean)
-      .map((v: any) => String(v).toLowerCase());
+  // Auto-detect geographic data for choropleth map
+  const firstCol = columns[0];
+  if (firstCol && rows.length > 0) {
+    const headerNorm = (firstCol.header || "")
+      .toLowerCase()
+      .replace(/[áéíóú]/g, (c: string) =>
+        ({ á: "a", é: "e", í: "i", ó: "o", ú: "u" } as Record<string, string>)[c] || c
+      );
 
-    const hasProvinces = firstColumnValues.some((v: string) => 
-      v.includes("provincia") || 
-      v.includes("ciudad de buenos aires") ||
-      v.includes("santa fe") ||
-      v.includes("córdoba") ||
-      v.includes("chaco") ||
-      v.includes("mendoza") ||
-      v.includes("tucumán") ||
-      v.includes("salta") ||
-      v.includes("santiago del estero") ||
-      (firstColumnValues.length >= 5 && firstColumnValues.length <= 24)
-    );
+    const hasDeptHeader = headerNorm.includes("departamento");
+    const hasGeoHeader =
+      hasDeptHeader ||
+      headerNorm.includes("jurisdiccion") ||
+      headerNorm.includes("jurisdicción") ||
+      headerNorm.includes("provincia");
 
-    const hasSantiagoDepts = firstColumnValues.some((v: string) => 
-      v.includes("departamento") ||
-      v.includes("la banda") ||
-      v.includes("santiago del estero") ||
-      (v.includes("capital") && firstColumnValues.length <= 30)
-    );
+    if (hasGeoHeader) {
+      chartTypes.push("choropleth_map");
+    } else {
+      // Fallback: value-based detection
+      const firstColValues = rows
+        .map((row) => {
+          if (row.cells && Array.isArray(row.cells)) {
+            return row.cells.find((c: any) => c.columnId === firstCol.id)?.value;
+          }
+          return row[firstCol.id];
+        })
+        .filter(Boolean)
+        .map((v: any) => String(v).toLowerCase());
 
-    // If it looks like provinces data, add map options
-    if (hasProvinces && !hasSantiagoDepts) {
-      chartTypes.push("map_argentina");
-    }
-    
-    // If it looks like Santiago del Estero departments
-    if (hasSantiagoDepts) {
-      chartTypes.push("map_santiago_del_estero");
+      const SDE_DEPT_KEYWORDS = [
+        "figueroa", "salavina", "atamisqui", "silipica", "jimenez",
+        "loreto", "guasayan", "quebrachos", "aguirre", "choya", "alberdi",
+        "avellaneda", "pellegrini", "mitre", "copo",
+      ];
+      const AR_PROVINCE_KEYWORDS = [
+        "cordoba", "mendoza", "tucuman", "chaco", "corrientes", "misiones",
+        "entre rios", "jujuy", "neuquen", "rio negro", "chubut", "formosa",
+        "la pampa", "la rioja", "catamarca", "san juan", "san luis",
+        "santa cruz", "tierra del fuego",
+      ];
+
+      const hasDeptValues = firstColValues.some((v: string) =>
+        SDE_DEPT_KEYWORDS.some((k) => v.includes(k))
+      );
+      const hasProvinceValues = firstColValues.some((v: string) =>
+        AR_PROVINCE_KEYWORDS.some((k) => v.includes(k))
+      );
+
+      if (hasDeptValues || hasProvinceValues) {
+        chartTypes.push("choropleth_map");
+      }
     }
   }
 
@@ -320,10 +322,20 @@ export const TableBlock = ({
 
   // Allow any chart type from catalog, prioritize tipo_visualizacion from CMS or compatible types
   const availableTypes = [...new Set([...compatibleTypes, ...allChartTypeIds])];
-  
+
+  // Map legacy map chart types to the unified choropleth_map
+  const CHART_TYPE_ALIASES: Record<string, string> = {
+    map_argentina: "choropleth_map",
+    map_santiago: "choropleth_map",
+    map_santiago_del_estero: "choropleth_map",
+  };
+  const resolvedVisualizationType = fields.tipo_visualizacion
+    ? (CHART_TYPE_ALIASES[fields.tipo_visualizacion] ?? fields.tipo_visualizacion)
+    : undefined;
+
   const defaultChartType =
-    fields.tipo_visualizacion && allChartTypeIds.includes(fields.tipo_visualizacion)
-      ? fields.tipo_visualizacion
+    resolvedVisualizationType && allChartTypeIds.includes(resolvedVisualizationType)
+      ? resolvedVisualizationType
       : availableTypes.includes("column_chart")
         ? "column_chart"
         : availableTypes[0] ?? "bar_chart";

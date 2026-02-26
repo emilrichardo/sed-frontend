@@ -1052,6 +1052,42 @@ export const ChartRenderer = ({
         </ResponsiveContainer>
       );
 
+    case "choropleth_map": {
+      // Auto-detect: if x-column header contains "departamento" or values match
+      // known SDE department names → show SDE map; otherwise show Argentina map
+      const xCol = columns.find((c: any) => c.id === xKey);
+      const xHeaderNorm = normalizeName(xCol?.header || "");
+      const SDE_DEPT_ONLY = [
+        "figueroa", "salavina", "atamisqui", "silipica", "jimenez",
+        "loreto", "guasayan", "quebrachos", "aguirre", "choya", "alberdi",
+        "avellaneda", "pellegrini", "mitre", "copo",
+      ];
+      const isDeptos =
+        xHeaderNorm.includes("departamento") ||
+        chartData.some((d) => {
+          const val = normalizeName(String(d[xKey] || ""));
+          return SDE_DEPT_ONLY.some((k) => val === k || val.includes(k));
+        });
+      if (isDeptos) {
+        return (
+          <MapSantiago
+            chartData={chartData}
+            xKey={xKey}
+            yKey={yKey}
+            yLabel={getColumnHeader(yKey)}
+          />
+        );
+      }
+      return (
+        <MapArgentina
+          chartData={chartData}
+          xKey={xKey}
+          yKey={yKey}
+          yLabel={getColumnHeader(yKey)}
+        />
+      );
+    }
+
     case "map_argentina":
       return (
         <MapArgentina
