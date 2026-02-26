@@ -13,6 +13,7 @@ import {
   FileText,
   BarChart,
   Layout,
+  LayoutTemplate,
 } from "lucide-react";
 
 const navLinks = [
@@ -25,7 +26,7 @@ const navLinks = [
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, layoutMode, setLayoutMode } = useAuth();
 
   // Hide global sidebar on Report Detail pages
   const isReportDetail =
@@ -104,6 +105,15 @@ export function Sidebar() {
               <User className="h-5 w-5" />
             </div>
             <button
+              onClick={() =>
+                setLayoutMode(layoutMode === "dashboard" ? "web" : "dashboard")
+              }
+              className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md transition-colors"
+              title="Cambiar Layout"
+            >
+              <LayoutTemplate className="h-5 w-5" />
+            </button>
+            <button
               onClick={logout}
               className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
               title="Cerrar Sesión"
@@ -129,6 +139,20 @@ export function Sidebar() {
                 </span>
               </div>
             </div>
+            <button
+              onClick={() =>
+                setLayoutMode(layoutMode === "dashboard" ? "web" : "dashboard")
+              }
+              className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md transition-colors border border-transparent hover:border-primary/20"
+              title={
+                layoutMode === "dashboard"
+                  ? "Cambiar a Layout Web"
+                  : "Cambiar a Layout Dashboard"
+              }
+            >
+              <LayoutTemplate className="h-4 w-4" />
+              <span>Vista Web</span>
+            </button>
             <button
               onClick={logout}
               className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"

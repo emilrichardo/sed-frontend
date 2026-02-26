@@ -12,6 +12,8 @@ const sourceCodePro = Source_Code_Pro({
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 // ... (metadata)
 
+import { LayoutContent } from "@/components/LayoutContent";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,10 +27,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ProtectedRoute>
-            <div className="flex min-h-screen">
-              <Sidebar />
-              <main className="flex-1 w-full min-w-0">{children}</main>
-            </div>
+            <LayoutContent>{children}</LayoutContent>
           </ProtectedRoute>
         </AuthProvider>
       </body>

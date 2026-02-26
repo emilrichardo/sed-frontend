@@ -4,7 +4,15 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Menu, X, LogIn, LogOut, User, Edit3 } from "lucide-react";
+import {
+  Menu,
+  X,
+  LogIn,
+  LogOut,
+  User,
+  Edit3,
+  LayoutDashboard,
+} from "lucide-react";
 
 const navLinks = [
   { name: "Inicio", href: "/" },
@@ -16,7 +24,8 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout, isEditing, toggleEditMode } = useAuth();
+  const { user, logout, isEditing, toggleEditMode, layoutMode, setLayoutMode } =
+    useAuth();
 
   if (!user) return null;
 
@@ -62,6 +71,21 @@ export function Navbar() {
                   <Edit3 className="h-3.5 w-3.5" />
                   {isEditing ? "Edit: ON" : "Edit: OFF"}
                 </button>
+                <button
+                  onClick={() =>
+                    setLayoutMode(
+                      layoutMode === "dashboard" ? "web" : "dashboard",
+                    )
+                  }
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-normal rounded-md border bg-background text-foreground hover:bg-muted border-input shadow-sm transition-all"
+                  title={
+                    layoutMode === "dashboard" ? "Vista Web" : "Vista Dashboard"
+                  }
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  {layoutMode === "dashboard" ? "Web" : "Dash"}
+                </button>
+
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <User className="h-4 w-4" />
                   <span className="max-w-[150px] truncate">{user.email}</span>

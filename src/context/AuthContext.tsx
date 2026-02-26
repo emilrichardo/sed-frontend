@@ -22,6 +22,8 @@ interface AuthContextType {
   setIsLoginModalOpen: (isOpen: boolean) => void;
   openLoginModal: () => void;
   closeLoginModal: () => void;
+  layoutMode: "dashboard" | "web";
+  setLayoutMode: (mode: "dashboard" | "web") => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +33,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [layoutMode, setLayoutModeState] = useState<"dashboard" | "web">(
+    "dashboard",
+  );
   const router = useRouter();
 
   const openLoginModal = () => setIsLoginModalOpen(true);
@@ -107,7 +112,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     validateSession();
+
+    // Check for layout mode
+    const storedLayout = localStorage.getItem("layout-mode") as
+      | "dashboard"
+      | "web";
+    if (
+      storedLayout &&
+      (storedLayout === "dashboard" || storedLayout === "web")
+    ) {
+      setLayoutModeState(storedLayout);
+    }
   }, []);
+
+  const setLayoutMode = (mode: "dashboard" | "web") => {
+    localStorage.setItem("layout-mode", mode);
+    setLayoutModeState(mode);
+  };
 
   const login = (token: string, userData: User) => {
     localStorage.setItem("payload-token", token);
@@ -145,6 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoginModalOpen,
         openLoginModal,
         closeLoginModal,
+        layoutMode,
+        setLayoutMode,
       }}
     >
       {children}
