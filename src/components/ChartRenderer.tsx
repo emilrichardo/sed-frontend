@@ -17,6 +17,12 @@ import {
   Line,
   AreaChart,
   Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Treemap,
 } from "recharts";
 import { scaleQuantile } from "d3-scale";
 import { geoMercator, geoPath } from "d3-geo";
@@ -35,6 +41,19 @@ const COLORS_DEFAULT = [
 const COLORS_SLATE = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
 const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#dc2626"];
 const COLORS_HEATMAP = ["#fee2e2", "#fca5a5", "#ef4444", "#b91c1c", "#7f1d1d"];
+// Multicolor: no red — red is reserved for Santiago del Estero
+const COLORS_MULTICOLOR = [
+  "#2563eb",
+  "#16a34a",
+  "#ea580c",
+  "#9333ea",
+  "#0891b2",
+  "#ca8a04",
+  "#db2777",
+  "#0d9488",
+  "#b45309",
+  "#6d28d9",
+];
 
 const SANTIAGO_RED = "#dc2626";
 const BLACK = "#000000";
@@ -148,7 +167,13 @@ const getItemColor = (
 };
 
 type ChartConfig = {
-  colores?: "default" | "vibrant" | "slate" | "semaphore" | "heatmap";
+  colores?:
+    | "default"
+    | "vibrant"
+    | "slate"
+    | "semaphore"
+    | "heatmap"
+    | "multicolor";
   colors?: string[];
   eje_principal?: string;
   eje_valores?: string;
@@ -165,6 +190,8 @@ const getColors = (palette?: string) => {
       return COLORS_SEMAPHORE;
     case "heatmap":
       return COLORS_HEATMAP;
+    case "multicolor":
+      return COLORS_MULTICOLOR;
     default:
       return COLORS_DEFAULT;
   }
@@ -235,6 +262,16 @@ const MAP_GRADIENT = [
   "#b91c1c",
   "#991b1b",
 ];
+// Blue gradient for multicolor mode (Santiago stays red, others in blue)
+const MAP_GRADIENT_MULTI = [
+  "#eff6ff",
+  "#bfdbfe",
+  "#93c5fd",
+  "#60a5fa",
+  "#3b82f6",
+  "#2563eb",
+  "#1d4ed8",
+];
 
 // Shared hook for loading GeoJSON
 function useGeoData(url: string) {
@@ -253,12 +290,15 @@ const MapArgentina = ({
   xKey,
   yKey,
   yLabel,
+  colors,
 }: {
   chartData: any[];
   xKey: string;
   yKey: string;
   yLabel: string;
+  colors: string[];
 }) => {
+  const isMulticolor = colors === COLORS_MULTICOLOR;
   const geoData = useGeoData("/argentina-provinces.json");
   const [tooltip, setTooltip] = React.useState<{
     name: string;
@@ -300,7 +340,7 @@ const MapArgentina = ({
 
   const colorScale = scaleQuantile<string>()
     .domain(numericValues.length ? numericValues : [0])
-    .range(MAP_GRADIENT);
+    .range(isMulticolor ? MAP_GRADIENT_MULTI : MAP_GRADIENT);
 
   const matchProvince = (name1: string, name2: string) => {
     if (!name1 || !name2) return false;
@@ -329,7 +369,7 @@ const MapArgentina = ({
       x: e.clientX - (rect?.left ?? 0),
       y: e.clientY - (rect?.top ?? 0),
     });
-    setHoveredProvince(name);
+    setHoveredProvince(normalizeName(name));
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -446,7 +486,7 @@ const MapArgentina = ({
         <div className="flex flex-col items-start gap-1 absolute bottom-4 left-0 bg-background/80 p-2 rounded border text-[10px]">
           <span className="font-semibold mb-1">Escala ({yLabel})</span>
           <div className="flex h-3 w-32 rounded overflow-hidden mb-1">
-            {MAP_GRADIENT.map((c) => (
+            {(isMulticolor ? MAP_GRADIENT_MULTI : MAP_GRADIENT).map((c) => (
               <div key={c} style={{ background: c, flex: 1 }} />
             ))}
           </div>
@@ -458,7 +498,10 @@ const MapArgentina = ({
       </div>
 
       <div className="flex-1 w-full">
-        <ResponsiveContainer width="100%" height={Math.max(barData.length * 22 + 20, 300)}>
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(barData.length * 22 + 20, 300)}
+        >
           <BarChart
             layout="vertical"
             data={barData}
@@ -500,7 +543,11 @@ const MapArgentina = ({
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      isSantiago ? SANTIAGO_RED : colorScale(entry.displayValue)
+                      isSantiago
+                        ? SANTIAGO_RED
+                        : isMulticolor
+                          ? COLORS_MULTICOLOR[index % COLORS_MULTICOLOR.length]
+                          : colorScale(entry.displayValue)
                     }
                     fillOpacity={hoveredProvince ? (isHovered ? 1 : 0.4) : 1}
                     stroke={isHovered ? "#333" : "none"}
@@ -521,12 +568,15 @@ const MapSantiago = ({
   xKey,
   yKey,
   yLabel,
+  colors,
 }: {
   chartData: any[];
   xKey: string;
   yKey: string;
   yLabel: string;
+  colors: string[];
 }) => {
+  const isMulticolor = colors === COLORS_MULTICOLOR;
   const geoData = useGeoData("/santiago-del-estero-departamentos.json");
   const [tooltip, setTooltip] = React.useState<{
     name: string;
@@ -584,7 +634,7 @@ const MapSantiago = ({
 
   const colorScale = scaleQuantile<string>()
     .domain(numericValues.length ? numericValues : [0])
-    .range(MAP_GRADIENT);
+    .range(isMulticolor ? MAP_GRADIENT_MULTI : MAP_GRADIENT);
 
   const handleMouseEnter = (
     e: React.MouseEvent,
@@ -598,7 +648,7 @@ const MapSantiago = ({
       x: e.clientX - (rect?.left ?? 0),
       y: e.clientY - (rect?.top ?? 0),
     });
-    setHoveredDept(name);
+    setHoveredDept(normalizeName(name));
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -626,8 +676,7 @@ const MapSantiago = ({
                 .replace("%", ""),
             );
       const name = String(d[xKey] || "");
-      const shortName =
-        name.length > 14 ? name.substring(0, 12) + "…" : name;
+      const shortName = name.length > 14 ? name.substring(0, 12) + "…" : name;
       return { ...d, displayValue: val, name, shortName };
     })
     .filter((d) => !isNaN(d.displayValue))
@@ -669,7 +718,7 @@ const MapSantiago = ({
           {geoData.features.map((feature: any, i: number) => {
             const name = feature.properties?.nam || "";
             const value = getValue(name);
-            const isHovered = hoveredDept === name;
+            const isHovered = hoveredDept === normalizeName(name);
             const d = pathGen(feature as any);
             if (!d) return null;
             return (
@@ -694,7 +743,7 @@ const MapSantiago = ({
         <div className="flex flex-col items-start gap-1 absolute bottom-4 left-0 bg-background/80 p-2 rounded border text-[10px]">
           <span className="font-semibold mb-1">Escala ({yLabel})</span>
           <div className="flex h-3 w-32 rounded overflow-hidden mb-1">
-            {MAP_GRADIENT.map((c) => (
+            {(isMulticolor ? MAP_GRADIENT_MULTI : MAP_GRADIENT).map((c) => (
               <div key={c} style={{ background: c, flex: 1 }} />
             ))}
           </div>
@@ -706,7 +755,10 @@ const MapSantiago = ({
       </div>
 
       <div className="flex-1 w-full">
-        <ResponsiveContainer width="100%" height={Math.max(barData.length * 22 + 20, 300)}>
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(barData.length * 22 + 20, 300)}
+        >
           <BarChart
             layout="vertical"
             data={barData}
@@ -735,14 +787,20 @@ const MapSantiago = ({
               name={yLabel}
               radius={[0, 2, 2, 0]}
               barSize={13}
-              onMouseEnter={(data) => setHoveredDept(data.name || null)}
+              onMouseEnter={(data) =>
+                setHoveredDept(normalizeName(data.name || ""))
+              }
             >
               {barData.map((entry, index) => {
-                const isHovered = hoveredDept === entry.name;
+                const isHovered = hoveredDept === normalizeName(entry.name);
                 return (
                   <Cell
                     key={`cell-${index}`}
-                    fill={colorScale(entry.displayValue)}
+                    fill={
+                      isMulticolor
+                        ? COLORS_MULTICOLOR[index % COLORS_MULTICOLOR.length]
+                        : colorScale(entry.displayValue)
+                    }
                     fillOpacity={hoveredDept ? (isHovered ? 1 : 0.4) : 1}
                     stroke={isHovered ? "#333" : "none"}
                     strokeWidth={1}
@@ -818,7 +876,10 @@ export const ChartRenderer = ({
   switch (type) {
     case "bar_chart":
       return (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(chartData.length * 25, 300)}
+        >
           <BarChart layout="vertical" {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" vertical horizontal={false} />
             <XAxis type="number" />
@@ -838,8 +899,14 @@ export const ChartRenderer = ({
                   dataKey={yk}
                   name={getColumnHeader(yk)}
                   radius={[0, 4, 4, 0]}
-                  fill={colors[idx % colors.length]}
-                  barSize={20}
+                  fill={
+                    normalizeName(getColumnHeader(yk)).includes(
+                      "santiago del estero",
+                    )
+                      ? SANTIAGO_RED
+                      : colors[idx % colors.length]
+                  }
+                  barSize={15}
                 />
               ))
             ) : (
@@ -851,10 +918,10 @@ export const ChartRenderer = ({
                 barSize={20}
               >
                 {!secondaryKey &&
-                  chartData.map((_, index) => (
+                  chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={getItemColor(chartData[index][xKey], index, colors)}
+                      fill={getItemColor(entry[xKey], index, colors)}
                     />
                   ))}
               </Bar>
@@ -888,7 +955,13 @@ export const ChartRenderer = ({
                   dataKey={yk}
                   name={getColumnHeader(yk)}
                   radius={[4, 4, 0, 0]}
-                  fill={colors[idx % colors.length]}
+                  fill={
+                    normalizeName(getColumnHeader(yk)).includes(
+                      "santiago del estero",
+                    )
+                      ? SANTIAGO_RED
+                      : colors[idx % colors.length]
+                  }
                   barSize={20}
                 />
               ))
@@ -901,10 +974,10 @@ export const ChartRenderer = ({
                 barSize={20}
               >
                 {!secondaryKey &&
-                  chartData.map((_, index) => (
+                  chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={getItemColor(chartData[index][xKey], index, colors)}
+                      fill={getItemColor(entry[xKey], index, colors)}
                     />
                   ))}
               </Bar>
@@ -924,7 +997,10 @@ export const ChartRenderer = ({
 
     case "stacked_bar_chart":
       return (
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(chartData.length * 25, 300)}
+        >
           <BarChart layout="vertical" {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" vertical horizontal={false} />
             <XAxis type="number" />
@@ -937,25 +1013,123 @@ export const ChartRenderer = ({
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar
-              dataKey={yKey}
-              name={yLabel}
-              stackId="a"
-              fill={getItemColor(yLabel, 0, colors)}
-              barSize={20}
-            />
-            {secondaryKey && (
-              <Bar
-                dataKey={secondaryKey}
-                name={getColumnHeader(secondaryKey)}
-                stackId="a"
-                fill={getItemColor(getColumnHeader(secondaryKey), 1, colors)}
-                barSize={20}
-              />
+            {hasMultipleYKeys ? (
+              yKeys.map((yk, idx) => (
+                <Bar
+                  key={yk}
+                  dataKey={yk}
+                  name={getColumnHeader(yk)}
+                  stackId="a"
+                  fill={
+                    normalizeName(getColumnHeader(yk)).includes(
+                      "santiago del estero",
+                    )
+                      ? SANTIAGO_RED
+                      : colors[idx % colors.length]
+                  }
+                  barSize={20}
+                />
+              ))
+            ) : (
+              <>
+                <Bar
+                  dataKey={yKey}
+                  name={yLabel}
+                  stackId="a"
+                  fill={getItemColor(yLabel, 0, colors)}
+                  barSize={20}
+                />
+                {secondaryKey && (
+                  <Bar
+                    dataKey={secondaryKey}
+                    name={getColumnHeader(secondaryKey)}
+                    stackId="a"
+                    fill={getItemColor(
+                      getColumnHeader(secondaryKey),
+                      1,
+                      colors,
+                    )}
+                    barSize={20}
+                  />
+                )}
+              </>
             )}
           </BarChart>
         </ResponsiveContainer>
       );
+
+    case "tornado_chart": {
+      const yKey1 = yKey;
+      const yKey2 = yKeys[1] || secondaryKey;
+      if (!yKey2) {
+        return (
+          <div className="p-8 text-center bg-muted/20 border-2 border-dashed rounded-lg italic text-muted-foreground">
+            El gráfico tornado requiere al menos dos métricas (ej. Santiago y
+            Argentina)
+          </div>
+        );
+      }
+
+      const tornadoData = chartData.map((d) => ({
+        ...d,
+        leftValue: -Math.abs(d[yKey1] || 0),
+        rightValue: Math.abs(d[yKey2] || 0),
+      }));
+
+      const labelLeft = getColumnHeader(yKey1);
+      const labelRight = getColumnHeader(yKey2);
+
+      return (
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(chartData.length * 30, 400)}
+        >
+          <BarChart
+            data={tornadoData}
+            layout="vertical"
+            stackOffset="sign"
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            <XAxis type="number" hide />
+            <YAxis
+              dataKey={xKey}
+              type="category"
+              width={120}
+              tick={{ fontSize: 10 }}
+            />
+            <Tooltip
+              content={<CustomTooltip />}
+              formatter={(value: any, name: any) => [
+                Math.abs(Number(value) || 0),
+                name,
+              ]}
+            />
+            <Legend />
+            <Bar
+              dataKey="leftValue"
+              name={labelLeft}
+              fill={
+                normalizeName(labelLeft).includes("santiago del estero")
+                  ? SANTIAGO_RED
+                  : colors[0]
+              }
+              stackId="stack"
+            />
+            <Bar
+              dataKey="rightValue"
+              name={labelRight}
+              fill={
+                normalizeName(labelRight).includes("santiago del estero")
+                  ? SANTIAGO_RED
+                  : colors[1] || "#2563eb"
+              }
+              stackId="stack"
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
 
     case "pie_chart":
     case "donut_chart": {
@@ -969,8 +1143,8 @@ export const ChartRenderer = ({
               nameKey={xKey}
               cx="50%"
               cy="50%"
-              innerRadius={isDonut ? 40 : 0}
-              outerRadius={70}
+              innerRadius={isDonut ? 70 : 0}
+              outerRadius={100}
               fill="#8884d8"
               label={({ name, percent }: any) =>
                 `${name || ""} ${((percent || 0) * 100).toFixed(0)}%`
@@ -985,10 +1159,74 @@ export const ChartRenderer = ({
               ))}
             </Pie>
             <Tooltip />
+            <Legend />
           </PieChart>
         </ResponsiveContainer>
       );
     }
+
+    case "radar_chart":
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+            <PolarGrid stroke="#e2e8f0" />
+            <PolarAngleAxis
+              dataKey={xKey}
+              tick={{ fontSize: 10, fill: "#64748b" }}
+            />
+            <PolarRadiusAxis />
+            {hasMultipleYKeys ? (
+              yKeys.map((yk, idx) => (
+                <Radar
+                  key={yk}
+                  name={getColumnHeader(yk)}
+                  dataKey={yk}
+                  stroke={
+                    normalizeName(getColumnHeader(yk)).includes(
+                      "santiago del estero",
+                    )
+                      ? SANTIAGO_RED
+                      : colors[idx % colors.length]
+                  }
+                  fill={
+                    normalizeName(getColumnHeader(yk)).includes(
+                      "santiago del estero",
+                    )
+                      ? SANTIAGO_RED
+                      : colors[idx % colors.length]
+                  }
+                  fillOpacity={0.4}
+                />
+              ))
+            ) : (
+              <Radar
+                name={yLabel}
+                dataKey={yKey}
+                stroke={SANTIAGO_RED}
+                fill={SANTIAGO_RED}
+                fillOpacity={0.6}
+              />
+            )}
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+          </RadarChart>
+        </ResponsiveContainer>
+      );
+
+    case "treemap_chart":
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <Treemap
+            data={chartData}
+            dataKey={yKey}
+            nameKey={xKey}
+            stroke="#fff"
+            fill={colors[0]}
+          >
+            <Tooltip />
+          </Treemap>
+        </ResponsiveContainer>
+      );
 
     case "line_chart":
       return (
@@ -998,18 +1236,40 @@ export const ChartRenderer = ({
             <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
             <YAxis />
             <Tooltip content={<CustomTooltip />} />
-            {secondaryKey && <Legend />}
-            <Line
-              type="monotone"
-              dataKey={yKey}
-              name={yLabel}
-              stroke={getItemColor(yLabel, 0, colors)}
-              strokeWidth={2}
-              activeDot={{ r: 8 }}
-            />
-            {secondaryKey && (
+            <Legend />
+            {hasMultipleYKeys ? (
+              yKeys.map((yk, idx) => {
+                const label = getColumnHeader(yk);
+                const isSantiago = normalizeName(label).includes(
+                  "santiago del estero",
+                );
+                return (
+                  <Line
+                    key={yk}
+                    type={idx === 0 ? "monotone" : "linear"}
+                    dataKey={yk}
+                    name={label}
+                    stroke={
+                      isSantiago ? SANTIAGO_RED : colors[idx % colors.length]
+                    }
+                    strokeWidth={isSantiago ? 3 : 2}
+                    activeDot={{ r: 8 }}
+                  />
+                );
+              })
+            ) : (
               <Line
                 type="monotone"
+                dataKey={yKey}
+                name={yLabel}
+                stroke={getItemColor(yLabel, 0, colors)}
+                strokeWidth={2}
+                activeDot={{ r: 8 }}
+              />
+            )}
+            {secondaryKey && !hasMultipleYKeys && (
+              <Line
+                type="linear"
                 dataKey={secondaryKey}
                 name={getColumnHeader(secondaryKey)}
                 stroke={getItemColor(getColumnHeader(secondaryKey), 1, colors)}
@@ -1029,18 +1289,42 @@ export const ChartRenderer = ({
             <XAxis dataKey={xKey} tick={{ fontSize: 12 }} />
             <YAxis />
             <Tooltip content={<CustomTooltip />} />
-            {secondaryKey && <Legend />}
-            <Area
-              type="monotone"
-              dataKey={yKey}
-              name={yLabel}
-              stroke={getItemColor(yLabel, 0, colors)}
-              fill={getItemColor(yLabel, 0, colors)}
-              fillOpacity={0.3}
-            />
-            {secondaryKey && (
+            <Legend />
+            {hasMultipleYKeys ? (
+              yKeys.map((yk, idx) => {
+                const label = getColumnHeader(yk);
+                const isSantiago = normalizeName(label).includes(
+                  "santiago del estero",
+                );
+                return (
+                  <Area
+                    key={yk}
+                    type={idx === 0 ? "monotone" : "linear"}
+                    dataKey={yk}
+                    name={label}
+                    stroke={
+                      isSantiago ? SANTIAGO_RED : colors[idx % colors.length]
+                    }
+                    fill={
+                      isSantiago ? SANTIAGO_RED : colors[idx % colors.length]
+                    }
+                    fillOpacity={0.3}
+                  />
+                );
+              })
+            ) : (
               <Area
                 type="monotone"
+                dataKey={yKey}
+                name={yLabel}
+                stroke={getItemColor(yLabel, 0, colors)}
+                fill={getItemColor(yLabel, 0, colors)}
+                fillOpacity={0.3}
+              />
+            )}
+            {secondaryKey && !hasMultipleYKeys && (
+              <Area
+                type="linear"
                 dataKey={secondaryKey}
                 name={getColumnHeader(secondaryKey)}
                 stroke={getItemColor(getColumnHeader(secondaryKey), 1, colors)}
@@ -1058,9 +1342,21 @@ export const ChartRenderer = ({
       const xCol = columns.find((c: any) => c.id === xKey);
       const xHeaderNorm = normalizeName(xCol?.header || "");
       const SDE_DEPT_ONLY = [
-        "figueroa", "salavina", "atamisqui", "silipica", "jimenez",
-        "loreto", "guasayan", "quebrachos", "aguirre", "choya", "alberdi",
-        "avellaneda", "pellegrini", "mitre", "copo",
+        "figueroa",
+        "salavina",
+        "atamisqui",
+        "silipica",
+        "jimenez",
+        "loreto",
+        "guasayan",
+        "quebrachos",
+        "aguirre",
+        "choya",
+        "alberdi",
+        "avellaneda",
+        "pellegrini",
+        "mitre",
+        "copo",
       ];
       const isDeptos =
         xHeaderNorm.includes("departamento") ||
@@ -1075,6 +1371,7 @@ export const ChartRenderer = ({
             xKey={xKey}
             yKey={yKey}
             yLabel={getColumnHeader(yKey)}
+            colors={colors}
           />
         );
       }
@@ -1084,6 +1381,7 @@ export const ChartRenderer = ({
           xKey={xKey}
           yKey={yKey}
           yLabel={getColumnHeader(yKey)}
+          colors={colors}
         />
       );
     }
@@ -1095,6 +1393,7 @@ export const ChartRenderer = ({
           xKey={xKey}
           yKey={yKey}
           yLabel={getColumnHeader(yKey)}
+          colors={colors}
         />
       );
 
@@ -1106,6 +1405,7 @@ export const ChartRenderer = ({
           xKey={xKey}
           yKey={yKey}
           yLabel={getColumnHeader(yKey)}
+          colors={colors}
         />
       );
 

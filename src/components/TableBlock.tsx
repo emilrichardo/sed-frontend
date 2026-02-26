@@ -184,7 +184,9 @@ const CHART_CATALOG: ChartTypeDef[] = [
 ];
 
 function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
-  const numericCount = columns.filter((c) => isNumericColumn(c.id, rows)).length;
+  const numericCount = columns.filter((c) =>
+    isNumericColumn(c.id, rows),
+  ).length;
   const stringCount = columns.length - numericCount;
   const rowCount = rows.length;
 
@@ -194,7 +196,8 @@ function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
       if (maxNumeric !== undefined && numericCount > maxNumeric) return false;
       if (rowCount < minRows) return false;
       if (maxRows !== undefined && rowCount > maxRows) return false;
-      if (minStringCols !== undefined && stringCount < minStringCols) return false;
+      if (minStringCols !== undefined && stringCount < minStringCols)
+        return false;
       return true;
     },
   ).map((ct) => ct.id);
@@ -204,8 +207,15 @@ function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
   if (firstCol && rows.length > 0) {
     const headerNorm = (firstCol.header || "")
       .toLowerCase()
-      .replace(/[áéíóú]/g, (c: string) =>
-        ({ á: "a", é: "e", í: "i", ó: "o", ú: "u" } as Record<string, string>)[c] || c
+      .replace(
+        /[áéíóú]/g,
+        (c: string) =>
+          (
+            ({ á: "a", é: "e", í: "i", ó: "o", ú: "u" }) as Record<
+              string,
+              string
+            >
+          )[c] || c,
       );
 
     const hasDeptHeader = headerNorm.includes("departamento");
@@ -222,7 +232,8 @@ function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
       const firstColValues = rows
         .map((row) => {
           if (row.cells && Array.isArray(row.cells)) {
-            return row.cells.find((c: any) => c.columnId === firstCol.id)?.value;
+            return row.cells.find((c: any) => c.columnId === firstCol.id)
+              ?.value;
           }
           return row[firstCol.id];
         })
@@ -230,22 +241,49 @@ function getCompatibleChartTypes(columns: any[], rows: any[]): string[] {
         .map((v: any) => String(v).toLowerCase());
 
       const SDE_DEPT_KEYWORDS = [
-        "figueroa", "salavina", "atamisqui", "silipica", "jimenez",
-        "loreto", "guasayan", "quebrachos", "aguirre", "choya", "alberdi",
-        "avellaneda", "pellegrini", "mitre", "copo",
+        "figueroa",
+        "salavina",
+        "atamisqui",
+        "silipica",
+        "jimenez",
+        "loreto",
+        "guasayan",
+        "quebrachos",
+        "aguirre",
+        "choya",
+        "alberdi",
+        "avellaneda",
+        "pellegrini",
+        "mitre",
+        "copo",
       ];
       const AR_PROVINCE_KEYWORDS = [
-        "cordoba", "mendoza", "tucuman", "chaco", "corrientes", "misiones",
-        "entre rios", "jujuy", "neuquen", "rio negro", "chubut", "formosa",
-        "la pampa", "la rioja", "catamarca", "san juan", "san luis",
-        "santa cruz", "tierra del fuego",
+        "cordoba",
+        "mendoza",
+        "tucuman",
+        "chaco",
+        "corrientes",
+        "misiones",
+        "entre rios",
+        "jujuy",
+        "neuquen",
+        "rio negro",
+        "chubut",
+        "formosa",
+        "la pampa",
+        "la rioja",
+        "catamarca",
+        "san juan",
+        "san luis",
+        "santa cruz",
+        "tierra del fuego",
       ];
 
       const hasDeptValues = firstColValues.some((v: string) =>
-        SDE_DEPT_KEYWORDS.some((k) => v.includes(k))
+        SDE_DEPT_KEYWORDS.some((k) => v.includes(k)),
       );
       const hasProvinceValues = firstColValues.some((v: string) =>
-        AR_PROVINCE_KEYWORDS.some((k) => v.includes(k))
+        AR_PROVINCE_KEYWORDS.some((k) => v.includes(k)),
       );
 
       if (hasDeptValues || hasProvinceValues) {
@@ -287,7 +325,16 @@ export const TableBlock = ({
     "visualizacion",
   );
 
-  let { title, columns, rows, source_type, tabla_relacionada } = fields;
+  const {
+    title: fieldTitle,
+    columns: fieldCols,
+    rows: fieldRows,
+    source_type,
+    tabla_relacionada,
+  } = fields;
+  let title = fieldTitle;
+  let columns = fieldCols;
+  let rows = fieldRows;
 
   if (source_type === "collection" && tabla_relacionada?.data) {
     const relatedData = tabla_relacionada.data;
@@ -310,10 +357,11 @@ export const TableBlock = ({
   }, [columns, rows]);
 
   // Chart type switcher
-  const allChartTypeIds = useMemo(() => 
-    CHART_CATALOG.filter((ct) => ct.id !== "table").map((ct) => ct.id),
-  []);
-  
+  const allChartTypeIds = useMemo(
+    () => CHART_CATALOG.filter((ct) => ct.id !== "table").map((ct) => ct.id),
+    [],
+  );
+
   const compatibleTypes = useMemo(
     () => getCompatibleChartTypes(columns, rows),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -330,49 +378,52 @@ export const TableBlock = ({
     map_santiago_del_estero: "choropleth_map",
   };
   const resolvedVisualizationType = fields.tipo_visualizacion
-    ? (CHART_TYPE_ALIASES[fields.tipo_visualizacion] ?? fields.tipo_visualizacion)
+    ? (CHART_TYPE_ALIASES[fields.tipo_visualizacion] ??
+      fields.tipo_visualizacion)
     : undefined;
 
   const defaultChartType =
-    resolvedVisualizationType && allChartTypeIds.includes(resolvedVisualizationType)
+    resolvedVisualizationType &&
+    allChartTypeIds.includes(resolvedVisualizationType)
       ? resolvedVisualizationType
       : availableTypes.includes("column_chart")
         ? "column_chart"
-        : availableTypes[0] ?? "bar_chart";
+        : (availableTypes[0] ?? "bar_chart");
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
-  
+
   // State for selected metric (numeric column)
-  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(
+    numericColumns.length > 1 ? "general" : null,
+  );
+
   // Set default metric when numeric columns change
   useMemo(() => {
-    if (numericColumns.length > 0 && !selectedMetric) {
+    if (numericColumns.length > 1 && !selectedMetric) {
+      setSelectedMetric("general");
+    } else if (numericColumns.length === 1 && !selectedMetric) {
       setSelectedMetric(numericColumns[0].id);
     }
   }, [numericColumns, selectedMetric]);
 
   // Build config with selected metric
   const chartConfig = useMemo(() => {
-    if (!selectedMetric || numericColumns.length <= 1) {
-      return fields.configuracion_visualizacion;
-    }
-    
-    // For grouped bar charts, pass all numeric columns
-    const isGroupedChart = selectedChartType === "column_chart" || selectedChartType === "bar_chart";
-    if (isGroupedChart && numericColumns.length > 1) {
+    if (selectedMetric === "general" && numericColumns.length > 1) {
       return {
         ...fields.configuracion_visualizacion,
         eje_valores: numericColumns.map((col: any) => col.id).join(","),
-        colores: "default",
       };
     }
-    
+
+    if (!selectedMetric) {
+      return fields.configuracion_visualizacion;
+    }
+
     return {
       ...fields.configuracion_visualizacion,
       eje_valores: selectedMetric,
     };
-  }, [selectedMetric, numericColumns.length, fields.configuracion_visualizacion, selectedChartType]);
+  }, [selectedMetric, numericColumns, fields.configuracion_visualizacion]);
 
   // JSON display payload
   const jsonDisplay = {
@@ -395,7 +446,8 @@ export const TableBlock = ({
       : {}),
   };
 
-  const showChart = activeTab === "visualizacion" && selectedChartType !== "table";
+  const showChart =
+    activeTab === "visualizacion" && selectedChartType !== "table";
 
   return (
     <div className="my-8 border rounded-lg shadow-sm bg-background">
@@ -462,24 +514,38 @@ export const TableBlock = ({
       )}
 
       {/* Metric selector tabs - when multiple numeric columns exist */}
-      {activeTab === "visualizacion" && showChart && numericColumns.length > 1 && (
-        <div className="flex items-center gap-0.5 px-3 py-2 bg-muted/10 border-b overflow-x-auto">
-          <span className="text-xs text-muted-foreground mr-2 whitespace-nowrap">Mostrar:</span>
-          {numericColumns.map((col: any) => (
+      {activeTab === "visualizacion" &&
+        showChart &&
+        numericColumns.length > 1 && (
+          <div className="flex items-center gap-0.5 px-3 py-2 bg-muted/10 border-b overflow-x-auto">
+            <span className="text-xs text-muted-foreground mr-2 whitespace-nowrap">
+              Mostrar:
+            </span>
             <button
-              key={col.id}
-              onClick={() => setSelectedMetric(col.id)}
+              onClick={() => setSelectedMetric("general")}
               className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap transition-all ${
-                selectedMetric === col.id
+                selectedMetric === "general"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
-              {col.header}
+              General (Comparar)
             </button>
-          ))}
-        </div>
-      )}
+            {numericColumns.map((col: any) => (
+              <button
+                key={col.id}
+                onClick={() => setSelectedMetric(col.id)}
+                className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap transition-all ${
+                  selectedMetric === col.id
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {col.header}
+              </button>
+            ))}
+          </div>
+        )}
 
       {activeTab === "json" ? (
         <div className="p-0">
@@ -568,7 +634,9 @@ export const TableBlock = ({
                   <span className="font-semibold block sm:inline mr-1">
                     Actualizado:
                   </span>
-                  {new Date(tabla_relacionada.actualizacion).toLocaleDateString()}
+                  {new Date(
+                    tabla_relacionada.actualizacion,
+                  ).toLocaleDateString()}
                 </div>
               )}
             </div>
