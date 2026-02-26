@@ -340,10 +340,15 @@ export const TableBlock = ({
     tabla_relacionada,
     fuente: fieldFuente,
     notas: fieldNotas,
+    nota: fieldNota,
   } = fields;
   let title = fieldTitle;
   let fuente = fieldFuente || tabla_relacionada?.fuente;
-  let notas = fieldNotas || tabla_relacionada?.notas || tabla_relacionada?.nota;
+  let notas =
+    fieldNotas ||
+    fieldNota ||
+    tabla_relacionada?.notas ||
+    tabla_relacionada?.nota;
   let columns = fieldCols;
   let rows = fieldRows;
 

@@ -31,7 +31,7 @@ import { geoMercator, geoPath } from "d3-geo";
 const COLORS_DEFAULT = [
   "#c95b4a",
   "#161616ff",
-  "#383838ff",
+  "#4d4a4aff",
   "#7c897aff",
   "#575f77ff",
   "#9333ea",
