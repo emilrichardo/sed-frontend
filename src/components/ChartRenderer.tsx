@@ -527,18 +527,13 @@ const MapArgentina = ({
                 const isHovered = hoveredProvince
                   ? matchProvince(entry.name, hoveredProvince)
                   : false;
-                const isSantiago = normalizeName(entry.name).includes(
-                  "santiago del estero",
-                );
                 return (
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      isSantiago
-                        ? SANTIAGO_RED
-                        : isMulticolor
-                          ? COLORS_MULTICOLOR[index % COLORS_MULTICOLOR.length]
-                          : colorScale(entry.displayValue)
+                      isMulticolor
+                        ? COLORS_MULTICOLOR[index % COLORS_MULTICOLOR.length]
+                        : colorScale(entry.displayValue)
                     }
                     fillOpacity={hoveredProvince ? (isHovered ? 1 : 0.4) : 1}
                     stroke={isHovered ? "#333" : "none"}

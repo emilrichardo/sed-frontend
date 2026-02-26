@@ -390,12 +390,21 @@ export const TableBlock = ({
   if (!notas && extractedNotas) notas = extractedNotas;
   if (!fuente && extractedFuente) fuente = extractedFuente;
 
-  // Detect numeric columns for metric selection
+  // Determine X-axis column (excluded from metric selection)
+  const xAxisColId =
+    columns.find(
+      (col: any) =>
+        col.header === fields.configuracion_visualizacion?.eje_principal ||
+        col.id === fields.configuracion_visualizacion?.eje_principal,
+    )?.id ?? columns[0]?.id;
+
+  // Detect numeric columns for metric selection (excluding X axis column)
   const numericColumns = useMemo(() => {
-    return columns.filter((col: { id: string }) =>
-      isNumericColumn(col.id, filteredRows),
+    return columns.filter(
+      (col: { id: string }) =>
+        col.id !== xAxisColId && isNumericColumn(col.id, filteredRows),
     );
-  }, [columns, filteredRows]);
+  }, [columns, filteredRows, xAxisColId]);
 
   // Chart type switcher
   const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
