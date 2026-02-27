@@ -682,19 +682,35 @@ export const TableBlock = ({
     if (selectedMetric === "general" && numericColumns.length > 1) {
       return {
         ...fields.configuracion_visualizacion,
-        eje_valores: numericColumns.map((col: any) => col.id).join(","),
+        eje_valores: numericColumns
+          .map((col: { id: string }) => col.id)
+          .join(","),
+        fuentes: fuente,
+        notas: notas,
       };
     }
 
     if (!selectedMetric) {
-      return fields.configuracion_visualizacion;
+      return {
+        ...fields.configuracion_visualizacion,
+        fuentes: fuente,
+        notas: notas,
+      };
     }
 
     return {
       ...fields.configuracion_visualizacion,
       eje_valores: selectedMetric,
+      fuentes: fuente,
+      notas: notas,
     };
-  }, [selectedMetric, numericColumns, fields.configuracion_visualizacion]);
+  }, [
+    selectedMetric,
+    numericColumns,
+    fields.configuracion_visualizacion,
+    fuente,
+    notas,
+  ]);
 
   // JSON display payload
   const jsonDisplay = {
