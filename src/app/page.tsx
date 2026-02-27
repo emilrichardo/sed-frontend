@@ -31,7 +31,7 @@ export default async function Home() {
 
         <div className="relative z-10 max-w-[1440px] mx-auto text-center">
           <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary-foreground/60 mb-6">
-            Gobierno de Santiago del Estero
+            Santiago en Datos
           </p>
           <h1 className="text-[clamp(3rem,10vw,8rem)] font-heading font-bold leading-[0.9] tracking-tight">
             Santiago

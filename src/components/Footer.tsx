@@ -164,9 +164,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             Desarrollado con precisión técnica para{" "}
-            <span className="font-bold text-foreground">
-              Gobierno de Santiago
-            </span>
+            <span className="font-bold text-foreground">Santiago en Datos</span>
           </div>
         </div>
       </div>
