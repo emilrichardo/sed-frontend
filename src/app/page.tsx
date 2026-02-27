@@ -1,5 +1,7 @@
 import { getBulletins, getReports, getCategories } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
+import { PublicationTableSlider } from "@/components/PublicationTableSlider";
+import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
 
 import Link from "next/link";
 import { FileText, ArrowRight, BookOpen, ArrowUpRight } from "lucide-react";
@@ -36,7 +38,10 @@ export default async function Home() {
 
       {/* ── Categories list ── */}
       {rootCategories.length > 0 && (
-        <nav className="-mx-4 md:-mx-8 border-b border-border" aria-label="Categorías principales">
+        <nav
+          className="-mx-4 md:-mx-8 border-b border-border"
+          aria-label="Categorías principales"
+        >
           {rootCategories.map((cat) => (
             <Link
               key={cat.id}
@@ -126,7 +131,9 @@ export default async function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {reports.docs.map((item) => {
-              const contenido = item.contenido as { root?: { children?: any[] } };
+              const contenido = item.contenido as {
+                root?: { children?: Array<{ children?: { text?: string }[] }> };
+              };
 
               let description = "Sin descripción";
               if (contenido?.root?.children) {
@@ -134,12 +141,17 @@ export default async function Home() {
                   (child: { children?: { text?: string }[] }) =>
                     child.children &&
                     child.children.length > 0 &&
-                    child.children[0].text,
+                    child.children[0]?.text,
                 );
                 if (firstTextNode) {
                   description = firstTextNode.children![0].text!;
                 }
               }
+
+              const showChart = shouldShowChart(item);
+              const tablaBlocks = showChart
+                ? extractAllTablaBlocks(item.contenido)
+                : [];
 
               return (
                 <Card
@@ -148,8 +160,19 @@ export default async function Home() {
                   description={description}
                   date={item.createdAt}
                   href={`/publicaciones/${item.slug}`}
-                  imageUrl={item.imagen_destacada?.url}
+                  imageUrl={
+                    tablaBlocks.length > 0
+                      ? undefined
+                      : item.imagen_destacada?.url
+                  }
                   imageAlt={item.imagen_destacada?.alt}
+                  chartPreview={
+                    tablaBlocks.length > 0 ? (
+                      <div className="w-full h-full relative">
+                        <PublicationTableSlider blocks={tablaBlocks} />
+                      </div>
+                    ) : undefined
+                  }
                 />
               );
             })}

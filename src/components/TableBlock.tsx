@@ -82,53 +82,252 @@ type ChartTypeDef = {
 // - box_plot → niche statistical use, hidden from toolbar
 const CHART_CATALOG: ChartTypeDef[] = [
   { id: "table", label: "Tabla", Icon: TableIcon, minNumeric: 0, minRows: 1 },
-  { id: "advanced_table", label: "Tabla avanzada", Icon: TableProperties, minNumeric: 0, minRows: 1 },
-  { id: "column_chart", label: "Columnas", Icon: ChartBar, minNumeric: 1, minRows: 1 },
-  { id: "bar_chart", label: "Barras horizontales", Icon: BarChartHorizontal, minNumeric: 1, minRows: 1 },
-  { id: "stacked_bar_chart", label: "Barras apiladas", Icon: ChartBarStacked, minNumeric: 2, minRows: 1 },
-  { id: "line_chart", label: "Líneas", Icon: ChartLine, minNumeric: 1, minRows: 2 },
-  { id: "area_chart", label: "Área", Icon: ChartArea, minNumeric: 1, minRows: 2 },
-  { id: "composed_chart", label: "Combinado (barra+línea)", Icon: Waves, minNumeric: 2, minRows: 1 },
-  { id: "pie_chart", label: "Torta", Icon: ChartPie, minNumeric: 1, maxNumeric: 1, minRows: 2, maxRows: 12 },
-  { id: "donut_chart", label: "Dona", Icon: Disc2, minNumeric: 1, maxNumeric: 1, minRows: 2, maxRows: 12 },
-  { id: "treemap_plotly", label: "Treemap", Icon: Grid2x2, minNumeric: 1, maxNumeric: 1, minRows: 2 },
-  { id: "sunburst_chart", label: "Sunburst", Icon: Sun, minNumeric: 1, maxNumeric: 1, minRows: 2 },
-  { id: "funnel_chart", label: "Embudo", Icon: TrendingUp, minNumeric: 1, maxNumeric: 1, minRows: 2 },
-  { id: "waterfall_chart", label: "Cascada", Icon: ChartBarDecreasing, minNumeric: 1, maxNumeric: 1, minRows: 2 },
-  { id: "radar_chart", label: "Radar", Icon: Hexagon, minNumeric: 1, minRows: 3 },
-  { id: "radial_bar_chart", label: "Barras radiales", Icon: Pointer, minNumeric: 1, minRows: 2 },
-  { id: "tornado_chart", label: "Tornado", Icon: ArrowLeftRight, minNumeric: 2, maxNumeric: 2, minRows: 1 },
-  { id: "scatter_chart", label: "Dispersión", Icon: CircleDot, minNumeric: 2, minRows: 3 },
-  { id: "bubble_plotly", label: "Burbujas", Icon: CircleDot, minNumeric: 2, minRows: 3 },
-  { id: "heatmap_chart", label: "Mapa de calor", Icon: Flame, minNumeric: 2, minRows: 2 },
-  { id: "sankey_chart", label: "Sankey", Icon: ChartNetwork, minNumeric: 1, maxNumeric: 1, minRows: 2, minStringCols: 2 },
+  {
+    id: "advanced_table",
+    label: "Tabla avanzada",
+    Icon: TableProperties,
+    minNumeric: 0,
+    minRows: 1,
+  },
+  {
+    id: "column_chart",
+    label: "Columnas",
+    Icon: ChartBar,
+    minNumeric: 1,
+    minRows: 1,
+  },
+  {
+    id: "bar_chart",
+    label: "Barras horizontales",
+    Icon: BarChartHorizontal,
+    minNumeric: 1,
+    minRows: 1,
+  },
+  {
+    id: "stacked_bar_chart",
+    label: "Barras apiladas",
+    Icon: ChartBarStacked,
+    minNumeric: 2,
+    minRows: 1,
+  },
+  {
+    id: "line_chart",
+    label: "Líneas",
+    Icon: ChartLine,
+    minNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "area_chart",
+    label: "Área",
+    Icon: ChartArea,
+    minNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "composed_chart",
+    label: "Combinado (barra+línea)",
+    Icon: Waves,
+    minNumeric: 2,
+    minRows: 1,
+  },
+  {
+    id: "pie_chart",
+    label: "Torta",
+    Icon: ChartPie,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 2,
+    maxRows: 12,
+  },
+  {
+    id: "donut_chart",
+    label: "Dona",
+    Icon: Disc2,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 2,
+    maxRows: 12,
+  },
+  {
+    id: "treemap_plotly",
+    label: "Treemap",
+    Icon: Grid2x2,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "sunburst_chart",
+    label: "Sunburst",
+    Icon: Sun,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "funnel_chart",
+    label: "Embudo",
+    Icon: TrendingUp,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "waterfall_chart",
+    label: "Cascada",
+    Icon: ChartBarDecreasing,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "radar_chart",
+    label: "Radar",
+    Icon: Hexagon,
+    minNumeric: 1,
+    minRows: 3,
+  },
+  {
+    id: "radial_bar_chart",
+    label: "Barras radiales",
+    Icon: Pointer,
+    minNumeric: 1,
+    minRows: 2,
+  },
+  {
+    id: "tornado_chart",
+    label: "Tornado",
+    Icon: ArrowLeftRight,
+    minNumeric: 2,
+    maxNumeric: 2,
+    minRows: 1,
+  },
+  {
+    id: "scatter_chart",
+    label: "Dispersión",
+    Icon: CircleDot,
+    minNumeric: 2,
+    minRows: 3,
+  },
+  {
+    id: "bubble_plotly",
+    label: "Burbujas",
+    Icon: CircleDot,
+    minNumeric: 2,
+    minRows: 3,
+  },
+  {
+    id: "heatmap_chart",
+    label: "Mapa de calor",
+    Icon: Flame,
+    minNumeric: 2,
+    minRows: 2,
+  },
+  {
+    id: "sankey_chart",
+    label: "Sankey",
+    Icon: ChartNetwork,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 2,
+    minStringCols: 2,
+  },
   // choropleth_map: no maxNumeric — the metric selector handles multi-column data (one metric shown at a time)
-  { id: "choropleth_map", label: "Mapa coroplético", Icon: Map, minNumeric: 1, minRows: 1 },
-  { id: "kpi_card", label: "KPI", Icon: Hash, minNumeric: 1, maxNumeric: 1, minRows: 1, maxRows: 5 },
-  { id: "gauge_chart", label: "Medidor", Icon: Gauge, minNumeric: 1, maxNumeric: 1, minRows: 1, maxRows: 1 },
+  {
+    id: "choropleth_map",
+    label: "Mapa coroplético",
+    Icon: Map,
+    minNumeric: 1,
+    minRows: 1,
+  },
+  {
+    id: "kpi_card",
+    label: "KPI",
+    Icon: Hash,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 1,
+    maxRows: 5,
+  },
+  {
+    id: "gauge_chart",
+    label: "Medidor",
+    Icon: Gauge,
+    minNumeric: 1,
+    maxNumeric: 1,
+    minRows: 1,
+    maxRows: 1,
+  },
 ];
 
 const SDE_DEPT_KEYWORDS = [
-  "figueroa","salavina","atamisqui","silipica","jimenez","loreto",
-  "guasayan","quebrachos","aguirre","choya","alberdi","avellaneda",
-  "pellegrini","mitre","copo",
+  "figueroa",
+  "salavina",
+  "atamisqui",
+  "silipica",
+  "jimenez",
+  "loreto",
+  "guasayan",
+  "quebrachos",
+  "aguirre",
+  "choya",
+  "alberdi",
+  "avellaneda",
+  "pellegrini",
+  "mitre",
+  "copo",
 ];
 const AR_PROVINCE_KEYWORDS = [
-  "cordoba","mendoza","tucuman","chaco","corrientes","misiones",
-  "entre rios","jujuy","neuquen","rio negro","chubut","formosa",
-  "la pampa","la rioja","catamarca","san juan","san luis",
-  "santa cruz","tierra del fuego","buenos aires","santa fe","salta",
-  "santiago del estero","neuquen","caba","capital federal",
-  "ciudad de buenos aires","ciudad autonoma",
+  "cordoba",
+  "mendoza",
+  "tucuman",
+  "chaco",
+  "corrientes",
+  "misiones",
+  "entre rios",
+  "jujuy",
+  "neuquen",
+  "rio negro",
+  "chubut",
+  "formosa",
+  "la pampa",
+  "la rioja",
+  "catamarca",
+  "san juan",
+  "san luis",
+  "santa cruz",
+  "tierra del fuego",
+  "buenos aires",
+  "santa fe",
+  "salta",
+  "santiago del estero",
+  "neuquen",
+  "caba",
+  "capital federal",
+  "ciudad de buenos aires",
+  "ciudad autonoma",
 ];
 
 function normStr(s: string): string {
-  return s.toLowerCase().replace(/[áéíóúñ]/g, (c) =>
-    ({ á: "a", é: "e", í: "i", ó: "o", ú: "u", ñ: "n" } as Record<string,string>)[c] || c
-  );
+  return s
+    .toLowerCase()
+    .replace(
+      /[áéíóúñ]/g,
+      (c) =>
+        (
+          ({ á: "a", é: "e", í: "i", ó: "o", ú: "u", ñ: "n" }) as Record<
+            string,
+            string
+          >
+        )[c] || c,
+    );
 }
 
-function detectGeoData(columns: { id: string; header?: string }[], rows: any[]): boolean {
+function detectGeoData(
+  columns: { id: string; header?: string }[],
+  rows: any[],
+): boolean {
   if (!columns[0] || rows.length === 0) return false;
   const firstCol = columns[0];
   const headerNorm = normStr(firstCol.header || "");
@@ -136,7 +335,8 @@ function detectGeoData(columns: { id: string; header?: string }[], rows: any[]):
     headerNorm.includes("departamento") ||
     headerNorm.includes("provincia") ||
     headerNorm.includes("jurisdiccion")
-  ) return true;
+  )
+    return true;
 
   const firstColValues = rows
     .map((row) => {
@@ -154,11 +354,20 @@ function detectGeoData(columns: { id: string; header?: string }[], rows: any[]):
   );
 }
 
-function detectTimeSeries(columns: { id: string; header?: string }[], rows: any[]): boolean {
+function detectTimeSeries(
+  columns: { id: string; header?: string }[],
+  rows: any[],
+): boolean {
   if (!columns[0] || rows.length < 2) return false;
   const firstCol = columns[0];
   const headerNorm = normStr(firstCol.header || "");
-  if (headerNorm.includes("año") || headerNorm.includes("anio") || headerNorm.includes("fecha") || headerNorm.includes("period")) return true;
+  if (
+    headerNorm.includes("año") ||
+    headerNorm.includes("anio") ||
+    headerNorm.includes("fecha") ||
+    headerNorm.includes("period")
+  )
+    return true;
   const values = rows.map((row) => {
     const v = row.cells
       ? row.cells.find((c: any) => c.columnId === firstCol.id)?.value
@@ -174,7 +383,9 @@ function getChartCompatibilityInfo(
   columns: { id: string; header?: string }[],
   rows: any[],
 ): { compatibleIds: Set<string>; recommendedId: string } {
-  const numericCount = columns.filter((c) => isNumericColumn(c.id, rows)).length;
+  const numericCount = columns.filter((c) =>
+    isNumericColumn(c.id, rows),
+  ).length;
   const stringCount = columns.length - numericCount;
   const rowCount = rows.length;
   const isGeo = detectGeoData(columns, rows);
@@ -182,14 +393,17 @@ function getChartCompatibilityInfo(
 
   // Base compatibility from catalog rules
   const compatibleIds = new Set<string>(
-    CHART_CATALOG.filter(({ minNumeric, maxNumeric, minRows, maxRows, minStringCols }) => {
-      if (numericCount < minNumeric) return false;
-      if (maxNumeric !== undefined && numericCount > maxNumeric) return false;
-      if (rowCount < minRows) return false;
-      if (maxRows !== undefined && rowCount > maxRows) return false;
-      if (minStringCols !== undefined && stringCount < minStringCols) return false;
-      return true;
-    }).map((ct) => ct.id),
+    CHART_CATALOG.filter(
+      ({ minNumeric, maxNumeric, minRows, maxRows, minStringCols }) => {
+        if (numericCount < minNumeric) return false;
+        if (maxNumeric !== undefined && numericCount > maxNumeric) return false;
+        if (rowCount < minRows) return false;
+        if (maxRows !== undefined && rowCount > maxRows) return false;
+        if (minStringCols !== undefined && stringCount < minStringCols)
+          return false;
+        return true;
+      },
+    ).map((ct) => ct.id),
   );
 
   // choropleth_map: ONLY compatible when geographic data is detected
@@ -226,7 +440,11 @@ function getChartCompatibilityInfo(
   } else if (numericCount === 1 && rowCount > 8) {
     // Many rows: horizontal bar is more readable
     recommendedId = "bar_chart";
-  } else if (numericCount === 1 && stringCount >= 2 && compatibleIds.has("sankey_chart")) {
+  } else if (
+    numericCount === 1 &&
+    stringCount >= 2 &&
+    compatibleIds.has("sankey_chart")
+  ) {
     recommendedId = "sankey_chart";
   } else {
     recommendedId = "column_chart";
@@ -244,6 +462,7 @@ function getChartCompatibilityInfo(
 
 export const TableBlock = ({
   fields,
+  isWidget = false,
 }: {
   fields: {
     id?: string;
@@ -265,6 +484,7 @@ export const TableBlock = ({
     };
     [key: string]: any;
   };
+  isWidget?: boolean;
 }) => {
   const [activeTab, setActiveTab] = useState<"visualizacion" | "json">(
     "visualizacion",
@@ -381,13 +601,15 @@ export const TableBlock = ({
     treemap_chart: "treemap_plotly",
   };
   const resolvedVisualizationType = fields.tipo_visualizacion
-    ? (CHART_TYPE_ALIASES[fields.tipo_visualizacion] ?? fields.tipo_visualizacion)
+    ? (CHART_TYPE_ALIASES[fields.tipo_visualizacion] ??
+      fields.tipo_visualizacion)
     : undefined;
 
   const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
 
   const defaultChartType =
-    resolvedVisualizationType && allChartTypeIds.includes(resolvedVisualizationType)
+    resolvedVisualizationType &&
+    allChartTypeIds.includes(resolvedVisualizationType)
       ? resolvedVisualizationType
       : compatibleIds.has(recommendedId)
         ? recommendedId
@@ -501,49 +723,57 @@ export const TableBlock = ({
     activeTab === "visualizacion" && selectedChartType !== "table";
 
   return (
-    <div className="my-8 border rounded-lg shadow-sm bg-background">
+    <div
+      className={
+        isWidget
+          ? "w-full h-full bg-background flex flex-col justify-center"
+          : "my-8 border rounded-lg shadow-sm bg-background"
+      }
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b">
-        <div className="flex items-center gap-2">
-          {activeTab === "visualizacion" ? (
-            <h4 className="font-bold text-sm uppercase tracking-wider">
-              {title || "Tabla"}
-            </h4>
-          ) : (
-            <span className="font-mono text-xs text-muted-foreground">
-              JSON Data
-            </span>
-          )}
-        </div>
+      {!isWidget && (
+        <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b">
+          <div className="flex items-center gap-2">
+            {activeTab === "visualizacion" ? (
+              <h4 className="font-bold text-sm uppercase tracking-wider">
+                {title || "Tabla"}
+              </h4>
+            ) : (
+              <span className="font-mono text-xs text-muted-foreground">
+                JSON Data
+              </span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
-          <button
-            onClick={() => setActiveTab("visualizacion")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
-              activeTab === "visualizacion"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-            }`}
-          >
-            <Eye className="h-3.5 w-3.5" />
-            Visualización
-          </button>
-          <button
-            onClick={() => setActiveTab("json")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
-              activeTab === "json"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-            }`}
-          >
-            <Code className="h-3.5 w-3.5" />
-            JSON
-          </button>
+          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
+            <button
+              onClick={() => setActiveTab("visualizacion")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+                activeTab === "visualizacion"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Visualización
+            </button>
+            <button
+              onClick={() => setActiveTab("json")}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+                activeTab === "json"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <Code className="h-3.5 w-3.5" />
+              JSON
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Chart type switcher */}
-      {activeTab === "visualizacion" && (
+      {!isWidget && activeTab === "visualizacion" && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 bg-muted/10 border-b flex-wrap">
           {CHART_CATALOG.map(({ id, label, Icon }) => {
             const isCompatible = compatibleIds.has(id);
@@ -578,7 +808,8 @@ export const TableBlock = ({
             <span className="w-2 h-2 bg-amber-400 rounded-full inline-block" />
             <span className="hidden sm:inline">Recomendado</span>
           </div>
-          {(selectedChartType === "table" || selectedChartType === "advanced_table") && (
+          {(selectedChartType === "table" ||
+            selectedChartType === "advanced_table") && (
             <div className="flex items-center gap-2 px-2 border-l ml-1">
               <button
                 onClick={() => setUseHeatmap(!useHeatmap)}
@@ -597,7 +828,8 @@ export const TableBlock = ({
       )}
 
       {/* Metric selector tabs - when multiple numeric columns exist */}
-      {activeTab === "visualizacion" &&
+      {!isWidget &&
+        activeTab === "visualizacion" &&
         showChart &&
         numericColumns.length > 1 && (
           <div className="flex items-center gap-0.5 px-3 py-2 bg-muted/10 border-b overflow-x-auto">
@@ -638,9 +870,9 @@ export const TableBlock = ({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full h-full flex-1">
             {showChart && (
-              <div className="p-4 bg-card border-b">
+              <div className={isWidget ? "p-4 h-full" : "p-4 bg-card border-b"}>
                 <ChartRenderer
                   type={selectedChartType}
                   config={chartConfig}
@@ -742,63 +974,6 @@ export const TableBlock = ({
               </table>
             )}
           </div>
-
-          {/* Footer Metadata */}
-          {(fields.tipo_visualizacion ||
-            fuente ||
-            notas ||
-            tabla_relacionada?.actualizacion) && (
-            <div className="bg-muted/10 px-4 py-3 border-t text-xs text-muted-foreground flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
-              <div className="flex flex-col gap-1">
-                {fields.tipo_visualizacion && (
-                  <div>
-                    <span className="font-semibold block sm:inline mr-1">
-                      Visualización:
-                    </span>
-                    <span className="capitalize text-muted-foreground/80">
-                      {fields.tipo_visualizacion.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                )}
-                {fuente && (
-                  <div>
-                    <span className="font-semibold block sm:inline mr-1">
-                      Fuente:
-                    </span>
-                    <span className="text-muted-foreground/80">
-                      {typeof fuente === "string"
-                        ? fuente
-                        : getTextFromNodes(fuente)}
-                    </span>
-                  </div>
-                )}
-                {notas && (
-                  <div>
-                    <span className="font-semibold block sm:inline mr-1">
-                      Nota:
-                    </span>
-                    <span className="italic text-muted-foreground/80">
-                      {typeof notas === "string"
-                        ? notas
-                        : getTextFromNodes(notas)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              {tabla_relacionada?.actualizacion && (
-                <div className="text-right whitespace-nowrap">
-                  <span className="font-semibold block sm:inline mr-1">
-                    Actualizado:
-                  </span>
-                  <span className="text-muted-foreground/80">
-                    {new Date(
-                      tabla_relacionada.actualizacion,
-                    ).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
         </>
       )}
     </div>

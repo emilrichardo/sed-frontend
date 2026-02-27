@@ -1,4 +1,11 @@
-import { getCategoryBySlug, getCategories, getPublicacionesByCategoria } from "@/lib/api";
+import {
+  getCategoryBySlug,
+  getCategories,
+  getPublicacionesByCategoria,
+} from "@/lib/api";
+import { Card } from "@/components/ui/Card";
+import { PublicationTableSlider } from "@/components/PublicationTableSlider";
+import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
@@ -10,7 +17,9 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Categoría no encontrada" };
@@ -85,7 +94,9 @@ export default async function CategoryPage({ params }: PageProps) {
         <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
           Publicaciones
           {publicaciones.totalDocs > 0 && (
-            <span className="ml-2 text-foreground">{publicaciones.totalDocs}</span>
+            <span className="ml-2 text-foreground">
+              {publicaciones.totalDocs}
+            </span>
           )}
         </p>
 
@@ -94,30 +105,49 @@ export default async function CategoryPage({ params }: PageProps) {
             <p className="text-sm">No hay publicaciones en esta categoría.</p>
           </div>
         ) : (
-          <div className="divide-y divide-border border border-border rounded-lg overflow-hidden">
-            {publicaciones.docs.map((pub) => (
-              <Link
-                key={pub.id}
-                href={`/publicaciones/${pub.slug}`}
-                className="group flex items-center justify-between px-6 py-5 bg-card hover:bg-muted/50 transition-colors"
-              >
-                <div className="min-w-0">
-                  <h3 className="text-lg font-heading font-bold leading-snug group-hover:text-primary transition-colors truncate">
-                    {pub.titulo}
-                  </h3>
-                  {pub.createdAt && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {new Date(pub.createdAt).toLocaleDateString("es-AR", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  )}
-                </div>
-                <ArrowUpRight className="h-5 w-5 shrink-0 ml-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </Link>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {publicaciones.docs.map((pub) => {
+              const contenido = pub.contenido as {
+                root?: { children?: Array<{ children?: { text?: string }[] }> };
+              };
+
+              let description = "";
+              if (contenido?.root?.children) {
+                const firstText = contenido.root.children.find(
+                  (child: { children?: { text?: string }[] }) =>
+                    child.children?.length && child.children[0].text,
+                );
+                if (firstText) description = firstText.children![0].text!;
+              }
+
+              const showChart = shouldShowChart(pub);
+              const tablaBlocks = showChart
+                ? extractAllTablaBlocks(pub.contenido)
+                : [];
+
+              return (
+                <Card
+                  key={pub.id}
+                  title={pub.titulo}
+                  description={description}
+                  date={pub.createdAt}
+                  href={`/publicaciones/${pub.slug}`}
+                  imageUrl={
+                    tablaBlocks.length > 0
+                      ? undefined
+                      : pub.imagen_destacada?.url
+                  }
+                  imageAlt={pub.imagen_destacada?.alt}
+                  chartPreview={
+                    tablaBlocks.length > 0 ? (
+                      <div className="w-full h-full relative">
+                        <PublicationTableSlider blocks={tablaBlocks} />
+                      </div>
+                    ) : undefined
+                  }
+                />
+              );
+            })}
           </div>
         )}
       </section>

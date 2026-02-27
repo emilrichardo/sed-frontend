@@ -10,6 +10,7 @@ interface CardProps {
   className?: string;
   imageUrl?: string;
   imageAlt?: string;
+  chartPreview?: React.ReactNode;
   layout?: "vertical" | "horizontal";
 }
 
@@ -21,79 +22,106 @@ export function Card({
   className,
   imageUrl,
   imageAlt,
+  chartPreview,
   layout = "vertical",
 }: CardProps) {
   const isHorizontal = layout === "horizontal";
+  const hasMedia = imageUrl || chartPreview;
 
   return (
-    <Link
-      href={href}
+    <div
       className={cn(
-        "block group border bg-card transition-all rounded-lg shadow-sm hover:shadow-md overflow-hidden",
-        isHorizontal ? "flex flex-row" : "",
+        "group flex border border-border bg-card transition-all rounded-xl shadow-sm hover:shadow-md overflow-hidden min-w-0",
+        isHorizontal ? "flex-row" : "flex-col h-full",
         className,
       )}
     >
-      {imageUrl && (
+      {chartPreview && !isHorizontal && (
+        <div className="p-5 pb-4 bg-background border-b border-border min-w-0">
+          <h3 className="font-bold text-xl tracking-tight leading-snug uppercase group-hover:text-primary transition-colors line-clamp-2">
+            <Link href={href} className="hover:underline">
+              {title}
+            </Link>
+          </h3>
+        </div>
+      )}
+      {hasMedia && (
         <div
           className={cn(
-            "overflow-hidden shrink-0 bg-muted",
+            "relative overflow-hidden shrink-0 bg-background border-b border-border min-w-0",
             isHorizontal
-              ? "w-1/3 md:w-[40%] aspect-[4/3] border-r" // Updated width to 40% on desktop
-              : "w-full aspect-video border-b",
+              ? "w-1/3 md:w-[40%] aspect-[4/3] border-r"
+              : chartPreview
+                ? "h-[500px] w-full"
+                : "aspect-[16/9] w-full",
           )}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={imageAlt || title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+          {imageUrl ? (
+            <Link href={href} className="block w-full h-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={imageAlt || title}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            </Link>
+          ) : (
+            <div className="absolute inset-0 z-0">{chartPreview}</div>
+          )}
         </div>
       )}
       <div
         className={cn(
-          "flex flex-col p-6", // Restore p-6 for better spacing? User asked to reduce spacing earlier but now wants vertical alignment. Let's keep p-6 or p-4? User said "quita ese espacio pronunciado" (remove pronounced space) on step 995, but now "aline verticalmente".
-          // Let's use p-4 but handle vertical centering
+          "flex flex-col flex-1 p-5 min-w-0",
           isHorizontal ? "w-full justify-center" : "h-full justify-between",
         )}
       >
-        <div>
+        <div className="flex flex-col gap-1.5 min-w-0">
           {date && (
-            <time className="text-xs text-muted-foreground font-mono mb-2 block font-medium">
-              {new Date(date).toLocaleDateString("es-CL", {
+            <time className="text-[10px] text-muted-foreground font-medium shrink-0">
+              {new Date(date).toLocaleDateString("es-AR", {
                 year: "numeric",
-                month: "long",
-                day: "numeric",
+                month: "short",
               })}
             </time>
           )}
-          <h3 className="text-lg font-bold tracking-tight group-hover:underline decoration-2 underline-offset-4 mb-1">
-            {title}
-          </h3>
+          {!(chartPreview && !isHorizontal) && (
+            <h3 className="font-semibold text-base leading-snug group-hover:text-primary transition-colors line-clamp-2">
+              <Link href={href} className="hover:underline">
+                {title}
+              </Link>
+            </h3>
+          )}
           {description && (
-            <p className="text-muted-foreground text-sm line-clamp-3 font-sans font-medium">
+            <p className="mt-1.5 text-xs text-muted-foreground line-clamp-3 leading-relaxed flex-1">
               {description}
             </p>
           )}
         </div>
-        <div className="mt-4 flex items-center text-sm font-medium text-primary">
-          Leer más
-          <svg
-            className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            />
-          </svg>
-        </div>
+        {!isHorizontal && (
+          <div className="mt-4 flex items-center text-xs font-semibold text-primary/80 group-hover:text-primary transition-colors">
+            <Link
+              href={href}
+              className="flex flex-row items-center gap-1 group/link"
+            >
+              Ver detalles
+              <svg
+                className="w-3.5 h-3.5 ml-0.5 transition-transform group-hover/link:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+              </svg>
+            </Link>
+          </div>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }

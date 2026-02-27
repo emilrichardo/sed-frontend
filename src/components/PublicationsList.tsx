@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Search, X, ChevronRight, Grid2X2, LayoutList } from "lucide-react";
 import Image from "next/image";
 import type { ReportItem } from "@/lib/api";
+import { PublicationTableSlider } from "@/components/PublicationTableSlider";
+import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
 
 export interface FlatPublication extends ReportItem {
   parentTitle?: string;
@@ -56,38 +58,55 @@ function GridCard({ item }: { item: FlatPublication }) {
   const img = getImg(item);
   const tags = getItemTags(item);
 
+  const useChart = shouldShowChart(item);
+  const tablaBlocks = useChart ? extractAllTablaBlocks(item.contenido) : [];
+  const hasTables = tablaBlocks.length > 0;
+
   return (
-    <Link
-      href={`/publicaciones/${item.slug}`}
-      className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-all"
-    >
-      {/* Image */}
-      <div className="relative aspect-[16/9] bg-muted shrink-0">
-        {img ? (
-          <Image
-            src={img.url!}
-            alt={img.alt || item.titulo}
-            fill
-            unoptimized
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          />
+    <div className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-all h-full">
+      {/* Image / Chart preview */}
+      <div
+        className={`relative ${hasTables ? "h-[500px]" : "aspect-[16/9]"} shrink-0 bg-background overflow-hidden border-b border-border`}
+      >
+        {!useChart && img ? (
+          <Link
+            href={`/publicaciones/${item.slug}`}
+            className="block w-full h-full relative"
+          >
+            <Image
+              src={img.url!}
+              alt={img.alt || item.titulo}
+              fill
+              unoptimized
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 50vw"
+            />
+          </Link>
+        ) : hasTables ? (
+          <div className="absolute inset-0">
+            <PublicationTableSlider blocks={tablaBlocks} />
+          </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10" />
         )}
       </div>
 
       {/* Content */}
-      <div className="flex flex-col flex-1 p-4">
+      <div className="flex flex-col flex-1 p-5">
         {item.parentTitle && (
-          <p className="text-xs text-muted-foreground mb-1 flex items-center gap-0.5">
+          <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-0.5">
             <span className="truncate">{item.parentTitle}</span>
             <ChevronRight className="h-3 w-3 shrink-0" />
           </p>
         )}
 
-        <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
-          {item.titulo}
+        <h3 className="font-semibold text-base leading-snug group-hover:text-primary transition-colors line-clamp-2">
+          <Link
+            href={`/publicaciones/${item.slug}`}
+            className="hover:underline"
+          >
+            {item.titulo}
+          </Link>
         </h3>
 
         {description && (
@@ -117,7 +136,7 @@ function GridCard({ item }: { item: FlatPublication }) {
           )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -133,27 +152,37 @@ function GroupedCard({ node }: { node: GroupedNode }) {
   const img = getImg(node);
   const tags = getItemTags(node);
 
+  const useChart = shouldShowChart(node);
+  const tablaBlocks = useChart ? extractAllTablaBlocks(node.contenido) : [];
+  const hasTables = tablaBlocks.length > 0;
+
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="flex items-stretch">
-        {/* Image */}
-        <Link
-          href={`/publicaciones/${node.slug}`}
-          className="relative w-48 shrink-0 bg-muted block group"
-        >
-          {img ? (
-            <Image
-              src={img.url!}
-              alt={img.alt || node.titulo}
-              fill
-              unoptimized
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              sizes="192px"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10" />
-          )}
-        </Link>
+      <div className={`flex ${hasTables ? "flex-col" : "items-stretch"}`}>
+        {/* Image / Chart preview */}
+        {!hasTables ? (
+          <Link
+            href={`/publicaciones/${node.slug}`}
+            className="relative w-48 shrink-0 bg-background block group overflow-hidden border-r border-border"
+          >
+            {img ? (
+              <Image
+                src={img.url!}
+                alt={img.alt || node.titulo}
+                fill
+                unoptimized
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="192px"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10" />
+            )}
+          </Link>
+        ) : (
+          <div className="relative h-[500px] w-full shrink-0 border-b border-border bg-background">
+            <PublicationTableSlider blocks={tablaBlocks} />
+          </div>
+        )}
 
         {/* Meta */}
         <div className="flex-1 min-w-0 p-5">
@@ -372,7 +401,7 @@ export function PublicationsList({ items, allCategories }: Props) {
           </p>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {filteredGrid.map((item) => (
             <GridCard key={item.id} item={item} />
           ))}
