@@ -3,7 +3,7 @@
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ReportSidebar } from "@/components/ReportSidebar";
-import { PublicationTopNav } from "@/components/PublicationTopNav";
+
 import type { ReportItem } from "@/lib/api";
 
 interface Heading {
@@ -34,11 +34,7 @@ export function PublicationLayoutWrapper({
   if (layoutMode === "web") {
     return (
       // Negative margins escape LayoutContent's px-4/px-8/py-6 container
-      <div className="-mx-4 md:-mx-8 -mt-6 flex flex-col min-h-screen">
-        <PublicationTopNav
-          headings={headings}
-          childrenReports={childrenReports}
-        />
+      <div className="flex flex-col min-h-screen">
         <main className="flex-1 bg-background">
           <article className="max-w-[960px] mx-auto py-10 px-4 md:py-14 md:px-8">
             {children}

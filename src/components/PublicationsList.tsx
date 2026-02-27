@@ -16,10 +16,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
+import { WideCard } from "@/components/WideCard";
 
-function getTipoIcon(
-  tp: ReportItem["tipo_publicacion"],
-): { Icon: LucideIcon; label: string } {
+function getTipoIcon(tp: ReportItem["tipo_publicacion"]): {
+  Icon: LucideIcon;
+  label: string;
+} {
   const obj = tp && typeof tp === "object" ? tp : null;
   const text = (obj?.slug ?? obj?.nombre ?? "").toLowerCase();
   if (text.includes("estadistica") || text.includes("estadística"))
@@ -28,8 +30,7 @@ function getTipoIcon(
     return { Icon: Newspaper, label: obj!.nombre };
   if (text.includes("analisis") || text.includes("análisis"))
     return { Icon: TrendingUp, label: obj!.nombre };
-  if (text.includes("informe"))
-    return { Icon: FileText, label: obj!.nombre };
+  if (text.includes("informe")) return { Icon: FileText, label: obj!.nombre };
   if (obj?.nombre) return { Icon: BookOpen, label: obj.nombre };
   return { Icon: BookOpen, label: "Publicación" };
 }
@@ -43,7 +44,7 @@ export interface FlatPublication extends ReportItem {
   parentId?: number;
 }
 
-type ViewMode = "grid" | "agrupado";
+type ViewMode = "grid" | "wide" | "agrupado";
 
 type TaxItem = { id: string | number; nombre: string; slug?: string };
 
@@ -53,13 +54,19 @@ interface Props {
 }
 
 function getDescription(item: ReportItem): string {
-  const contenido = item.contenido as any;
+  const contenido = item.contenido as {
+    root?: {
+      children?: Array<{
+        children?: Array<{ text?: string }>;
+      }>;
+    };
+  };
   if (contenido?.root?.children) {
-    const firstText = contenido.root.children.find(
-      (child: any) =>
+    const firstParagraph = contenido.root.children.find(
+      (child) =>
         child.children && child.children.length > 0 && child.children[0]?.text,
     );
-    if (firstText) return firstText.children[0].text;
+    if (firstParagraph) return firstParagraph.children![0].text || "";
   }
   return "";
 }
@@ -120,7 +127,10 @@ function GridCard({ item }: { item: FlatPublication }) {
             const { Icon, label } = getTipoIcon(item.tipo_publicacion);
             return (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/40">
-                <Icon className="h-14 w-14 text-muted-foreground/25" strokeWidth={1} />
+                <Icon
+                  className="h-14 w-14 text-muted-foreground/25"
+                  strokeWidth={1}
+                />
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
                   {label}
                 </span>
@@ -218,7 +228,10 @@ function GroupedCard({ node }: { node: GroupedNode }) {
                 const { Icon, label } = getTipoIcon(node.tipo_publicacion);
                 return (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">
-                    <Icon className="h-10 w-10 text-muted-foreground/25" strokeWidth={1} />
+                    <Icon
+                      className="h-10 w-10 text-muted-foreground/25"
+                      strokeWidth={1}
+                    />
                     <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
                       {label}
                     </span>
@@ -297,7 +310,7 @@ export function PublicationsList({ items, allCategories }: Props) {
   const [selectedCategories, setSelectedCategories] = useState<
     Set<string | number>
   >(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("wide");
 
   const matchesFilters = (item: FlatPublication) => {
     if (search && !item.titulo.toLowerCase().includes(search.toLowerCase()))
@@ -396,6 +409,18 @@ export function PublicationsList({ items, allCategories }: Props) {
         {/* View toggle */}
         <div className="flex items-center gap-0.5 bg-muted/50 p-1 rounded-lg border">
           <button
+            title="Vista horizontal"
+            onClick={() => setViewMode("wide")}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+              viewMode === "wide"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LayoutList className="h-3.5 w-3.5" />
+            Amplio
+          </button>
+          <button
             title="Vista grid"
             onClick={() => setViewMode("grid")}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
@@ -416,7 +441,7 @@ export function PublicationsList({ items, allCategories }: Props) {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <LayoutList className="h-3.5 w-3.5" />
+            <ChevronRight className="h-3.5 w-3.5 rotate-90" />
             Agrupado
           </button>
         </div>
@@ -453,6 +478,12 @@ export function PublicationsList({ items, allCategories }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {filteredGrid.map((item) => (
             <GridCard key={item.id} item={item} />
+          ))}
+        </div>
+      ) : viewMode === "wide" ? (
+        <div className="space-y-6">
+          {filteredGrid.map((item) => (
+            <WideCard key={item.id} item={item} />
           ))}
         </div>
       ) : (

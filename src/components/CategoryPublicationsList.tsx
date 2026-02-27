@@ -2,9 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { ReportItem } from "@/lib/api";
-import { Card } from "@/components/ui/Card";
-import { PublicationTableSlider } from "@/components/PublicationTableSlider";
-import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
+import { WideCard } from "@/components/WideCard";
 
 interface Props {
   publications: ReportItem[];
@@ -18,19 +16,6 @@ function getTipo(pub: ReportItem): TipoPublicacion | null {
   return tp as TipoPublicacion;
 }
 
-function getDescription(pub: ReportItem): string {
-  const contenido = pub.contenido as {
-    root?: { children?: Array<{ children?: { text?: string }[] }> };
-  };
-  if (contenido?.root?.children) {
-    const first = contenido.root.children.find(
-      (child) => child.children?.length && child.children[0].text,
-    );
-    if (first) return first.children![0].text!;
-  }
-  return "";
-}
-
 export function CategoryPublicationsList({ publications }: Props) {
   // Collect unique tipos present in the data
   const tipos = useMemo(() => {
@@ -42,7 +27,9 @@ export function CategoryPublicationsList({ publications }: Props) {
     return Array.from(map.values());
   }, [publications]);
 
-  const [selectedTipo, setSelectedTipo] = useState<string | number | null>(null);
+  const [selectedTipo, setSelectedTipo] = useState<string | number | null>(
+    null,
+  );
 
   const visible = useMemo(
     () =>
@@ -100,32 +87,10 @@ export function CategoryPublicationsList({ publications }: Props) {
           <p className="text-sm">No hay publicaciones en esta categoría.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {visible.map((pub) => {
-            const description = getDescription(pub);
-            const showChart = shouldShowChart(pub);
-            const tablaBlocks = showChart ? extractAllTablaBlocks(pub.contenido) : [];
-
-            return (
-              <Card
-                key={pub.id}
-                title={pub.titulo}
-                description={description}
-                date={pub.createdAt}
-                href={`/publicaciones/${pub.slug}`}
-                imageUrl={tablaBlocks.length > 0 ? undefined : pub.imagen_destacada?.url}
-                imageAlt={pub.imagen_destacada?.alt}
-                tipoPublicacion={pub.tipo_publicacion}
-                chartPreview={
-                  tablaBlocks.length > 0 ? (
-                    <div className="w-full h-full relative">
-                      <PublicationTableSlider blocks={tablaBlocks} />
-                    </div>
-                  ) : undefined
-                }
-              />
-            );
-          })}
+        <div className="space-y-6">
+          {visible.map((pub) => (
+            <WideCard key={pub.id} item={pub} showParent={false} />
+          ))}
         </div>
       )}
     </div>
