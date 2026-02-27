@@ -291,6 +291,8 @@ interface Props {
   cycleDuration?: number;
   /** Stroke color (default: gold #C8AE69) */
   strokeColor?: string;
+  /** When true the SVG fills its parent container (ignores size) */
+  fill?: boolean;
   className?: string;
 }
 
@@ -298,6 +300,7 @@ export function SunRaysAnimated({
   size = 240,
   cycleDuration = 4,
   strokeColor = "#C8AE69",
+  fill = false,
   className = "",
 }: Props) {
   const uid = useId().replace(/:/g, "");
@@ -310,7 +313,7 @@ export function SunRaysAnimated({
       setTimeout(() => {
         setIdx((i) => (i + 1) % SUNS.length);
         setVisible(true);
-      }, 600);
+      }, 150);
     }, cycleDuration * 1000);
     return () => clearInterval(timer);
   }, [cycleDuration]);
@@ -324,15 +327,15 @@ export function SunRaysAnimated({
         @keyframes sr-cw-${uid}  { from{transform:rotate(0deg)}    to{transform:rotate(360deg)} }
         @keyframes sr-ccw-${uid} { from{transform:rotate(0deg)}    to{transform:rotate(-360deg)} }
         @keyframes sr-draw-${uid} {
-          from { stroke-dashoffset: 600; opacity: 0; }
-          to   { stroke-dashoffset: 0;   opacity: 1; }
+          from { stroke-dashoffset: 600; }
+          to   { stroke-dashoffset: 0; }
         }
         @keyframes sr-pulse-${uid} {
           0%,100% { transform: scale(1); }
           50%     { transform: scale(1.07); }
         }
-        @keyframes sr-in-${uid}  { from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
-        @keyframes sr-out-${uid} { from{opacity:1;transform:scale(1)}    to{opacity:0;transform:scale(1.08)} }
+        @keyframes sr-in-${uid}  { from{transform:scale(0.94)} to{transform:scale(1)} }
+        @keyframes sr-out-${uid} { from{transform:scale(1)}    to{transform:scale(1.04)} }
 
         .sr-wrap-${uid} path {
           stroke: ${strokeColor};
@@ -342,19 +345,23 @@ export function SunRaysAnimated({
           stroke-dasharray: 600;
           animation: sr-draw-${uid} ${cfg.drawDur}s ease forwards;
         }
+        .sr-wrap-${uid} {
+          fill: none;
+        }
       `}</style>
 
       <svg
         key={idx}
-        width={size}
-        height={size}
+        width={fill ? undefined : size}
+        height={fill ? undefined : size}
         viewBox={cfg.viewBox}
         fill="none"
         aria-hidden="true"
         className={`sr-wrap-${uid} ${className}`}
         style={{
           display: "block",
-          animation: `${visible ? `sr-in-${uid}` : `sr-out-${uid}`} 0.6s ease forwards`,
+          ...(fill ? { width: "100%", height: "100%" } : {}),
+          animation: `${visible ? `sr-in-${uid}` : `sr-out-${uid}`} 0.15s ease forwards`,
         }}
       >
         <g
