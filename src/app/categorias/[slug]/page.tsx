@@ -1,4 +1,4 @@
-import { getCategoryBySlug, getCategories } from "@/lib/api";
+import { getCategoryBySlug, getCategories, getPublicacionesByCategoria } from "@/lib/api";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
@@ -23,7 +23,10 @@ export default async function CategoryPage({ params }: PageProps) {
   const category = await getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const children = await getCategories({ padreId: category.id });
+  const [children, publicaciones] = await Promise.all([
+    getCategories({ padreId: category.id }),
+    getPublicacionesByCategoria(category.id),
+  ]);
 
   return (
     <div className="py-8 md:py-12">
@@ -49,38 +52,75 @@ export default async function CategoryPage({ params }: PageProps) {
         )}
       </div>
 
-      {children.length === 0 ? (
-        <div className="border border-border p-8 text-center text-muted-foreground">
-          <p className="text-sm">No hay subcategorías disponibles.</p>
-        </div>
-      ) : (
-        <>
+      {/* Subcategorías */}
+      {children.length > 0 && (
+        <section className="mb-12">
           <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
             Subcategorías
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {children.map((child) => (
               <Link
                 key={child.id}
                 href={`/categorias/${child.slug}`}
-                className="group flex flex-col justify-between p-6 bg-background hover:bg-muted transition-colors min-h-[140px]"
+                className="group flex flex-col border border-border bg-card hover:bg-muted/50 transition-colors rounded-lg p-6 min-h-[180px]"
               >
-                <span className="text-base font-semibold leading-snug group-hover:text-primary transition-colors">
+                <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mb-4" />
+                <span className="text-2xl font-heading font-bold leading-tight group-hover:text-primary transition-colors">
                   {child.nombre}
                 </span>
                 {child.descripcion && (
-                  <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed line-clamp-3">
                     {child.descripcion}
                   </p>
                 )}
-                <div className="flex justify-end mt-4">
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                </div>
               </Link>
             ))}
           </div>
-        </>
+        </section>
       )}
+
+      {/* Publicaciones */}
+      <section>
+        <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
+          Publicaciones
+          {publicaciones.totalDocs > 0 && (
+            <span className="ml-2 text-foreground">{publicaciones.totalDocs}</span>
+          )}
+        </p>
+
+        {publicaciones.docs.length === 0 ? (
+          <div className="border border-border rounded-lg p-8 text-center text-muted-foreground">
+            <p className="text-sm">No hay publicaciones en esta categoría.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border border border-border rounded-lg overflow-hidden">
+            {publicaciones.docs.map((pub) => (
+              <Link
+                key={pub.id}
+                href={`/publicaciones/${pub.slug}`}
+                className="group flex items-center justify-between px-6 py-5 bg-card hover:bg-muted/50 transition-colors"
+              >
+                <div className="min-w-0">
+                  <h3 className="text-lg font-heading font-bold leading-snug group-hover:text-primary transition-colors truncate">
+                    {pub.titulo}
+                  </h3>
+                  {pub.createdAt && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Date(pub.createdAt).toLocaleDateString("es-AR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
+                <ArrowUpRight className="h-5 w-5 shrink-0 ml-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -391,8 +391,9 @@ export interface Category {
   id: string | number;
   nombre: string;
   slug: string;
+  tipo?: string;
   descripcion?: string;
-  padre?: Category | string | number | null;
+  parent?: Category | string | number | null;
 }
 
 export async function getCategories(
@@ -403,12 +404,12 @@ export async function getCategories(
   } = {},
 ): Promise<Category[]> {
   const { sinPadre, padreId, limit = 100 } = params;
-  let url = `${API_URL}/categorias?limit=${limit}&depth=1`;
+  let url = `${API_URL}/taxonomias?limit=${limit}&depth=1&where[tipo][equals]=categoria`;
 
   if (sinPadre) {
-    url += `&where[padre][exists]=false`;
+    url += `&where[parent][exists]=false`;
   } else if (padreId !== undefined) {
-    url += `&where[padre][equals]=${padreId}`;
+    url += `&where[parent][equals]=${padreId}`;
   }
 
   try {
@@ -426,7 +427,7 @@ export async function getCategoryBySlug(
 ): Promise<Category | null> {
   try {
     const res = await fetch(
-      `${API_URL}/categorias?where[slug][equals]=${slug}&depth=1`,
+      `${API_URL}/taxonomias?where[slug][equals]=${slug}&where[tipo][equals]=categoria&depth=1`,
       { next: { revalidate: 300 } },
     );
     if (!res.ok) return null;
@@ -555,6 +556,24 @@ export interface LearningRecord {
 }
 
 // --- Report Functions ---
+
+/**
+ * Fetches publications for a given category (taxonomia) ID
+ */
+export async function getPublicacionesByCategoria(
+  categoriaId: string | number,
+  params: { page?: number; limit?: number } = {},
+): Promise<PayloadResponse<ReportItem>> {
+  const { page = 1, limit = 20 } = params;
+  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=-createdAt&depth=1&where[categorias][in][0]=${categoriaId}`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 60 } });
+    if (!res.ok) return { docs: [], totalDocs: 0, limit, totalPages: 0, page: 1, pagingCounter: 0, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null };
+    return res.json();
+  } catch {
+    return { docs: [], totalDocs: 0, limit, totalPages: 0, page: 1, pagingCounter: 0, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null };
+  }
+}
 
 /**
  * Fetches a list of reports (Informes)

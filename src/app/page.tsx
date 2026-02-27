@@ -34,32 +34,23 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── Categories super menu ── */}
-      <section className="-mx-4 md:-mx-8 border-b border-border bg-card sticky top-16 z-40">
-        <div className="max-w-[1440px] mx-auto">
-          {rootCategories.length > 0 ? (
-            <nav className="flex items-stretch overflow-x-auto" aria-label="Categorías principales">
-              <span className="hidden md:flex items-center px-5 py-4 text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground border-r border-border whitespace-nowrap shrink-0">
-                Categorías
+      {/* ── Categories list ── */}
+      {rootCategories.length > 0 && (
+        <nav className="-mx-4 md:-mx-8 border-b border-border" aria-label="Categorías principales">
+          {rootCategories.map((cat) => (
+            <Link
+              key={cat.id}
+              href={`/categorias/${cat.slug}`}
+              className="flex items-center justify-between w-full px-4 md:px-8 py-5 border-t border-border hover:bg-muted/50 transition-colors group"
+            >
+              <span className="text-2xl md:text-3xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                {cat.nombre}
               </span>
-              {rootCategories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/categorias/${cat.slug}`}
-                  className="flex items-center gap-1.5 px-5 py-4 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border-r border-border"
-                >
-                  {cat.nombre}
-                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
-                </Link>
-              ))}
-            </nav>
-          ) : (
-            <div className="px-5 py-4 text-xs text-muted-foreground italic">
-              Categorías próximamente
-            </div>
-          )}
-        </div>
-      </section>
+              <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+            </Link>
+          ))}
+        </nav>
+      )}
 
       {/* ── Main content ── */}
       <div className="py-8 md:py-12">
