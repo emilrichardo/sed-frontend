@@ -14,6 +14,14 @@ import { SourcesSection } from "@/components/SourcesSection";
 import { PublicationLayoutWrapper } from "@/components/PublicationLayoutWrapper";
 import { getTextFromNodes } from "@/components/RichTextParser";
 import slugify from "slugify";
+import { PublicationTableSlider } from "@/components/PublicationTableSlider";
+import {
+  extractAllTablaBlocks,
+  shouldShowChart,
+  getDescription,
+  isEstadistica,
+  hasRealContent,
+} from "@/utils/publicacion";
 
 export const revalidate = 0;
 
@@ -141,81 +149,120 @@ export default async function PublicationPage({ params }: PageProps) {
       {/* Main Content */}
       <NewsDetail initialData={reportItem} hideSources={true} />
 
-      {/* Sibling Navigation */}
-      {(prevSibling || nextSibling) && (
-        <div className="mt-12 flex items-center justify-between border-t pt-6 gap-4">
-          {prevSibling ? (
-            <Link
-              href={`/publicaciones/${prevSibling.slug}`}
-              className="group flex flex-col items-start text-left"
-            >
-              <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                Anterior Publicación
-              </span>
-              <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                {prevSibling.titulo}
-              </span>
-            </Link>
-          ) : (
-            <div />
-          )}
+      {(() => {
+        const hasParentContent = hasRealContent(
+          reportItem.contenido,
+          reportItem.layout,
+        );
 
-          {nextSibling && (
-            <Link
-              href={`/publicaciones/${nextSibling.slug}`}
-              className="group flex flex-col items-end text-right"
-            >
-              <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                Siguiente Publicación
-              </span>
-              <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
-                {nextSibling.titulo}
-                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </span>
-            </Link>
-          )}
-        </div>
-      )}
+        return (
+          <>
+            {/* Sibling Navigation */}
+            {(prevSibling || nextSibling) && hasParentContent && (
+              <div className="flex items-center justify-between gap-4 mt-12 pt-6 border-t">
+                {prevSibling ? (
+                  <Link
+                    href={`/publicaciones/${prevSibling.slug}`}
+                    className="group flex flex-col items-start text-left"
+                  >
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                      Anterior Publicación
+                    </span>
+                    <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
+                      <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                      {prevSibling.titulo}
+                    </span>
+                  </Link>
+                ) : (
+                  <div />
+                )}
 
-      {/* Children List Grid */}
-      {children.length > 0 && (
-        <div className="mt-16 pt-8 border-t">
-          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-muted-foreground" />
-            Secciones
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {children.map((child) => {
-              const contenido = child.contenido as any;
-              let description = "Sin descripción";
-              if (contenido?.root?.children) {
-                const firstTextNode = contenido.root.children.find(
-                  (child: any) =>
-                    child.children &&
-                    child.children.length > 0 &&
-                    child.children[0].text,
-                );
-                if (firstTextNode) {
-                  description = firstTextNode.children[0].text;
+                {nextSibling && (
+                  <Link
+                    href={`/publicaciones/${nextSibling.slug}`}
+                    className="group flex flex-col items-end text-right"
+                  >
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                      Siguiente Publicación
+                    </span>
+                    <span className="text-lg font-medium text-primary hover:underline flex items-center gap-2">
+                      {nextSibling.titulo}
+                      <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {/* Children List Grid */}
+            {children.length > 0 && (
+              <div
+                className={
+                  hasParentContent
+                    ? "mt-16 pt-8 border-t border-border"
+                    : "mt-8"
                 }
-              }
+              >
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+                  Secciones
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {children.map((child) => {
+                    if (isEstadistica(child)) {
+                      return (
+                        <div
+                          key={child.id}
+                          id={child.slug}
+                          className="col-span-1 md:col-span-2 mt-8 mb-4 bg-background rounded-xl p-0"
+                        >
+                          <NewsDetail
+                            initialData={child}
+                            hideSources={true}
+                            isEmbedded={true}
+                          />
+                        </div>
+                      );
+                    }
 
-              return (
-                <Card
-                  key={child.id}
-                  title={child.titulo}
-                  description={description}
-                  date={child.createdAt}
-                  href={`/publicaciones/${child.slug}`}
-                  imageUrl={child.imagen_destacada?.url}
-                  imageAlt={child.imagen_destacada?.alt}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
+                    const description = getDescription(child);
+                    const showChart = shouldShowChart(child);
+                    const tablaBlocks = showChart
+                      ? extractAllTablaBlocks(child.contenido)
+                      : [];
+
+                    return (
+                      <div
+                        key={child.id}
+                        id={child.slug}
+                        className="flex flex-col"
+                      >
+                        <Card
+                          title={child.titulo}
+                          description={description}
+                          date={child.createdAt}
+                          href={`/publicaciones/${child.slug}`}
+                          imageUrl={
+                            !showChart ? child.imagen_destacada?.url : undefined
+                          }
+                          imageAlt={child.imagen_destacada?.alt}
+                          chartPreview={
+                            tablaBlocks.length > 0 ? (
+                              <div className="w-full h-full relative">
+                                <PublicationTableSlider blocks={tablaBlocks} />
+                              </div>
+                            ) : undefined
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Sources Section */}
       <div className="mt-12">

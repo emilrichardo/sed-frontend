@@ -4,24 +4,43 @@ import { RichTextParser } from "@/components/RichTextParser";
 import { BlockRenderer } from "@/components/BlockRenderer";
 import { EditContentButton } from "@/components/EditContentButton";
 import { SourcesSection } from "@/components/SourcesSection";
+import { hasRealContent } from "@/utils/publicacion";
 
 interface NewsDetailProps {
   initialData: NewsItem;
   hideSources?: boolean;
+  isEmbedded?: boolean;
 }
 
 export const NewsDetail: React.FC<NewsDetailProps> = ({
   initialData,
   hideSources = false,
+  isEmbedded = false,
 }) => {
   console.log(initialData);
+  const hasContent = hasRealContent(initialData.contenido, initialData.layout);
+
   return (
     <>
-      <header className="mb-10 border-b border-border pb-8">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 leading-tight">
-          {initialData.titulo}
-        </h1>
-        {initialData.createdAt && (
+      <header
+        className={
+          isEmbedded
+            ? "mb-0 pb-0"
+            : hasContent
+              ? "mb-10 pb-8 border-b border-border"
+              : "mb-0 pb-0"
+        }
+      >
+        {isEmbedded ? (
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4 leading-tight">
+            {initialData.titulo}
+          </h2>
+        ) : (
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 leading-tight">
+            {initialData.titulo}
+          </h1>
+        )}
+        {initialData.createdAt && !isEmbedded && (
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mt-4">
             <time className="text-muted-foreground font-mono text-sm shrink-0">
               Publicado el{" "}
@@ -86,14 +105,11 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
               );
             })()}
 
-            <EditContentButton
-              collection="publicaciones"
-              id={initialData.id}
-            />
+            <EditContentButton collection="publicaciones" id={initialData.id} />
           </div>
         )}
 
-        {initialData.imagen_destacada?.url && (
+        {initialData.imagen_destacada?.url && !isEmbedded && (
           <div className="mt-8 rounded-lg overflow-hidden relative aspect-video shadow-sm border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -105,13 +121,15 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
         )}
       </header>
 
-      <div className="prose prose-neutral max-w-none font-sans">
-        {initialData.contenido?.root?.children ? (
-          <RichTextParser content={initialData.contenido.root.children} />
-        ) : (
-          <BlockRenderer blocks={initialData.layout || []} />
-        )}
-      </div>
+      {hasContent && (
+        <div className="prose prose-neutral max-w-none font-sans mt-4">
+          {initialData.contenido?.root?.children ? (
+            <RichTextParser content={initialData.contenido.root.children} />
+          ) : (
+            <BlockRenderer blocks={initialData.layout || []} />
+          )}
+        </div>
+      )}
 
       {!hideSources && <SourcesSection content={initialData.fuentes} />}
     </>

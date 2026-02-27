@@ -20,14 +20,12 @@ interface Props {
   headings: Heading[];
   childrenReports: ChildReport[];
   backLink: { href: string; label: string };
-  currentSlug: string;
 }
 
 export function PublicationTopNav({
   headings,
   childrenReports,
   backLink,
-  currentSlug,
 }: Props) {
   const [activeId, setActiveId] = useState<string>("");
   const [isPaused, setIsPaused] = useState(false);
@@ -55,8 +53,13 @@ export function PublicationTopNav({
       if (el) observer.observe(el);
     });
 
+    childrenReports.forEach(({ slug }) => {
+      const el = document.getElementById(slug);
+      if (el) observer.observe(el);
+    });
+
     return () => observer.disconnect();
-  }, [headings]);
+  }, [headings, childrenReports]);
 
   // Auto-slide logic (Marquee-like crawl)
   useEffect(() => {
@@ -151,17 +154,21 @@ export function PublicationTopNav({
 
               {/* Children */}
               {childrenReports.map((child) => (
-                <Link
+                <button
                   key={child.id}
-                  href={`/publicaciones/${child.slug}`}
+                  ref={(el) => {
+                    if (el) itemRefs.current.set(child.slug, el);
+                    else itemRefs.current.delete(child.slug);
+                  }}
+                  onClick={() => scrollToHeading(child.slug)}
                   className={`shrink-0 px-3 py-1.5 text-[11px] font-medium transition-all whitespace-nowrap border-b-2 ${
-                    child.slug === currentSlug
+                    activeId === child.slug
                       ? "text-primary border-primary font-bold"
                       : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
                   {child.titulo}
-                </Link>
+                </button>
               ))}
             </div>
 

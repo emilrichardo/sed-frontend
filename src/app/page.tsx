@@ -21,8 +21,15 @@ export default async function Home() {
   return (
     <div className="w-full">
       {/* ── Hero ── */}
-      <section className="-mx-4 md:-mx-8 -mt-6 bg-primary text-primary-foreground px-4 md:px-8 py-20 md:py-32 rounded-2xl">
-        <div className="max-w-[1440px] mx-auto text-center">
+      <section className="relative overflow-hidden  md:-mx-8 bg-primary text-primary-foreground px-4 md:px-8 py-16 md:py-20 rounded-2xl">
+        {/* Sun — centered, 120% of hero height */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="aspect-square h-[120%] opacity-20">
+            <SunRaysAnimated fill cycleDuration={4} strokeColor="black" />
+          </div>
+        </div>
+
+        <div className="relative z-10 max-w-[1440px] mx-auto text-center">
           <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary-foreground/60 mb-6">
             Gobierno de Santiago del Estero
           </p>
@@ -34,9 +41,6 @@ export default async function Home() {
           <p className="mt-8 text-base md:text-lg text-primary-foreground/70 max-w-lg leading-relaxed mx-auto">
             Transparencia, análisis y acceso a datos públicos de la provincia.
           </p>
-          <div className="mt-12 flex justify-center opacity-80">
-            <SunRaysAnimated size={180} cycleDuration={4} strokeColor="white" />
-          </div>
         </div>
       </section>
 
@@ -63,30 +67,7 @@ export default async function Home() {
 
       {/* ── Main content ── */}
       <div className="py-8 md:py-12">
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold flex items-center gap-2">
-              <FileText className="h-6 w-6" />
-              Último Boletín Oficial
-            </h2>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/admin/subir-boletin"
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 transition-colors rounded-md shadow-sm hover:shadow-md font-bold text-sm tracking-normal"
-              >
-                <FileText className="w-4 h-4" />
-                Cargar Boletín
-              </Link>
-              <Link
-                href="/boletines"
-                className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
-              >
-                Ver todos
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-
+        <section className="mb-4 -mx-4">
           {latestBulletin ? (
             <Link
               href={`/boletines/${latestBulletin.slug}`}
@@ -115,75 +96,6 @@ export default async function Home() {
           ) : (
             <p className="text-muted-foreground italic">
               No hay boletines disponibles.
-            </p>
-          )}
-        </section>
-
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold flex items-center gap-2">
-              <BookOpen className="h-6 w-6" />
-              Publicaciones
-            </h2>
-            <Link
-              href="/publicaciones"
-              className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
-            >
-              Ver todos
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {reports.docs.map((item) => {
-              const contenido = item.contenido as {
-                root?: { children?: Array<{ children?: { text?: string }[] }> };
-              };
-
-              let description = "Sin descripción";
-              if (contenido?.root?.children) {
-                const firstTextNode = contenido.root.children.find(
-                  (child: { children?: { text?: string }[] }) =>
-                    child.children &&
-                    child.children.length > 0 &&
-                    child.children[0]?.text,
-                );
-                if (firstTextNode) {
-                  description = firstTextNode.children![0].text!;
-                }
-              }
-
-              const showChart = shouldShowChart(item);
-              const tablaBlocks = showChart
-                ? extractAllTablaBlocks(item.contenido)
-                : [];
-
-              return (
-                <Card
-                  key={item.id}
-                  title={item.titulo}
-                  description={description}
-                  date={item.createdAt}
-                  href={`/publicaciones/${item.slug}`}
-                  imageUrl={
-                    tablaBlocks.length > 0
-                      ? undefined
-                      : item.imagen_destacada?.url
-                  }
-                  imageAlt={item.imagen_destacada?.alt}
-                  chartPreview={
-                    tablaBlocks.length > 0 ? (
-                      <div className="w-full h-full relative">
-                        <PublicationTableSlider blocks={tablaBlocks} />
-                      </div>
-                    ) : undefined
-                  }
-                />
-              );
-            })}
-          </div>
-          {reports.docs.length === 0 && (
-            <p className="text-muted-foreground italic">
-              No hay publicaciones disponibles.
             </p>
           )}
         </section>
