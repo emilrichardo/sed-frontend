@@ -2,6 +2,7 @@ import { getBulletins, getReports, getCategories } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { PublicationTableSlider } from "@/components/PublicationTableSlider";
 import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
+import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 
 import Link from "next/link";
 import { FileText, ArrowRight, BookOpen, ArrowUpRight } from "lucide-react";
@@ -33,6 +34,9 @@ export default async function Home() {
           <p className="mt-8 text-base md:text-lg text-primary-foreground/70 max-w-lg leading-relaxed mx-auto">
             Transparencia, análisis y acceso a datos públicos de la provincia.
           </p>
+          <div className="mt-12 flex justify-center opacity-80">
+            <SunRaysAnimated size={180} cycleDuration={4} strokeColor="white" />
+          </div>
         </div>
       </section>
 
