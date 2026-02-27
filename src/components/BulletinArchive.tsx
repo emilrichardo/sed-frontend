@@ -223,7 +223,7 @@ export default function BulletinArchive({
       <div className="flex flex-col gap-4">
         {/* Top Controls Bar */}
         {/* Top Controls Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border bg-white rounded-lg shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border bg-card rounded-lg shadow-sm">
           {/* Integrated Filters (Search + Dates) */}
           <div className="flex-1">
             <BulletinFilters onFilterChange={setFilters} />
@@ -237,11 +237,11 @@ export default function BulletinArchive({
               <Upload className="w-4 h-4" />
               Cargar Boletín
             </Link>
-            <div className="flex border rounded-md overflow-hidden bg-white">
+            <div className="flex border rounded-md overflow-hidden bg-card">
               <button
                 onClick={() => setViewMode("table")}
-                className={`p-2 border-r hover:bg-gray-100 ${
-                  viewMode === "table" ? "bg-gray-200" : "bg-white"
+                className={`p-2 border-r hover:bg-muted transition-colors ${
+                  viewMode === "table" ? "bg-muted" : "bg-card"
                 }`}
                 title="Vista Tabla"
               >
@@ -249,8 +249,8 @@ export default function BulletinArchive({
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 hover:bg-gray-100 ${
-                  viewMode === "list" ? "bg-gray-200" : "bg-white"
+                className={`p-2 hover:bg-muted transition-colors ${
+                  viewMode === "list" ? "bg-muted" : "bg-card"
                 }`}
                 title="Vista Lista"
               >

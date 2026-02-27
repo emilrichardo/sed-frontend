@@ -45,7 +45,7 @@ export default function BulletinEntriesBySection({
                     {entry.seccion || "Sección"}
                   </span>
                 </div>
-                <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors font-mono">
+                <h3 className="font-heading font-bold text-lg leading-tight group-hover:text-primary transition-colors">
                   {entry.identificador_de_acto}
                 </h3>
                 <p className="text-sm text-muted-foreground line-clamp-2">

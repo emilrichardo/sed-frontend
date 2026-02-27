@@ -57,7 +57,7 @@ export default async function BulletinDetailPage({
 
       <div className="pb-6 space-y-2">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-heading font-bold">
             Boletín Oficial Nº {bulletin.numero}
           </h1>
           <span className="text-sm font-mono bg-muted px-3 py-1 rounded-full">

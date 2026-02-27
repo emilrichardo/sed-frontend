@@ -119,7 +119,7 @@ export default function BulletinEntriesLoader({
       <div className="w-full lg:flex-1 space-y-8">
         <div className="flex items-center gap-2 pb-4">
           <Newspaper className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-2xl font-heading font-bold tracking-tight">
             Versión Periodística
           </h2>
         </div>
@@ -167,7 +167,7 @@ export default function BulletinEntriesLoader({
                         </span>
                       </div>
 
-                      <h2 className="text-2xl md:text-3xl font-bold leading-tight group-hover:text-primary transition-colors font-mono">
+                      <h2 className="text-2xl md:text-3xl font-heading font-bold leading-tight group-hover:text-primary transition-colors">
                         {act.titulo_periodistico || act.identificador_de_acto}
                       </h2>
 
@@ -200,7 +200,7 @@ export default function BulletinEntriesLoader({
       <aside className="w-full lg:w-[40%] space-y-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto custom-scrollbar">
         <div className="flex items-center gap-2 pb-4 sticky top-0 bg-background/95 backdrop-blur z-10 pt-2">
           <FileText className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-bold tracking-tight">Lista Oficial</h2>
+          <h2 className="text-xl font-heading font-bold tracking-tight">Lista Oficial</h2>
         </div>
 
         <div className="bg-muted/10 p-1 rounded-lg">
