@@ -48,11 +48,9 @@ export async function generateMetadata({
   };
 }
 
-function extractHeadings(node: {
-  type?: string;
-  tag?: string;
-  children?: any[];
-}): { id: string; text: string; level: number }[] {
+function extractHeadings(
+  node?: any,
+): { id: string; text: string; level: number }[] {
   let headings: { id: string; text: string; level: number }[] = [];
   if (!node) return headings;
 
@@ -67,7 +65,7 @@ function extractHeadings(node: {
 
   // Recursively check children
   if (node.children && Array.isArray(node.children)) {
-    node.children.forEach((child) => {
+    node.children.forEach((child: any) => {
       headings = headings.concat(extractHeadings(child));
     });
   }
