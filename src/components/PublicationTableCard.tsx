@@ -50,14 +50,18 @@ export function PublicationTableCard({
                     key={i}
                     onClick={() => setIdx(i)}
                     className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                      i === idx ? "bg-primary" : "bg-border hover:bg-muted-foreground"
+                      i === idx
+                        ? "bg-primary"
+                        : "bg-border hover:bg-muted-foreground"
                     }`}
                     aria-label={`Tabla ${i + 1}`}
                   />
                 ))}
               </div>
               <button
-                onClick={() => setIdx((i) => Math.min(tablas.length - 1, i + 1))}
+                onClick={() =>
+                  setIdx((i) => Math.min(tablas.length - 1, i + 1))
+                }
                 disabled={idx === tablas.length - 1}
                 className="p-1 rounded hover:bg-muted disabled:opacity-30 transition-colors"
                 aria-label="Tabla siguiente"
@@ -72,6 +76,7 @@ export function PublicationTableCard({
         <TableBlock
           fields={{
             ...current,
+            blockType: "tabla",
             configuracion_visualizacion:
               current.configuracion_visualizacion ?? current.config_viz,
           }}
