@@ -15,7 +15,7 @@ export default async function Home() {
   const latestBulletin = bulletins.docs[0];
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
+    <div className="w-full mx-auto px-4 py-8 md:py-12">
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -88,18 +88,18 @@ export default async function Home() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {reports.docs.map((item) => {
-            const contenido = item.contenido as any;
+            const contenido = item.contenido as { root?: { children?: any[] } };
 
             let description = "Sin descripción";
             if (contenido?.root?.children) {
               const firstTextNode = contenido.root.children.find(
-                (child: any) =>
+                (child: { children?: { text?: string }[] }) =>
                   child.children &&
                   child.children.length > 0 &&
                   child.children[0].text,
               );
               if (firstTextNode) {
-                description = firstTextNode.children[0].text;
+                description = firstTextNode.children![0].text!;
               }
             }
 
@@ -112,7 +112,6 @@ export default async function Home() {
                 href={`/publicaciones/${item.slug}`}
                 imageUrl={item.imagen_destacada?.url}
                 imageAlt={item.imagen_destacada?.alt}
-                // layout="horizontal" removed to use default vertical layout for grid
               />
             );
           })}

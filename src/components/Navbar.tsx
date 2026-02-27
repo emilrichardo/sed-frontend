@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Sun,
   Moon,
+  ChevronDown,
 } from "lucide-react";
 
 const navLinks = [
@@ -26,18 +27,36 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout, isEditing, toggleEditMode, layoutMode, setLayoutMode } =
     useAuth();
 
+  // Handle theme initialization
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     const dark =
       saved === "dark" ||
       (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    setIsDark(dark);
+
     document.documentElement.classList.toggle("dark", dark);
+    // Use a small timeout to avoid synchronous setState during render
+    const timer = setTimeout(() => {
+      setIsDark(dark);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (userMenuOpen && !target.closest(".user-menu")) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [userMenuOpen]);
 
   const toggleTheme = () => {
     const newDark = !isDark;
@@ -54,14 +73,14 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 group">
-              <span className="text-xl font-bold tracking-tight hidden sm:inline-block">
+              <span className="text-2xl font-extrabold tracking-tight font-heading">
                 Santiago en Datos
               </span>
             </Link>
           </div>
 
           <div className="hidden md:flex items-center gap-6">
-            <div className="flex items-center gap-6   mr-2">
+            <div className="flex items-center gap-6 mr-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -79,56 +98,88 @@ export function Navbar() {
 
             {user ? (
               <div className="flex items-center gap-4">
-                <button
-                  onClick={toggleEditMode}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-normal rounded-md border transition-all ${
-                    isEditing
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background text-foreground hover:bg-muted border-input shadow-sm hover:shadow-none"
-                  }`}
-                >
-                  <Edit3 className="h-3.5 w-3.5" />
-                  {isEditing ? "Edit: ON" : "Edit: OFF"}
-                </button>
-                <button
-                  onClick={() =>
-                    setLayoutMode(
-                      layoutMode === "dashboard" ? "web" : "dashboard",
-                    )
-                  }
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-normal rounded-md border bg-background text-foreground hover:bg-muted border-input shadow-sm transition-all"
-                  title={
-                    layoutMode === "dashboard" ? "Vista Web" : "Vista Dashboard"
-                  }
-                >
-                  <LayoutDashboard className="h-3.5 w-3.5" />
-                  {layoutMode === "dashboard" ? "Web" : "Dash"}
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="user-menu flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background hover:bg-muted transition-colors"
+                  >
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </button>
 
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                  title={isDark ? "Modo Claro" : "Modo Oscuro"}
-                >
-                  {isDark ? (
-                    <Sun className="h-4 w-4" />
-                  ) : (
-                    <Moon className="h-4 w-4" />
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-md border border-border bg-background shadow-lg z-50">
+                      <div className="px-4 py-3 border-b border-border">
+                        <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-bold">
+                          Usuario
+                        </p>
+                        <p className="text-sm font-medium truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            toggleEditMode();
+                            setUserMenuOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                            isEditing
+                              ? "text-primary bg-primary/5 font-semibold"
+                              : "text-foreground hover:bg-muted"
+                          }`}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Modo Edición: {isEditing ? "Activado" : "Desactivado"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setLayoutMode(
+                              layoutMode === "dashboard" ? "web" : "dashboard",
+                            );
+                            setUserMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          {layoutMode === "dashboard"
+                            ? "Cambiar a Vista Web"
+                            : "Cambiar a Vista Panel"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            toggleTheme();
+                            setUserMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                        >
+                          {isDark ? (
+                            <>
+                              <Sun className="h-4 w-4" />
+                              Modo Claro
+                            </>
+                          ) : (
+                            <>
+                              <Moon className="h-4 w-4" />
+                              Modo Oscuro
+                            </>
+                          )}
+                        </button>
+                        <div className="my-1 border-t border-border" />
+                        <button
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Cerrar Sesión
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </button>
-
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  <span className="max-w-[150px] truncate">{user.email}</span>
                 </div>
-
-                <button
-                  onClick={logout}
-                  className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                  title="Cerrar Sesión"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
               </div>
             ) : (
               <Link
@@ -140,21 +191,7 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-4">
-            {user && (
-              <button
-                onClick={toggleEditMode}
-                className={`p-2 border rounded-md transition-colors ${
-                  isEditing
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-foreground hover:bg-muted"
-                }`}
-                title="Toggle Edit Mode"
-              >
-                <Edit3 className="h-5 w-5" />
-              </button>
-            )}
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-muted-foreground hover:text-primary transition-colors"
@@ -198,6 +235,30 @@ export function Navbar() {
                     <User className="h-5 w-5" />
                     <span>{user.email}</span>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      toggleEditMode();
+                      setIsOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
+                  >
+                    <Edit3 className="h-5 w-5" />
+                    Modo Edición: {isEditing ? "ON" : "OFF"}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setLayoutMode(
+                        layoutMode === "dashboard" ? "web" : "dashboard",
+                      );
+                      setIsOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
+                  >
+                    <LayoutDashboard className="h-5 w-5" />
+                    {layoutMode === "dashboard" ? "Vista Web" : "Vista Panel"}
+                  </button>
 
                   <button
                     onClick={() => {

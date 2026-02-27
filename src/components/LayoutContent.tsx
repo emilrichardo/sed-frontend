@@ -4,6 +4,7 @@ import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const { layoutMode, user } = useAuth();
@@ -18,6 +19,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 md:px-8 py-6 animate-in fade-in duration-500">
           {children}
         </main>
+        <Footer />
       </div>
     );
   }

@@ -1,8 +1,4 @@
-import {
-  getWidgets,
-  fetchEntriesForCollection,
-  resolveWidgetEntries,
-} from "@/lib/api";
+import { getWidgets, resolveWidgetEntries } from "@/lib/api";
 import { WidgetCard } from "@/components/WidgetCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Layout } from "lucide-react";
@@ -22,7 +18,7 @@ export default async function WidgetsPage() {
   const widgets = await Promise.all(rawWidgets.map(resolveWidgetEntries));
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
+    <div className="w-full mx-auto px-4 py-8 md:py-12 space-y-8">
       <PageHeader
         title="Widgets"
         description="Visualizaciones rápidas de indicadores clave y comparativas."

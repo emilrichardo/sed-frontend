@@ -39,7 +39,11 @@ export default async function PublicationsArchivePage() {
     { id: string | number; nombre: string; slug?: string }
   >();
   items.forEach((item) => {
-    [...(item.categorias || []), ...(item.tags || []), ...(item.taxonomias || [])].forEach((t) => {
+    [
+      ...(item.categorias || []),
+      ...(item.tags || []),
+      ...(item.taxonomias || []),
+    ].forEach((t) => {
       if (!catMap.has(t.id)) catMap.set(t.id, t);
     });
   });
@@ -48,7 +52,7 @@ export default async function PublicationsArchivePage() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 space-y-8">
+    <div className="w-full mx-auto px-4 py-8 md:py-12 space-y-8">
       <PageHeader
         title="Publicaciones"
         description="Publicaciones técnicas y análisis detallados de Santiago en Datos."

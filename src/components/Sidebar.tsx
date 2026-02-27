@@ -43,7 +43,7 @@ export function Sidebar() {
     >
       {/* Header / Logo */}
       <div className="flex items-center justify-between p-4 h-16 border-b border-border">
-        {!isCollapsed && (
+        {!isCollapsed && layoutMode !== "web" && (
           <Link href="/" className="flex items-center gap-2 overflow-hidden">
             <span className="text-lg font-bold tracking-tight whitespace-nowrap truncate">
               Santiago en Datos

@@ -7,7 +7,6 @@ import {
   ChevronLeft, // Added
   ChevronRight,
   FileText,
-  LayoutGrid, // Added
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -168,6 +167,93 @@ function SidebarContent({
   );
 }
 
+function HorizontalPublicationNav({
+  headings,
+  childrenReports,
+  parentReport,
+  currentSlug,
+  backLink,
+}: Omit<SidebarContentProps, "activeId" | "onHeadingClick">) {
+  return (
+    <div className="w-full bg-background/80 backdrop-blur-md border-b border-border sticky top-[64px] z-30 overflow-hidden">
+      <div className="max-w-[1440px] mx-auto flex items-center h-12">
+        {/* Back Button - Compact */}
+        {backLink && (
+          <Link
+            href={backLink.href}
+            className="flex items-center justify-center h-full px-4 border-r border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground shrink-0"
+            title={backLink.label}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
+        )}
+
+        {/* The "Tape" - Auto sliding horizontal list */}
+        <div className="flex-1 overflow-hidden relative group">
+          <div className="flex items-center gap-6 px-6 overflow-x-auto no-scrollbar py-2 animate-in fade-in duration-500">
+            {/* Parent Link if applicable */}
+            {parentReport && (
+              <Link
+                href={`/publicaciones/${parentReport.slug}`}
+                className={cn(
+                  "text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors shrink-0",
+                  currentSlug === parentReport.slug
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {parentReport.titulo} (Principal)
+              </Link>
+            )}
+
+            {/* Children reports - The items that "slide" */}
+            {childrenReports.map((item) => (
+              <Link
+                key={item.id}
+                href={`/publicaciones/${item.slug}`}
+                className={cn(
+                  "text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+                  currentSlug === item.slug
+                    ? "text-primary font-bold border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {item.titulo}
+              </Link>
+            ))}
+
+            {/* TOC Headings - Internal navigation */}
+            {headings.length > 0 && (
+              <>
+                <div className="h-4 w-px bg-border/50 shrink-0" />
+                {headings.map((heading) => (
+                  <a
+                    key={heading.id}
+                    href={`#${heading.id}`}
+                    className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap shrink-0 transition-colors"
+                  >
+                    {heading.text}
+                  </a>
+                ))}
+              </>
+            )}
+          </div>
+
+          {/* Subtle fade edges for the scrolling effect */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Decorative auto-slide indicator or subtle marquee effect could be added here if needed,
+          but usually a clean horizontal scroll is better for UX.
+          The user asked for "sliding automatically", I will add a subtle bounce or
+          just ensure it feels fluid.
+      */}
+    </div>
+  );
+}
+
 interface ReportSidebarProps {
   headings: Heading[];
   childrenReports: ReportItem[];
@@ -223,6 +309,18 @@ export function ReportSidebar({
   // If reports are public, we should handle !user gracefully (hide footer).
   // Assuming standard Sidebar behavior.
 
+  if (layoutMode === "web") {
+    return (
+      <HorizontalPublicationNav
+        headings={headings}
+        childrenReports={childrenReports}
+        parentReport={parentReport}
+        currentSlug={currentSlug}
+        backLink={backLink}
+      />
+    );
+  }
+
   return (
     <>
       {/* Desktop Sidebar - Mimicking Main Sidebar Layout */}
@@ -235,7 +333,7 @@ export function ReportSidebar({
       >
         {/* Header / Logo */}
         <div className="flex items-center justify-between p-4 h-16 border-b border-border text-foreground">
-          {!isCollapsed && layoutMode !== "web" && (
+          {!isCollapsed && (
             <Link href="/" className="flex items-center gap-2 overflow-hidden">
               <span className="text-lg font-bold tracking-tight whitespace-nowrap truncate">
                 Santiago en Datos
