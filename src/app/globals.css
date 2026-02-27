@@ -54,7 +54,7 @@
   --color-border: var(--border);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), monospace;
-  --font-heading: var(--font-serif), "Georgia", ui-serif, serif;
+  --font-heading: var(--font-tiempos-headline), "Georgia", ui-serif, serif;
 
   /* Map other shadcn vars */
   --color-card: var(--card);
@@ -109,8 +109,9 @@ body {
   h4,
   h5,
   h6 {
-    font-family: var(--font-heading);
-    @apply font-bold tracking-tight;
+    font-family: var(--font-tiempos-headline), "Georgia", ui-serif, serif;
+    font-weight: 600;
+    @apply tracking-tight;
   }
 
   /* Buttons: Rounded, no hard tracking */
