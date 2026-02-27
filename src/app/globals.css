@@ -6,44 +6,44 @@
 :root {
   /* Modern Theme Base Colors */
   --background: oklch(1 0 0); /* White */
-  --foreground: oklch(0.1 0 0); /* Near Black */
+  --foreground: #262624; /* Dark Navy Blue */
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.1 0 0);
+  --card-foreground: #262624;
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.1 0 0);
+  --popover-foreground: #262624;
 
   --primary: oklch(0.605 0.144 30.7); /* Muted red #c95b4a */
   --primary-foreground: oklch(1 0 0); /* White */
 
   --secondary: oklch(0.96 0 0); /* Very Light Grey */
-  --secondary-foreground: oklch(0.1 0 0);
+  --secondary-foreground: #262624;
 
   --muted: oklch(0.96 0 0);
   --muted-foreground: oklch(0.4 0 0);
 
   --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0.1 0 0);
+  --accent-foreground: #262624;
 
   --destructive: oklch(0.605 0.144 30.7); /* Muted red #c95b4a */
   --destructive-foreground: oklch(1 0 0);
 
   --border: oklch(0.9 0 0); /* Light Grey Borders */
   --input: oklch(0.9 0 0);
-  --ring: oklch(0.1 0 0);
+  --ring: #262624;
 
   --radius: 0.5rem; /* Rounded corners */
 
   /* Sidebar specific (if used) */
   --sidebar: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.1 0 0);
-  --sidebar-primary: oklch(0.1 0 0);
+  --sidebar-foreground: #262624;
+  --sidebar-primary: #262624;
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.1 0 0);
+  --sidebar-accent-foreground: #262624;
   --sidebar-border: oklch(0.9 0 0);
-  --sidebar-ring: oklch(0.1 0 0);
+  --sidebar-ring: #262624;
 }
 
 @theme inline {
@@ -54,6 +54,7 @@
   --color-border: var(--border);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), monospace;
+  --font-heading: var(--font-serif), "Georgia", ui-serif, serif;
 
   /* Map other shadcn vars */
   --color-card: var(--card);
@@ -101,14 +102,15 @@ body {
     @apply border-border outline-ring/50;
   }
 
-  /* Titles with Mono Font */
+  /* Titles with Serif Font (Lora / Tiempos-like) */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-sans font-bold tracking-tight;
+    font-family: var(--font-heading);
+    @apply font-bold tracking-tight;
   }
 
   /* Buttons: Rounded, no hard tracking */
@@ -139,15 +141,24 @@ body {
 }
 
 .dark {
-  /* Dark Mode Colors */
-  --background: oklch(0.1 0 0);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.12 0 0);
-  --card-foreground: oklch(0.98 0 0);
+  /* Dark Mode Colors — Dark Grey base */
+  --background: #161614;
+  --foreground: oklch(0.95 0 0);
+  --card: #1e1e1c;
+  --card-foreground: oklch(0.95 0 0);
+  --popover: #1e1e1c;
+  --popover-foreground: oklch(0.95 0 0);
   --primary: oklch(0.605 0.144 30.7);
   --primary-foreground: oklch(1 0 0);
-  --muted: oklch(0.2 0 0);
-  --muted-foreground: oklch(0.7 0 0);
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.2 0 0);
+  --secondary: #2a2a28;
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: #2a2a28;
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: #2a2a28;
+  --accent-foreground: oklch(0.95 0 0);
+  --border: #303030;
+  --input: #303030;
+  --ring: #525250;
+  --sidebar: #1a1a18;
+  --sidebar-foreground: oklch(0.95 0 0);
 }

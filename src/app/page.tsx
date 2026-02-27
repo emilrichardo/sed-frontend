@@ -1,6 +1,5 @@
 import { getBulletins, getReports } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
-import { Stats } from "@/components/Stats";
 
 import Link from "next/link";
 import { FileText, ArrowRight, BookOpen } from "lucide-react";
@@ -17,7 +16,6 @@ export default async function Home() {
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
-      <Stats />
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold flex items-center gap-2">

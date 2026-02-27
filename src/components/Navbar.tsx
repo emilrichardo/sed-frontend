@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,8 @@ import {
   User,
   Edit3,
   LayoutDashboard,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const navLinks = [
@@ -23,9 +25,26 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const pathname = usePathname();
   const { user, logout, isEditing, toggleEditMode, layoutMode, setLayoutMode } =
     useAuth();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    const dark =
+      saved === "dark" ||
+      (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    setIsDark(dark);
+    document.documentElement.classList.toggle("dark", dark);
+  }, []);
+
+  const toggleTheme = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    document.documentElement.classList.toggle("dark", newDark);
+    localStorage.setItem("theme", newDark ? "dark" : "light");
+  };
 
   if (!user) return null;
 
@@ -84,6 +103,18 @@ export function Navbar() {
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
                   {layoutMode === "dashboard" ? "Web" : "Dash"}
+                </button>
+
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  title={isDark ? "Modo Claro" : "Modo Oscuro"}
+                >
+                  {isDark ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
                 </button>
 
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

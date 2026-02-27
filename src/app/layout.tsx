@@ -1,4 +1,4 @@
-import { Source_Code_Pro, Inter } from "next/font/google";
+import { Source_Code_Pro, Inter, Lora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
@@ -10,6 +10,7 @@ const sourceCodePro = Source_Code_Pro({
   variable: "--font-mono",
 });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const lora = Lora({ subsets: ["latin"], variable: "--font-serif" });
 // ... (metadata)
 
 import { LayoutContent } from "@/components/LayoutContent";
@@ -21,8 +22,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{const t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}`,
+        }}
+      />
       <body
-        className={`${sourceCodePro.variable} ${inter.variable} font-sans bg-background`}
+        className={`${sourceCodePro.variable} ${inter.variable} ${lora.variable} font-sans bg-background`}
         suppressHydrationWarning
       >
         <AuthProvider>

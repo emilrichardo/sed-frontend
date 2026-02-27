@@ -26,10 +26,8 @@ import {
   TableProperties,
   Sun,
   Flame,
-  Target,
-  ArrowUpDown,
   TrendingUp,
-  CandlestickChart,
+  Star,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
 import { getTextFromNodes } from "./RichTextParser";
@@ -76,335 +74,170 @@ type ChartTypeDef = {
   minStringCols?: number;
 };
 
+// Removed duplicates/broken charts vs previous version:
+// - treemap_chart (recharts) → replaced by treemap_plotly (plotly, better)
+// - polar_chart → redundant with radar_chart
+// - candlestick_chart → requires OHLC format not available from CMS
+// - sparkline → too minimal, overlaps with line/area charts
+// - box_plot → niche statistical use, hidden from toolbar
 const CHART_CATALOG: ChartTypeDef[] = [
   { id: "table", label: "Tabla", Icon: TableIcon, minNumeric: 0, minRows: 1 },
-  {
-    id: "bar_chart",
-    label: "Barras horizontales",
-    Icon: BarChartHorizontal,
-    minNumeric: 1,
-    minRows: 1,
-  },
-  {
-    id: "column_chart",
-    label: "Columnas",
-    Icon: ChartBar,
-    minNumeric: 1,
-    minRows: 1,
-  },
-  {
-    id: "stacked_bar_chart",
-    label: "Barras apiladas",
-    Icon: ChartBarStacked,
-    minNumeric: 2,
-    minRows: 1,
-  },
-  {
-    id: "composed_chart",
-    label: "Combinado",
-    Icon: Waves,
-    minNumeric: 2,
-    minRows: 1,
-  },
-  {
-    id: "line_chart",
-    label: "Líneas",
-    Icon: ChartLine,
-    minNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "area_chart",
-    label: "Área",
-    Icon: ChartArea,
-    minNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "pie_chart",
-    label: "Torta",
-    Icon: ChartPie,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "donut_chart",
-    label: "Dona",
-    Icon: Disc2,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "treemap_chart",
-    label: "Treemap",
-    Icon: Grid2x2,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "radar_chart",
-    label: "Radar",
-    Icon: Hexagon,
-    minNumeric: 1,
-    minRows: 3,
-  },
-  {
-    id: "radial_bar_chart",
-    label: "Radial",
-    Icon: Pointer,
-    minNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "tornado_chart",
-    label: "Tornado",
-    Icon: ArrowLeftRight,
-    minNumeric: 2,
-    maxNumeric: 2,
-    minRows: 1,
-  },
-  {
-    id: "waterfall_chart",
-    label: "Cascada",
-    Icon: ChartBarDecreasing,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "scatter_chart",
-    label: "Dispersión",
-    Icon: CircleDot,
-    minNumeric: 2,
-    minRows: 2,
-  },
-  {
-    id: "sankey_chart",
-    label: "Sankey",
-    Icon: ChartNetwork,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-    minStringCols: 2,
-  },
-  {
-    id: "kpi_card",
-    label: "KPI",
-    Icon: Hash,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 1,
-    maxRows: 5,
-  },
-  {
-    id: "gauge_chart",
-    label: "Medidor",
-    Icon: Gauge,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 1,
-    maxRows: 1,
-  },
-  {
-    id: "choropleth_map",
-    label: "Mapa",
-    Icon: Map,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 1,
-  },
-  {
-    id: "sunburst_chart",
-    label: "Sunburst",
-    Icon: Sun,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "heatmap_chart",
-    label: "Mapa de calor",
-    Icon: Flame,
-    minNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "bubble_plotly",
-    label: "Burbujas",
-    Icon: CircleDot,
-    minNumeric: 2,
-    minRows: 3,
-  },
-  {
-    id: "treemap_plotly",
-    label: "Treemap Pro",
-    Icon: Grid2x2,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "funnel_chart",
-    label: "Embudo",
-    Icon: TrendingUp,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "polar_chart",
-    label: "Polar",
-    Icon: Hexagon,
-    minNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "box_plot",
-    label: "Caja",
-    Icon: ChartBar,
-    minNumeric: 1,
-    minRows: 5,
-  },
-  {
-    id: "advanced_table",
-    label: "Tabla avanzada",
-    Icon: TableProperties,
-    minNumeric: 0,
-    minRows: 1,
-  },
-  {
-    id: "sparkline",
-    label: "Sparkline",
-    Icon: TrendingUp,
-    minNumeric: 1,
-    maxNumeric: 1,
-    minRows: 2,
-  },
-  {
-    id: "candlestick_chart",
-    label: "Velas",
-    Icon: CandlestickChart,
-    minNumeric: 1,
-    minRows: 3,
-  },
+  { id: "advanced_table", label: "Tabla avanzada", Icon: TableProperties, minNumeric: 0, minRows: 1 },
+  { id: "column_chart", label: "Columnas", Icon: ChartBar, minNumeric: 1, minRows: 1 },
+  { id: "bar_chart", label: "Barras horizontales", Icon: BarChartHorizontal, minNumeric: 1, minRows: 1 },
+  { id: "stacked_bar_chart", label: "Barras apiladas", Icon: ChartBarStacked, minNumeric: 2, minRows: 1 },
+  { id: "line_chart", label: "Líneas", Icon: ChartLine, minNumeric: 1, minRows: 2 },
+  { id: "area_chart", label: "Área", Icon: ChartArea, minNumeric: 1, minRows: 2 },
+  { id: "composed_chart", label: "Combinado (barra+línea)", Icon: Waves, minNumeric: 2, minRows: 1 },
+  { id: "pie_chart", label: "Torta", Icon: ChartPie, minNumeric: 1, maxNumeric: 1, minRows: 2, maxRows: 12 },
+  { id: "donut_chart", label: "Dona", Icon: Disc2, minNumeric: 1, maxNumeric: 1, minRows: 2, maxRows: 12 },
+  { id: "treemap_plotly", label: "Treemap", Icon: Grid2x2, minNumeric: 1, maxNumeric: 1, minRows: 2 },
+  { id: "sunburst_chart", label: "Sunburst", Icon: Sun, minNumeric: 1, maxNumeric: 1, minRows: 2 },
+  { id: "funnel_chart", label: "Embudo", Icon: TrendingUp, minNumeric: 1, maxNumeric: 1, minRows: 2 },
+  { id: "waterfall_chart", label: "Cascada", Icon: ChartBarDecreasing, minNumeric: 1, maxNumeric: 1, minRows: 2 },
+  { id: "radar_chart", label: "Radar", Icon: Hexagon, minNumeric: 1, minRows: 3 },
+  { id: "radial_bar_chart", label: "Barras radiales", Icon: Pointer, minNumeric: 1, minRows: 2 },
+  { id: "tornado_chart", label: "Tornado", Icon: ArrowLeftRight, minNumeric: 2, maxNumeric: 2, minRows: 1 },
+  { id: "scatter_chart", label: "Dispersión", Icon: CircleDot, minNumeric: 2, minRows: 3 },
+  { id: "bubble_plotly", label: "Burbujas", Icon: CircleDot, minNumeric: 2, minRows: 3 },
+  { id: "heatmap_chart", label: "Mapa de calor", Icon: Flame, minNumeric: 2, minRows: 2 },
+  { id: "sankey_chart", label: "Sankey", Icon: ChartNetwork, minNumeric: 1, maxNumeric: 1, minRows: 2, minStringCols: 2 },
+  // choropleth_map: no maxNumeric — the metric selector handles multi-column data (one metric shown at a time)
+  { id: "choropleth_map", label: "Mapa coroplético", Icon: Map, minNumeric: 1, minRows: 1 },
+  { id: "kpi_card", label: "KPI", Icon: Hash, minNumeric: 1, maxNumeric: 1, minRows: 1, maxRows: 5 },
+  { id: "gauge_chart", label: "Medidor", Icon: Gauge, minNumeric: 1, maxNumeric: 1, minRows: 1, maxRows: 1 },
 ];
 
-function getCompatibleChartTypes(
+const SDE_DEPT_KEYWORDS = [
+  "figueroa","salavina","atamisqui","silipica","jimenez","loreto",
+  "guasayan","quebrachos","aguirre","choya","alberdi","avellaneda",
+  "pellegrini","mitre","copo",
+];
+const AR_PROVINCE_KEYWORDS = [
+  "cordoba","mendoza","tucuman","chaco","corrientes","misiones",
+  "entre rios","jujuy","neuquen","rio negro","chubut","formosa",
+  "la pampa","la rioja","catamarca","san juan","san luis",
+  "santa cruz","tierra del fuego","buenos aires","santa fe","salta",
+  "santiago del estero","neuquen","caba","capital federal",
+  "ciudad de buenos aires","ciudad autonoma",
+];
+
+function normStr(s: string): string {
+  return s.toLowerCase().replace(/[áéíóúñ]/g, (c) =>
+    ({ á: "a", é: "e", í: "i", ó: "o", ú: "u", ñ: "n" } as Record<string,string>)[c] || c
+  );
+}
+
+function detectGeoData(columns: { id: string; header?: string }[], rows: any[]): boolean {
+  if (!columns[0] || rows.length === 0) return false;
+  const firstCol = columns[0];
+  const headerNorm = normStr(firstCol.header || "");
+  if (
+    headerNorm.includes("departamento") ||
+    headerNorm.includes("provincia") ||
+    headerNorm.includes("jurisdiccion")
+  ) return true;
+
+  const firstColValues = rows
+    .map((row) => {
+      if (row.cells && Array.isArray(row.cells)) {
+        return row.cells.find((c: any) => c.columnId === firstCol.id)?.value;
+      }
+      return row[firstCol.id];
+    })
+    .filter(Boolean)
+    .map((v: any) => normStr(String(v)));
+
+  return (
+    firstColValues.some((v) => SDE_DEPT_KEYWORDS.some((k) => v.includes(k))) ||
+    firstColValues.some((v) => AR_PROVINCE_KEYWORDS.some((k) => v.includes(k)))
+  );
+}
+
+function detectTimeSeries(columns: { id: string; header?: string }[], rows: any[]): boolean {
+  if (!columns[0] || rows.length < 2) return false;
+  const firstCol = columns[0];
+  const headerNorm = normStr(firstCol.header || "");
+  if (headerNorm.includes("año") || headerNorm.includes("anio") || headerNorm.includes("fecha") || headerNorm.includes("period")) return true;
+  const values = rows.map((row) => {
+    const v = row.cells
+      ? row.cells.find((c: any) => c.columnId === firstCol.id)?.value
+      : row[firstCol.id];
+    return String(v || "").trim();
+  });
+  // Most values look like years (4-digit number 1900-2100) or dates
+  const yearLike = values.filter((v) => /^(19|20)\d{2}$/.test(v)).length;
+  return yearLike >= Math.ceil(values.length * 0.6);
+}
+
+function getChartCompatibilityInfo(
   columns: { id: string; header?: string }[],
   rows: any[],
-): string[] {
-  const numericCount = columns.filter((c) =>
-    isNumericColumn(c.id, rows),
-  ).length;
+): { compatibleIds: Set<string>; recommendedId: string } {
+  const numericCount = columns.filter((c) => isNumericColumn(c.id, rows)).length;
   const stringCount = columns.length - numericCount;
   const rowCount = rows.length;
+  const isGeo = detectGeoData(columns, rows);
+  const isTimeSeries = detectTimeSeries(columns, rows);
 
-  const chartTypes = CHART_CATALOG.filter(
-    ({ minNumeric, maxNumeric, minRows, maxRows, minStringCols }) => {
+  // Base compatibility from catalog rules
+  const compatibleIds = new Set<string>(
+    CHART_CATALOG.filter(({ minNumeric, maxNumeric, minRows, maxRows, minStringCols }) => {
       if (numericCount < minNumeric) return false;
       if (maxNumeric !== undefined && numericCount > maxNumeric) return false;
       if (rowCount < minRows) return false;
       if (maxRows !== undefined && rowCount > maxRows) return false;
-      if (minStringCols !== undefined && stringCount < minStringCols)
-        return false;
+      if (minStringCols !== undefined && stringCount < minStringCols) return false;
       return true;
-    },
-  ).map((ct) => ct.id);
+    }).map((ct) => ct.id),
+  );
 
-  // Auto-detect geographic data for choropleth map
-  const firstCol = columns[0];
-  if (firstCol && rows.length > 0) {
-    const headerNorm = (firstCol.header || "")
-      .toLowerCase()
-      .replace(
-        /[áéíóú]/g,
-        (c: string) =>
-          (
-            ({ á: "a", é: "e", í: "i", ó: "o", ú: "u" }) as Record<
-              string,
-              string
-            >
-          )[c] || c,
-      );
-
-    const hasDeptHeader = headerNorm.includes("departamento");
-    const hasGeoHeader =
-      hasDeptHeader ||
-      headerNorm.includes("jurisdiccion") ||
-      headerNorm.includes("jurisdicción") ||
-      headerNorm.includes("provincia");
-
-    if (hasGeoHeader) {
-      chartTypes.push("choropleth_map");
-    } else {
-      // Fallback: value-based detection
-      const firstColValues = rows
-        .map((row) => {
-          if (row.cells && Array.isArray(row.cells)) {
-            return row.cells.find((c: any) => c.columnId === firstCol.id)
-              ?.value;
-          }
-          return row[firstCol.id];
-        })
-        .filter(Boolean)
-        .map((v: any) => String(v).toLowerCase());
-
-      const SDE_DEPT_KEYWORDS = [
-        "figueroa",
-        "salavina",
-        "atamisqui",
-        "silipica",
-        "jimenez",
-        "loreto",
-        "guasayan",
-        "quebrachos",
-        "aguirre",
-        "choya",
-        "alberdi",
-        "avellaneda",
-        "pellegrini",
-        "mitre",
-        "copo",
-      ];
-      const AR_PROVINCE_KEYWORDS = [
-        "cordoba",
-        "mendoza",
-        "tucuman",
-        "chaco",
-        "corrientes",
-        "misiones",
-        "entre rios",
-        "jujuy",
-        "neuquen",
-        "rio negro",
-        "chubut",
-        "formosa",
-        "la pampa",
-        "la rioja",
-        "catamarca",
-        "san juan",
-        "san luis",
-        "santa cruz",
-        "tierra del fuego",
-      ];
-
-      const hasDeptValues = firstColValues.some((v: string) =>
-        SDE_DEPT_KEYWORDS.some((k) => v.includes(k)),
-      );
-      const hasProvinceValues = firstColValues.some((v: string) =>
-        AR_PROVINCE_KEYWORDS.some((k) => v.includes(k)),
-      );
-
-      if (hasDeptValues || hasProvinceValues) {
-        chartTypes.push("choropleth_map");
-      }
-    }
+  // choropleth_map: ONLY compatible when geographic data is detected
+  if (!isGeo) {
+    compatibleIds.delete("choropleth_map");
   }
 
-  return chartTypes;
+  // scatter/bubble: require at least 2 numeric cols (already enforced by catalog)
+  // heatmap: more useful with 3+ numeric cols
+  if (numericCount < 3) {
+    compatibleIds.delete("heatmap_chart");
+  }
+
+  // sankey: needs at least 2 distinct string cols
+  if (stringCount < 2) {
+    compatibleIds.delete("sankey_chart");
+  }
+
+  // Determine recommended chart
+  let recommendedId = "column_chart";
+
+  if (isGeo && compatibleIds.has("choropleth_map")) {
+    recommendedId = "choropleth_map";
+  } else if (rowCount === 1 && numericCount >= 1) {
+    recommendedId = "kpi_card";
+  } else if (isTimeSeries && numericCount >= 1 && rowCount >= 3) {
+    recommendedId = numericCount >= 2 ? "area_chart" : "line_chart";
+  } else if (numericCount === 1 && rowCount >= 2 && rowCount <= 8) {
+    recommendedId = "pie_chart";
+  } else if (numericCount === 2 && rowCount >= 2) {
+    recommendedId = "tornado_chart";
+  } else if (numericCount >= 3) {
+    recommendedId = "stacked_bar_chart";
+  } else if (numericCount === 1 && rowCount > 8) {
+    // Many rows: horizontal bar is more readable
+    recommendedId = "bar_chart";
+  } else if (numericCount === 1 && stringCount >= 2 && compatibleIds.has("sankey_chart")) {
+    recommendedId = "sankey_chart";
+  } else {
+    recommendedId = "column_chart";
+  }
+
+  // Fallback: if recommended is not compatible, use first compatible
+  if (!compatibleIds.has(recommendedId)) {
+    recommendedId = [...compatibleIds][0] ?? "table";
+  }
+
+  return { compatibleIds, recommendedId };
 }
 
 // --- Main component ---
@@ -533,36 +366,32 @@ export const TableBlock = ({
     );
   }, [columns, filteredRows, xAxisColId]);
 
-  // Chart type switcher
-  const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
-
-  const compatibleTypes = useMemo(
-    () => getCompatibleChartTypes(columns, rows),
+  // Chart compatibility and recommendation
+  const { compatibleIds, recommendedId } = useMemo(
+    () => getChartCompatibilityInfo(columns, filteredRows),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(columns), JSON.stringify(rows)],
+    [JSON.stringify(columns), JSON.stringify(filteredRows)],
   );
 
-  // Allow any chart type from catalog, prioritize tipo_visualizacion from CMS or compatible types
-  const availableTypes = [...new Set([...compatibleTypes, ...allChartTypeIds])];
-
-  // Map legacy map chart types to the unified choropleth_map
+  // Map legacy chart type aliases to unified choropleth_map
   const CHART_TYPE_ALIASES: Record<string, string> = {
     map_argentina: "choropleth_map",
     map_santiago: "choropleth_map",
     map_santiago_del_estero: "choropleth_map",
+    treemap_chart: "treemap_plotly",
   };
   const resolvedVisualizationType = fields.tipo_visualizacion
-    ? (CHART_TYPE_ALIASES[fields.tipo_visualizacion] ??
-      fields.tipo_visualizacion)
+    ? (CHART_TYPE_ALIASES[fields.tipo_visualizacion] ?? fields.tipo_visualizacion)
     : undefined;
 
+  const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
+
   const defaultChartType =
-    resolvedVisualizationType &&
-    allChartTypeIds.includes(resolvedVisualizationType)
+    resolvedVisualizationType && allChartTypeIds.includes(resolvedVisualizationType)
       ? resolvedVisualizationType
-      : availableTypes.includes("column_chart")
-        ? "column_chart"
-        : (availableTypes[0] ?? "bar_chart");
+      : compatibleIds.has(recommendedId)
+        ? recommendedId
+        : ([...compatibleIds][0] ?? "table");
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
   const [useHeatmap, setUseHeatmap] = useState(false);
@@ -713,25 +542,44 @@ export const TableBlock = ({
         </div>
       </div>
 
-      {/* Chart type switcher — show all chart types when in visualization mode */}
+      {/* Chart type switcher */}
       {activeTab === "visualizacion" && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 bg-muted/10 border-b flex-wrap">
-          {CHART_CATALOG.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              title={label}
-              onClick={() => setSelectedChartType(id)}
-              className={`p-1.5 rounded transition-all ${
-                selectedChartType === id
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-            </button>
-          ))}
-          {selectedChartType === "table" && (
-            <div className="ml-auto flex items-center gap-2 px-2">
+          {CHART_CATALOG.map(({ id, label, Icon }) => {
+            const isCompatible = compatibleIds.has(id);
+            const isSelected = selectedChartType === id;
+            const isRecommended = id === recommendedId;
+            return (
+              <button
+                key={id}
+                title={`${label}${isRecommended ? " ★ Recomendado" : ""}${!isCompatible ? " (datos insuficientes)" : ""}`}
+                onClick={() => setSelectedChartType(id)}
+                disabled={!isCompatible}
+                className={`relative p-1.5 rounded transition-all ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : isCompatible
+                      ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      : "text-muted-foreground/25 cursor-not-allowed"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {isRecommended && !isSelected && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full border border-background" />
+                )}
+                {isRecommended && isSelected && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-300 rounded-full border border-primary-foreground" />
+                )}
+              </button>
+            );
+          })}
+          {/* Recommendation legend */}
+          <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground pl-2">
+            <span className="w-2 h-2 bg-amber-400 rounded-full inline-block" />
+            <span className="hidden sm:inline">Recomendado</span>
+          </div>
+          {(selectedChartType === "table" || selectedChartType === "advanced_table") && (
+            <div className="flex items-center gap-2 px-2 border-l ml-1">
               <button
                 onClick={() => setUseHeatmap(!useHeatmap)}
                 className={`flex items-center gap-2 px-2 py-1 text-[10px] uppercase font-bold border rounded transition-all ${

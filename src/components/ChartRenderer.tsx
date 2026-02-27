@@ -60,7 +60,7 @@ import Plot from "react-plotly.js";
 // Color Palettes
 const COLORS_DEFAULT = [
   "#c95b4a",
-  "#161616ff",
+  "#262624ff",
   "#4d4a4aff",
   "#7c897aff",
   "#575f77ff",
@@ -68,7 +68,7 @@ const COLORS_DEFAULT = [
   "#0891b2",
   "#ca8a04",
 ];
-const COLORS_SLATE = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
+const COLORS_SLATE = ["#262624", "#3d3d3a", "#64748b", "#94a3b8", "#cbd5e1"];
 const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#c95b4a"];
 const COLORS_HEATMAP = ["#fee2e2", "#fca5a5", "#ef4444", "#b91c1c", "#7f1d1d"];
 // Multicolor: no red — red is reserved for Santiago del Estero
@@ -86,7 +86,7 @@ const COLORS_MULTICOLOR = [
 ];
 
 const SANTIAGO_RED = "#c95b4a";
-const BLACK = "#000000";
+const BLACK = "#262624";
 
 // Province name mappings
 const PROVINCE_ALIASES: Record<string, string[]> = {
