@@ -28,7 +28,7 @@ export function PublicationTableSlider({
 
   return (
     <div
-      className="w-full relative group/slider flex flex-col h-[500px] overflow-hidden"
+      className="w-full relative group/slider flex flex-col overflow-hidden"
       onClick={(e) => e.preventDefault()}
     >
       <div

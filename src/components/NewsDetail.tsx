@@ -32,7 +32,11 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
         }
       >
         {isEmbedded ? (
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4 leading-tight">
+          <h2
+            className={`text-2xl md:text-3xl font-bold tracking-tight leading-tight ${
+              hasContent ? "mb-4" : "mb-0"
+            }`}
+          >
             {initialData.titulo}
           </h2>
         ) : (

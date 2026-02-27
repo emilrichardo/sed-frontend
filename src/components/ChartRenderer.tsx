@@ -53,20 +53,25 @@ import {
 } from "lucide-react";
 import { scaleQuantile } from "d3-scale";
 import { geoMercator, geoPath } from "d3-geo";
-import { useReactTable, getCoreRowModel, getSortedRowModel, getFilteredRowModel, flexRender, SortingState, ColumnDef } from "@tanstack/react-table";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  SortingState,
+  ColumnDef,
+} from "@tanstack/react-table";
 import { useState, useMemo } from "react";
 import Plot from "react-plotly.js";
 
 // Color Palettes
 const COLORS_DEFAULT = [
-  "#c95b4a",
-  "#262624ff",
-  "#4d4a4aff",
-  "#7c897aff",
-  "#575f77ff",
-  "#9333ea",
-  "#0891b2",
-  "#ca8a04",
+  "#c95b4a", // Primary red
+  "#4d5f7a", // Slate blue
+  "#b08f51", // Muted gold/orange
+  "#518765", // Soft pine green
+  "#8a597a", // Muted purple/rose
 ];
 const COLORS_SLATE = ["#262624", "#3d3d3a", "#64748b", "#94a3b8", "#cbd5e1"];
 const COLORS_SEMAPHORE = ["#16a34a", "#ca8a04", "#c95b4a"];
@@ -265,7 +270,13 @@ const prepareData = (rows: any[], columns: any[]) => {
 };
 
 // Advanced Table component (must be a component to use hooks)
-const AdvancedTableChart = ({ chartData, columns }: { chartData: any[]; columns: any[] }) => {
+const AdvancedTableChart = ({
+  chartData,
+  columns,
+}: {
+  chartData: any[];
+  columns: any[];
+}) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -278,7 +289,9 @@ const AdvancedTableChart = ({ chartData, columns }: { chartData: any[]; columns:
           return (
             <button
               className="flex items-center gap-1 font-semibold hover:text-primary"
-              onClick={() => column.toggleSorting(isSorted === "asc" ? false : true)}
+              onClick={() =>
+                column.toggleSorting(isSorted === "asc" ? false : true)
+              }
             >
               {col.header}
               {isSorted === "asc" ? (
@@ -293,7 +306,9 @@ const AdvancedTableChart = ({ chartData, columns }: { chartData: any[]; columns:
         },
         cell: ({ getValue }: any) => {
           const val = getValue();
-          return typeof val === "number" ? val.toLocaleString("es-AR") : String(val ?? "");
+          return typeof val === "number"
+            ? val.toLocaleString("es-AR")
+            : String(val ?? "");
         },
       })),
     [columns],
@@ -351,7 +366,10 @@ const AdvancedTableChart = ({ chartData, columns }: { chartData: any[]; columns:
                   <th key={header.id} className="px-4 py-3 text-left">
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </th>
                 ))}
               </tr>
@@ -1145,7 +1163,15 @@ export const ChartRenderer = ({
       const manyCategories = chartData.length > 8;
       return (
         <ResponsiveContainer width="100%" height={manyCategories ? 460 : 400}>
-          <BarChart {...commonProps} margin={{ top: 20, right: 30, left: 20, bottom: manyCategories ? 80 : 20 }}>
+          <BarChart
+            {...commonProps}
+            margin={{
+              top: 20,
+              right: 30,
+              left: 20,
+              bottom: manyCategories ? 80 : 20,
+            }}
+          >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey={xKey}
@@ -1622,7 +1648,9 @@ export const ChartRenderer = ({
     case "gauge_chart": {
       const value = Number(chartData[0]?.[yKey]) || 0;
       // Detect if value is a percentage: use 100 as max; otherwise use max from all rows
-      const allValues = chartData.map((d) => Number(d[yKey]) || 0).filter((v) => !isNaN(v));
+      const allValues = chartData
+        .map((d) => Number(d[yKey]) || 0)
+        .filter((v) => !isNaN(v));
       const maxDataVal = allValues.length ? Math.max(...allValues) : 100;
       // If value ≤ 100 and the column name suggests percentage, treat as %
       const isPercent = value <= 100 && maxDataVal <= 100;
@@ -1632,7 +1660,11 @@ export const ChartRenderer = ({
         : value.toLocaleString("es-AR");
       const gaugeData = [
         { name: "Value", value: value, fill: colors[0] },
-        { name: "Remaining", value: Math.max(0, target - value), fill: "#e2e8f0" },
+        {
+          name: "Remaining",
+          value: Math.max(0, target - value),
+          fill: "#e2e8f0",
+        },
       ];
       return (
         <div className="flex flex-col items-center justify-center h-[300px]">
@@ -1653,7 +1685,11 @@ export const ChartRenderer = ({
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: any, name: any) => name === "Value" ? [displayValue, yLabel] : null} />
+              <Tooltip
+                formatter={(v: any, name: any) =>
+                  name === "Value" ? [displayValue, yLabel] : null
+                }
+              />
             </PieChart>
           </ResponsiveContainer>
           <div className="text-4xl font-black -mt-16 text-primary">
@@ -1670,10 +1706,18 @@ export const ChartRenderer = ({
       // Show up to 5 KPIs — one per row, using the label from xKey and value from yKey
       const kpiRows = chartData.slice(0, 5);
       if (kpiRows.length === 1) {
-        return <KPICard value={kpiRows[0]?.[yKey]} label={xKey ? String(kpiRows[0]?.[xKey] || yLabel) : yLabel} unit={""} />;
+        return (
+          <KPICard
+            value={kpiRows[0]?.[yKey]}
+            label={xKey ? String(kpiRows[0]?.[xKey] || yLabel) : yLabel}
+            unit={""}
+          />
+        );
       }
       return (
-        <div className={`grid gap-4 ${kpiRows.length <= 2 ? "grid-cols-2" : kpiRows.length === 3 ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`}>
+        <div
+          className={`grid gap-4 ${kpiRows.length <= 2 ? "grid-cols-2" : kpiRows.length === 3 ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`}
+        >
           {kpiRows.map((row, i) => (
             <KPICard
               key={i}
@@ -1809,15 +1853,17 @@ export const ChartRenderer = ({
       return (
         <div className="h-[500px] w-full">
           <Plot
-            data={[{
-              type: "sunburst",
-              labels: sunburstData.map(d => d.id),
-              parents: sunburstData.map(() => ""),
-              values: sunburstData.map(d => d.value),
-              marker: { colors: sunburstData.map(d => d.color) },
-              textinfo: "label+percent parent",
-              hoverinfo: "label+value+percent",
-            }]}
+            data={[
+              {
+                type: "sunburst",
+                labels: sunburstData.map((d) => d.id),
+                parents: sunburstData.map(() => ""),
+                values: sunburstData.map((d) => d.value),
+                marker: { colors: sunburstData.map((d) => d.color) },
+                textinfo: "label+percent parent",
+                hoverinfo: "label+value+percent",
+              },
+            ]}
             layout={{
               margin: { t: 20, l: 20, r: 20, b: 20 },
               height: 480,
@@ -1831,9 +1877,13 @@ export const ChartRenderer = ({
     case "heatmap_chart": {
       // Build 2D matrix: rows = numeric columns, columns = xKey categories
       const numericHeatCols = columns.filter(
-        (c: any) => c.id !== xKey && chartData.some((d) => typeof d[c.id] === "number"),
+        (c: any) =>
+          c.id !== xKey && chartData.some((d) => typeof d[c.id] === "number"),
       );
-      const heatCols = numericHeatCols.length > 0 ? numericHeatCols : [columns.find((c: any) => c.id === yKey)].filter(Boolean);
+      const heatCols =
+        numericHeatCols.length > 0
+          ? numericHeatCols
+          : [columns.find((c: any) => c.id === yKey)].filter(Boolean);
       const zMatrix = heatCols.map((col: any) =>
         chartData.map((d) => Number(d[col.id]) || 0),
       );
@@ -1843,15 +1893,17 @@ export const ChartRenderer = ({
       return (
         <div className="w-full" style={{ height: heatHeight }}>
           <Plot
-            data={[{
-              type: "heatmap",
-              z: zMatrix,
-              x: xHeatLabels,
-              y: yHeatLabels,
-              colorscale: "Reds",
-              showscale: true,
-              hoverongaps: false,
-            }]}
+            data={[
+              {
+                type: "heatmap",
+                z: zMatrix,
+                x: xHeatLabels,
+                y: yHeatLabels,
+                colorscale: "Reds",
+                showscale: true,
+                hoverongaps: false,
+              },
+            ]}
             layout={{
               margin: { t: 40, l: 120, r: 40, b: 80 },
               height: heatHeight - 20,
@@ -1866,11 +1918,14 @@ export const ChartRenderer = ({
 
     case "sankey_chart": {
       // Use xKey as source, secondaryKey (or columns[1]) as target, yKey as value
-      const targetKey = secondaryKey || columns.find((c: any) => c.id !== xKey && c.id !== yKey)?.id;
+      const targetKey =
+        secondaryKey ||
+        columns.find((c: any) => c.id !== xKey && c.id !== yKey)?.id;
       if (!targetKey) {
         return (
           <div className="p-8 text-center bg-muted/20 border-2 border-dashed rounded-lg italic text-muted-foreground">
-            Sankey requiere columnas: origen, destino y valor (eje_principal, eje_secundario, eje_valores)
+            Sankey requiere columnas: origen, destino y valor (eje_principal,
+            eje_secundario, eje_valores)
           </div>
         );
       }
@@ -1911,21 +1966,23 @@ export const ChartRenderer = ({
       return (
         <div className="h-[500px] w-full">
           <Plot
-            data={[{
-              type: "sankey",
-              orientation: "h",
-              node: {
-                pad: 15,
-                thickness: 20,
-                label: nodeList,
-                color: nodeList.map((_, i) => colors[i % colors.length]),
+            data={[
+              {
+                type: "sankey",
+                orientation: "h",
+                node: {
+                  pad: 15,
+                  thickness: 20,
+                  label: nodeList,
+                  color: nodeList.map((_, i) => colors[i % colors.length]),
+                },
+                link: {
+                  source: sankeySourceIndices,
+                  target: sankeyTargetIndices,
+                  value: sankeyValues,
+                },
               },
-              link: {
-                source: sankeySourceIndices,
-                target: sankeyTargetIndices,
-                value: sankeyValues,
-              },
-            }]}
+            ]}
             layout={{
               margin: { t: 20, l: 20, r: 20, b: 20 },
               height: 480,
@@ -1939,38 +1996,49 @@ export const ChartRenderer = ({
 
     case "bubble_plotly": {
       // x: use numeric value if available, else use row index (for categorical xKey)
-      const xNumeric = chartData.every(d => typeof d[xKey] === "number");
+      const xNumeric = chartData.every((d) => typeof d[xKey] === "number");
       const bubbleX = xNumeric
-        ? chartData.map(d => Number(d[xKey]) || 0)
+        ? chartData.map((d) => Number(d[xKey]) || 0)
         : chartData.map((_, i) => i);
-      const bubbleXLabels = chartData.map(d => String(d[xKey]));
-      const bubbleY = chartData.map(d => Number(d[yKey]) || 0);
+      const bubbleXLabels = chartData.map((d) => String(d[xKey]));
+      const bubbleY = chartData.map((d) => Number(d[yKey]) || 0);
       // Scale bubble sizes relative to the data range to avoid extreme sizes
-      const rawSizes = chartData.map(d => (secondaryKey ? Number(d[secondaryKey]) || 1 : 1));
+      const rawSizes = chartData.map((d) =>
+        secondaryKey ? Number(d[secondaryKey]) || 1 : 1,
+      );
       const maxRawSize = Math.max(...rawSizes.map(Math.abs), 1);
-      const bubbleSize = rawSizes.map(s => Math.max(8, (Math.abs(s) / maxRawSize) * 60 + 8));
+      const bubbleSize = rawSizes.map((s) =>
+        Math.max(8, (Math.abs(s) / maxRawSize) * 60 + 8),
+      );
       return (
         <div className="h-[450px] w-full">
           <Plot
-            data={[{
-              type: "scatter",
-              mode: "markers",
-              x: bubbleX,
-              y: bubbleY,
-              marker: {
-                size: bubbleSize,
-                color: colors.map((c, i) => colors[i % colors.length]),
-                sizemode: "diameter",
+            data={[
+              {
+                type: "scatter",
+                mode: "markers",
+                x: bubbleX,
+                y: bubbleY,
+                marker: {
+                  size: bubbleSize,
+                  color: colors.map((c, i) => colors[i % colors.length]),
+                  sizemode: "diameter",
+                },
+                text: bubbleXLabels,
+                hovertemplate:
+                  "<b>%{text}</b><br>" + yLabel + ": %{y}<extra></extra>",
               },
-              text: bubbleXLabels,
-              hovertemplate: "<b>%{text}</b><br>" + yLabel + ": %{y}<extra></extra>",
-            }]}
+            ]}
             layout={{
               margin: { t: 40, l: 60, r: 40, b: 60 },
               height: 430,
               xaxis: xNumeric
                 ? { title: getColumnHeader(xKey) }
-                : { tickvals: bubbleX, ticktext: bubbleXLabels, title: getColumnHeader(xKey) },
+                : {
+                    tickvals: bubbleX,
+                    ticktext: bubbleXLabels,
+                    title: getColumnHeader(xKey),
+                  },
               yaxis: { title: yLabel },
             }}
             config={{ displayModeBar: false }}
@@ -1980,19 +2048,25 @@ export const ChartRenderer = ({
     }
 
     case "treemap_plotly": {
-      const treemapLabels = chartData.map(d => String(d[xKey]));
-      const treemapValues = chartData.map(d => Number(d[yKey]) || 0);
+      const treemapLabels = chartData.map((d) => String(d[xKey]));
+      const treemapValues = chartData.map((d) => Number(d[yKey]) || 0);
       return (
         <div className="h-[450px] w-full">
           <Plot
-            data={[{
-              type: "treemap",
-              labels: treemapLabels,
-              parents: treemapLabels.map(() => ""),
-              values: treemapValues,
-              textinfo: "label+value+percent parent",
-              marker: { colors: treemapValues, colorscale: "Reds", showscale: false },
-            }]}
+            data={[
+              {
+                type: "treemap",
+                labels: treemapLabels,
+                parents: treemapLabels.map(() => ""),
+                values: treemapValues,
+                textinfo: "label+value+percent parent",
+                marker: {
+                  colors: treemapValues,
+                  colorscale: "Reds",
+                  showscale: false,
+                },
+              },
+            ]}
             layout={{
               margin: { t: 20, l: 20, r: 20, b: 20 },
               height: 430,
@@ -2007,13 +2081,15 @@ export const ChartRenderer = ({
       return (
         <div className="h-[450px] w-full">
           <Plot
-            data={[{
-              type: "funnel",
-              y: chartData.map(d => String(d[xKey])),
-              x: chartData.map(d => Number(d[yKey]) || 0),
-              textinfo: "value+percent initial",
-              marker: { color: colors[0] },
-            }]}
+            data={[
+              {
+                type: "funnel",
+                y: chartData.map((d) => String(d[xKey])),
+                x: chartData.map((d) => Number(d[yKey]) || 0),
+                textinfo: "value+percent initial",
+                marker: { color: colors[0] },
+              },
+            ]}
             layout={{
               margin: { t: 40, l: 120, r: 40, b: 40 },
               height: 430,
@@ -2028,12 +2104,16 @@ export const ChartRenderer = ({
       return (
         <div className="h-[450px] w-full">
           <Plot
-            data={[{
-              type: "barpolar",
-              r: chartData.map(d => Number(d[yKey]) || 0),
-              theta: chartData.map(d => String(d[xKey])),
-              marker: { color: chartData.map((_, i) => colors[i % colors.length]) },
-            }]}
+            data={[
+              {
+                type: "barpolar",
+                r: chartData.map((d) => Number(d[yKey]) || 0),
+                theta: chartData.map((d) => String(d[xKey])),
+                marker: {
+                  color: chartData.map((_, i) => colors[i % colors.length]),
+                },
+              },
+            ]}
             layout={{
               margin: { t: 40, l: 40, r: 40, b: 40 },
               height: 430,
@@ -2049,15 +2129,17 @@ export const ChartRenderer = ({
       return (
         <div className="h-[450px] w-full">
           <Plot
-            data={[{
-              type: "box",
-              y: chartData.map(d => Number(d[yKey]) || 0),
-              name: yLabel,
-              marker: { color: colors[0] },
-              boxpoints: "all",
-              jitter: 0.3,
-              pointpos: -1.8,
-            }]}
+            data={[
+              {
+                type: "box",
+                y: chartData.map((d) => Number(d[yKey]) || 0),
+                name: yLabel,
+                marker: { color: colors[0] },
+                boxpoints: "all",
+                jitter: 0.3,
+                pointpos: -1.8,
+              },
+            ]}
             layout={{
               margin: { t: 40, l: 60, r: 40, b: 60 },
               height: 430,
@@ -2073,22 +2155,22 @@ export const ChartRenderer = ({
       return <AdvancedTableChart chartData={chartData} columns={columns} />;
 
     case "sparkline": {
-      const sparkData = chartData.slice(-10).map(d => Number(d[yKey]) || 0);
+      const sparkData = chartData.slice(-10).map((d) => Number(d[yKey]) || 0);
       return (
         <div className="h-[100px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={sparkData.map((v, i) => ({ value: v, index: i }))}>
               <defs>
                 <linearGradient id="sparkGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={colors[0]} stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor={colors[0]} stopOpacity={0}/>
+                  <stop offset="5%" stopColor={colors[0]} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={colors[0]} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke={colors[0]} 
-                fill="url(#sparkGradient)" 
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={colors[0]}
+                fill="url(#sparkGradient)"
                 strokeWidth={2}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -2102,7 +2184,11 @@ export const ChartRenderer = ({
       // Use yKey as close; if secondaryKey exists use as open; derive high/low from open/close
       const ohlcData = chartData.slice(0, 20).map((d, i) => {
         const close = Number(d[yKey]) || 0;
-        const open = secondaryKey ? Number(d[secondaryKey]) || close : (i > 0 ? Number(chartData[i - 1]?.[yKey]) || close : close);
+        const open = secondaryKey
+          ? Number(d[secondaryKey]) || close
+          : i > 0
+            ? Number(chartData[i - 1]?.[yKey]) || close
+            : close;
         return {
           date: String(d[xKey]) || `Período ${i + 1}`,
           open,
@@ -2114,16 +2200,18 @@ export const ChartRenderer = ({
       return (
         <div className="h-[450px] w-full">
           <Plot
-            data={[{
-              type: "candlestick",
-              x: ohlcData.map(d => d.date),
-              open: ohlcData.map(d => d.open),
-              high: ohlcData.map(d => d.high),
-              low: ohlcData.map(d => d.low),
-              close: ohlcData.map(d => d.close),
-              increasing: { line: { color: colors[0] } },
-              decreasing: { line: { color: "#ef4444" } },
-            }]}
+            data={[
+              {
+                type: "candlestick",
+                x: ohlcData.map((d) => d.date),
+                open: ohlcData.map((d) => d.open),
+                high: ohlcData.map((d) => d.high),
+                low: ohlcData.map((d) => d.low),
+                close: ohlcData.map((d) => d.close),
+                increasing: { line: { color: colors[0] } },
+                decreasing: { line: { color: "#ef4444" } },
+              },
+            ]}
             layout={{
               margin: { t: 40, l: 60, r: 40, b: 80 },
               height: 430,

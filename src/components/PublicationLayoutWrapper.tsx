@@ -38,8 +38,6 @@ export function PublicationLayoutWrapper({
         <PublicationTopNav
           headings={headings}
           childrenReports={childrenReports}
-          backLink={backLink}
-          currentSlug={currentSlug}
         />
         <main className="flex-1 bg-background">
           <article className="max-w-[1440px] mx-auto py-10 px-4 md:py-14 md:px-8">

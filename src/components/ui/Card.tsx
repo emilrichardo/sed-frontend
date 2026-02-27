@@ -48,11 +48,11 @@ export function Card({
       {hasMedia && (
         <div
           className={cn(
-            "relative overflow-hidden shrink-0 bg-background border-b border-border min-w-0",
+            "relative overflow-hidden shrink-0 bg-background border-b border-border min-w-0 flex flex-col",
             isHorizontal
               ? "w-1/3 md:w-[40%] aspect-[4/3] border-r"
               : chartPreview
-                ? "h-[500px] w-full"
+                ? "w-full"
                 : "aspect-[16/9] w-full",
           )}
         >
@@ -66,7 +66,9 @@ export function Card({
               />
             </Link>
           ) : (
-            <div className="absolute inset-0 z-0">{chartPreview}</div>
+            <div className="relative z-0 w-full flex-1 flex flex-col">
+              {chartPreview}
+            </div>
           )}
         </div>
       )}
