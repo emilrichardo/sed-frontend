@@ -89,6 +89,7 @@ export interface NewsItem {
   slug: string;
   publishedDate?: string;
   createdAt?: string;
+  fijado?: boolean;
   layout?: PayloadBlock[];
   contenido?: {
     root?: {
@@ -98,7 +99,10 @@ export interface NewsItem {
   taxonomias?: Array<{ id: number | string; nombre: string; slug?: string }>;
   categorias?: Array<{ id: number | string; nombre: string; slug?: string }>;
   tags?: Array<{ id: number | string; nombre: string; slug?: string }>;
-  tipo_publicacion?: { id: number | string; nombre: string; slug?: string } | number | null;
+  tipo_publicacion?:
+    | { id: number | string; nombre: string; slug?: string }
+    | number
+    | null;
   autor?:
     | {
         id: number | string;

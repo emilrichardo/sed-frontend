@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { BarChart } from "lucide-react";
 import { PublicationsList } from "@/components/PublicationsList";
 import type { FlatPublication } from "@/components/PublicationsList";
+import { FeaturedPublicationsSlider } from "@/components/FeaturedPublicationsSlider";
 
 export const revalidate = 60;
 
@@ -51,6 +52,15 @@ export default async function PublicationsArchivePage() {
     a.nombre.localeCompare(b.nombre, "es"),
   );
 
+  // Filter featured items (pinned) and resolve their children
+  const featuredItems = flatItems
+    .filter((item) => item.fijado)
+    .slice(0, 5)
+    .map((item) => ({
+      ...item,
+      children: flatItems.filter((i) => i.parentId === item.id),
+    }));
+
   return (
     <div className="w-full mx-auto px-4 py-8 md:py-12 space-y-8">
       <PageHeader
@@ -58,6 +68,13 @@ export default async function PublicationsArchivePage() {
         description="Publicaciones técnicas y análisis detallados de Santiago en Datos."
         icon={BarChart}
       />
+
+      {featuredItems.length > 0 && (
+        <section className="animate-in fade-in slide-in-from-top-4 duration-700">
+          <FeaturedPublicationsSlider items={featuredItems} />
+        </section>
+      )}
+
       <PublicationsList items={flatItems} allCategories={allCategories} />
     </div>
   );
