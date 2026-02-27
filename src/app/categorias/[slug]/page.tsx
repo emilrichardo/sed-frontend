@@ -3,9 +3,7 @@ import {
   getCategories,
   getPublicacionesByCategoria,
 } from "@/lib/api";
-import { Card } from "@/components/ui/Card";
-import { PublicationTableSlider } from "@/components/PublicationTableSlider";
-import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
+import { CategoryPublicationsList } from "@/components/CategoryPublicationsList";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
@@ -67,25 +65,27 @@ export default async function CategoryPage({ params }: PageProps) {
           <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
             Subcategorías
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <nav className="-mx-4 md:-mx-8 border-b border-border" aria-label="Subcategorías">
             {children.map((child) => (
               <Link
                 key={child.id}
                 href={`/categorias/${child.slug}`}
-                className="group flex flex-col border border-border bg-card hover:bg-muted/50 transition-colors rounded-lg p-6 min-h-[180px]"
+                className="flex items-center justify-between w-full px-4 md:px-8 py-5 border-t border-border hover:bg-muted/50 transition-colors group"
               >
-                <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mb-4" />
-                <span className="text-2xl font-heading font-bold leading-tight group-hover:text-primary transition-colors">
-                  {child.nombre}
-                </span>
-                {child.descripcion && (
-                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed line-clamp-3">
-                    {child.descripcion}
-                  </p>
-                )}
+                <div>
+                  <span className="text-2xl md:text-3xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                    {child.nombre}
+                  </span>
+                  {child.descripcion && (
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                      {child.descripcion}
+                    </p>
+                  )}
+                </div>
+                <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>
             ))}
-          </div>
+          </nav>
         </section>
       )}
 
@@ -100,56 +100,7 @@ export default async function CategoryPage({ params }: PageProps) {
           )}
         </p>
 
-        {publicaciones.docs.length === 0 ? (
-          <div className="border border-border rounded-lg p-8 text-center text-muted-foreground">
-            <p className="text-sm">No hay publicaciones en esta categoría.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {publicaciones.docs.map((pub) => {
-              const contenido = pub.contenido as {
-                root?: { children?: Array<{ children?: { text?: string }[] }> };
-              };
-
-              let description = "";
-              if (contenido?.root?.children) {
-                const firstText = contenido.root.children.find(
-                  (child: { children?: { text?: string }[] }) =>
-                    child.children?.length && child.children[0].text,
-                );
-                if (firstText) description = firstText.children![0].text!;
-              }
-
-              const showChart = shouldShowChart(pub);
-              const tablaBlocks = showChart
-                ? extractAllTablaBlocks(pub.contenido)
-                : [];
-
-              return (
-                <Card
-                  key={pub.id}
-                  title={pub.titulo}
-                  description={description}
-                  date={pub.createdAt}
-                  href={`/publicaciones/${pub.slug}`}
-                  imageUrl={
-                    tablaBlocks.length > 0
-                      ? undefined
-                      : pub.imagen_destacada?.url
-                  }
-                  imageAlt={pub.imagen_destacada?.alt}
-                  chartPreview={
-                    tablaBlocks.length > 0 ? (
-                      <div className="w-full h-full relative">
-                        <PublicationTableSlider blocks={tablaBlocks} />
-                      </div>
-                    ) : undefined
-                  }
-                />
-              );
-            })}
-          </div>
-        )}
+        <CategoryPublicationsList publications={publicaciones.docs} />
       </section>
     </div>
   );

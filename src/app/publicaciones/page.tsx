@@ -16,8 +16,17 @@ export default async function PublicationsArchivePage() {
   const parentMap = new Map<number, ReportItem>();
   items.forEach((item) => parentMap.set(item.id, item));
 
+  // Exclude estadísticas publications
+  const nonStatItems = items.filter((item) => {
+    const tp = item.tipo_publicacion;
+    if (!tp || typeof tp !== "object") return true;
+    const slug = (tp as { slug?: string }).slug ?? "";
+    const nombre = (tp as { nombre?: string }).nombre ?? "";
+    return !slug.toLowerCase().includes("estadistica") && !nombre.toLowerCase().includes("estadistica");
+  });
+
   // Flatten all publications with resolved parent info
-  const flatItems: FlatPublication[] = items.map((item) => {
+  const flatItems: FlatPublication[] = nonStatItems.map((item) => {
     const parentVal = item.parent;
     const parentItem =
       parentVal && typeof parentVal === "object"
@@ -39,7 +48,7 @@ export default async function PublicationsArchivePage() {
     string | number,
     { id: string | number; nombre: string; slug?: string }
   >();
-  items.forEach((item) => {
+  nonStatItems.forEach((item) => {
     [
       ...(item.categorias || []),
       ...(item.tags || []),
