@@ -22,7 +22,10 @@ export default async function PublicationsArchivePage() {
     if (!tp || typeof tp !== "object") return true;
     const slug = (tp as { slug?: string }).slug ?? "";
     const nombre = (tp as { nombre?: string }).nombre ?? "";
-    return !slug.toLowerCase().includes("estadistica") && !nombre.toLowerCase().includes("estadistica");
+    return (
+      !slug.toLowerCase().includes("estadistica") &&
+      !nombre.toLowerCase().includes("estadistica")
+    );
   });
 
   // Flatten all publications with resolved parent info
@@ -71,7 +74,7 @@ export default async function PublicationsArchivePage() {
     }));
 
   return (
-    <div className="w-full mx-auto px-4 py-8 md:py-12 space-y-8">
+    <div className="w-full max-w-[1440px] mx-auto py-8 md:py-12 space-y-8">
       <PageHeader
         title="Publicaciones"
         description="Publicaciones técnicas y análisis detallados de Santiago en Datos."

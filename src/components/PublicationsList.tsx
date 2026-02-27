@@ -2,8 +2,37 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, X, ChevronRight, Grid2X2, LayoutList } from "lucide-react";
+import {
+  Search,
+  X,
+  ChevronRight,
+  Grid2X2,
+  LayoutList,
+  BarChart2,
+  FileText,
+  Newspaper,
+  TrendingUp,
+  BookOpen,
+  type LucideIcon,
+} from "lucide-react";
 import Image from "next/image";
+
+function getTipoIcon(
+  tp: ReportItem["tipo_publicacion"],
+): { Icon: LucideIcon; label: string } {
+  const obj = tp && typeof tp === "object" ? tp : null;
+  const text = (obj?.slug ?? obj?.nombre ?? "").toLowerCase();
+  if (text.includes("estadistica") || text.includes("estadística"))
+    return { Icon: BarChart2, label: obj!.nombre };
+  if (text.includes("boletin") || text.includes("boletín"))
+    return { Icon: Newspaper, label: obj!.nombre };
+  if (text.includes("analisis") || text.includes("análisis"))
+    return { Icon: TrendingUp, label: obj!.nombre };
+  if (text.includes("informe"))
+    return { Icon: FileText, label: obj!.nombre };
+  if (obj?.nombre) return { Icon: BookOpen, label: obj.nombre };
+  return { Icon: BookOpen, label: "Publicación" };
+}
 import type { ReportItem } from "@/lib/api";
 import { PublicationTableSlider } from "@/components/PublicationTableSlider";
 import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
@@ -87,7 +116,17 @@ function GridCard({ item }: { item: FlatPublication }) {
             <PublicationTableSlider blocks={tablaBlocks} />
           </div>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10" />
+          (() => {
+            const { Icon, label } = getTipoIcon(item.tipo_publicacion);
+            return (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/40">
+                <Icon className="h-14 w-14 text-muted-foreground/25" strokeWidth={1} />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
+                  {label}
+                </span>
+              </div>
+            );
+          })()
         )}
       </div>
 
@@ -175,7 +214,17 @@ function GroupedCard({ node }: { node: GroupedNode }) {
                 sizes="192px"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10" />
+              (() => {
+                const { Icon, label } = getTipoIcon(node.tipo_publicacion);
+                return (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">
+                    <Icon className="h-10 w-10 text-muted-foreground/25" strokeWidth={1} />
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
+                      {label}
+                    </span>
+                  </div>
+                );
+              })()
             )}
           </Link>
         ) : (

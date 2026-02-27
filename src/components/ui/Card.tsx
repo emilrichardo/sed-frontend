@@ -1,6 +1,35 @@
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import {
+  BarChart2,
+  FileText,
+  Newspaper,
+  TrendingUp,
+  BookOpen,
+  type LucideIcon,
+} from "lucide-react";
+
+type TipoPublicacion =
+  | { id: number | string; nombre: string; slug?: string }
+  | number
+  | null
+  | undefined;
+
+function getTipoIcon(tp: TipoPublicacion): { Icon: LucideIcon; label: string } {
+  const obj = tp && typeof tp === "object" ? tp : null;
+  const text = (obj?.slug ?? obj?.nombre ?? "").toLowerCase();
+  if (text.includes("estadistica") || text.includes("estadística"))
+    return { Icon: BarChart2, label: obj!.nombre };
+  if (text.includes("boletin") || text.includes("boletín"))
+    return { Icon: Newspaper, label: obj!.nombre };
+  if (text.includes("analisis") || text.includes("análisis"))
+    return { Icon: TrendingUp, label: obj!.nombre };
+  if (text.includes("informe"))
+    return { Icon: FileText, label: obj!.nombre };
+  if (obj?.nombre) return { Icon: BookOpen, label: obj.nombre };
+  return { Icon: BookOpen, label: "Publicación" };
+}
 
 interface CardProps {
   title: string;
@@ -12,6 +41,7 @@ interface CardProps {
   imageAlt?: string;
   chartPreview?: React.ReactNode;
   layout?: "vertical" | "horizontal";
+  tipoPublicacion?: TipoPublicacion;
 }
 
 export function Card({
@@ -24,9 +54,10 @@ export function Card({
   imageAlt,
   chartPreview,
   layout = "vertical",
+  tipoPublicacion,
 }: CardProps) {
   const isHorizontal = layout === "horizontal";
-  const hasMedia = imageUrl || chartPreview;
+  const hasMedia = imageUrl || chartPreview || tipoPublicacion != null;
 
   return (
     <div
@@ -65,10 +96,22 @@ export function Card({
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </Link>
-          ) : (
+          ) : chartPreview ? (
             <div className="relative z-0 w-full flex-1 flex flex-col">
               {chartPreview}
             </div>
+          ) : (
+            (() => {
+              const { Icon, label } = getTipoIcon(tipoPublicacion);
+              return (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-muted/40">
+                  <Icon className="h-14 w-14 text-muted-foreground/25" strokeWidth={1} />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
+                    {label}
+                  </span>
+                </div>
+              );
+            })()
           )}
         </div>
       )}

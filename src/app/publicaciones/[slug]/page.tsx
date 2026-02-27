@@ -246,6 +246,7 @@ export default async function PublicationPage({ params }: PageProps) {
                             !showChart ? child.imagen_destacada?.url : undefined
                           }
                           imageAlt={child.imagen_destacada?.alt}
+                          tipoPublicacion={child.tipo_publicacion}
                           chartPreview={
                             tablaBlocks.length > 0 ? (
                               <div className="w-full h-full relative">

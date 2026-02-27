@@ -40,7 +40,7 @@ export function PublicationLayoutWrapper({
           childrenReports={childrenReports}
         />
         <main className="flex-1 bg-background">
-          <article className="max-w-[1440px] mx-auto py-10 px-4 md:py-14 md:px-8">
+          <article className="max-w-[960px] mx-auto py-10 px-4 md:py-14 md:px-8">
             {children}
           </article>
         </main>
@@ -59,7 +59,7 @@ export function PublicationLayoutWrapper({
         backLink={backLink}
       />
       <main className="flex-1 min-w-0 bg-background">
-        <article className="max-w-6xl mx-auto py-8 px-4 md:py-12 md:px-8">
+        <article className="max-w-[960px] mx-auto py-8 px-4 md:py-12 md:px-8">
           {children}
         </article>
       </main>

@@ -1327,7 +1327,10 @@ export const ChartRenderer = ({
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-            <XAxis type="number" hide />
+            <XAxis
+              type="number"
+              tickFormatter={(value) => Math.abs(value).toLocaleString("es-AR")}
+            />
             <YAxis
               dataKey={xKey}
               type="category"

@@ -115,6 +115,7 @@ export function CategoryPublicationsList({ publications }: Props) {
                 href={`/publicaciones/${pub.slug}`}
                 imageUrl={tablaBlocks.length > 0 ? undefined : pub.imagen_destacada?.url}
                 imageAlt={pub.imagen_destacada?.alt}
+                tipoPublicacion={pub.tipo_publicacion}
                 chartPreview={
                   tablaBlocks.length > 0 ? (
                     <div className="w-full h-full relative">
