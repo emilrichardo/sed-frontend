@@ -12,7 +12,6 @@ import {
   Home,
   FileText,
   BarChart,
-  Layout,
   LayoutTemplate,
 } from "lucide-react";
 
@@ -20,7 +19,6 @@ const navLinks = [
   { name: "Inicio", href: "/", icon: Home },
   { name: "Boletines", href: "/boletines", icon: FileText },
   { name: "Publicaciones", href: "/publicaciones", icon: BarChart },
-  { name: "Widgets", href: "/widgets", icon: Layout },
 ];
 
 export function Sidebar() {
