@@ -387,6 +387,56 @@ export interface Taxonomy {
   descripcion?: string;
 }
 
+export interface Category {
+  id: string | number;
+  nombre: string;
+  slug: string;
+  descripcion?: string;
+  padre?: Category | string | number | null;
+}
+
+export async function getCategories(
+  params: {
+    sinPadre?: boolean;
+    padreId?: string | number;
+    limit?: number;
+  } = {},
+): Promise<Category[]> {
+  const { sinPadre, padreId, limit = 100 } = params;
+  let url = `${API_URL}/categorias?limit=${limit}&depth=1`;
+
+  if (sinPadre) {
+    url += `&where[padre][exists]=false`;
+  } else if (padreId !== undefined) {
+    url += `&where[padre][equals]=${padreId}`;
+  }
+
+  try {
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.docs || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getCategoryBySlug(
+  slug: string,
+): Promise<Category | null> {
+  try {
+    const res = await fetch(
+      `${API_URL}/categorias?where[slug][equals]=${slug}&depth=1`,
+      { next: { revalidate: 300 } },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.docs?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export interface Boletin {
   id: string;
   numero: number;

@@ -21,7 +21,6 @@ const navLinks = [
   { name: "Inicio", href: "/" },
   { name: "Boletines", href: "/boletines" },
   { name: "Publicaciones", href: "/publicaciones" },
-  { name: "Widgets", href: "/widgets" },
 ];
 
 export function Navbar() {
