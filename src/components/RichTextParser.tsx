@@ -1,6 +1,7 @@
 import React from "react";
 import { TableBlock } from "./TableBlock";
 import { WidgetCard } from "./WidgetCard";
+import { AnimatedBlock } from "./AnimatedBlock";
 import slugify from "slugify";
 
 export const getTextFromNodes = (nodes: any): string => {
@@ -168,6 +169,7 @@ export const RichTextParser = ({ content }: { content: any }) => {
       if (!media.url) return null;
 
       return (
+        <AnimatedBlock>
         <figure className="my-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -181,6 +183,7 @@ export const RichTextParser = ({ content }: { content: any }) => {
             </figcaption>
           )}
         </figure>
+        </AnimatedBlock>
       );
     case "quote":
       return (
@@ -258,16 +261,20 @@ export const RichTextParser = ({ content }: { content: any }) => {
         content.fields?.blockType === "table" ||
         content.fields?.blockType === "tabla"
       ) {
-        return <TableBlock fields={content.fields} />;
+        return (
+          <AnimatedBlock className="my-10">
+            <TableBlock fields={content.fields} />
+          </AnimatedBlock>
+        );
       }
       if (
         content.fields?.blockType === "widget_block" &&
         content.fields.widget
       ) {
         return (
-          <div className="my-12 not-prose">
+          <AnimatedBlock className="my-12 not-prose">
             <WidgetCard widget={content.fields.widget} />
-          </div>
+          </AnimatedBlock>
         );
       }
       return null;

@@ -126,10 +126,14 @@ function CompactVariant({
     | undefined;
   const tags = getItemTags(item);
 
+  const useChart = shouldShowChart(item);
+  const tablaBlocks = useChart ? extractAllTablaBlocks(item.contenido) : [];
+  const hasTables = tablaBlocks.length > 0;
+
   return (
     <Link
       href={`/publicaciones/${item.slug}`}
-      className="group flex items-stretch gap-3 rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-all"
+      className="group flex items-stretch rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-all"
     >
       {/* Text side */}
       <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
@@ -164,16 +168,29 @@ function CompactVariant({
         </div>
       </div>
 
-      {/* Image side */}
-      <div className="w-24 shrink-0 relative bg-muted overflow-hidden">
-        {img?.url ? (
+      {/* Media side — 35% width */}
+      <div className="w-[35%] shrink-0 relative bg-muted border-l border-border overflow-hidden min-h-[110px]">
+        {hasTables ? (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div
+              style={{
+                transform: "scale(0.45)",
+                transformOrigin: "top left",
+                width: "222%",
+                height: "222%",
+              }}
+            >
+              <PublicationTableSlider blocks={tablaBlocks.slice(0, 1)} />
+            </div>
+          </div>
+        ) : img?.url ? (
           <Image
             src={img.url}
             alt={img.alt || item.titulo}
             fill
             unoptimized
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="96px"
+            sizes="35vw"
           />
         ) : (
           (() => {
