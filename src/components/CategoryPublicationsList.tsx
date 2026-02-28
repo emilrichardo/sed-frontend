@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { ReportItem } from "@/lib/api";
-import { WideCard } from "@/components/WideCard";
+import { ResponsivePublicationCard } from "@/components/PublicationCard";
 
 interface Props {
   publications: ReportItem[];
@@ -87,9 +87,13 @@ export function CategoryPublicationsList({ publications }: Props) {
           <p className="text-sm">No hay publicaciones en esta categoría.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {visible.map((pub) => (
-            <WideCard key={pub.id} item={pub} showParent={false} />
+            <ResponsivePublicationCard
+              key={pub.id}
+              item={pub}
+              showParent={false}
+            />
           ))}
         </div>
       )}

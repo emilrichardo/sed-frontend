@@ -2,7 +2,6 @@ import { Source_Code_Pro, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { Sidebar } from "@/components/Sidebar";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 

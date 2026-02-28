@@ -13,6 +13,10 @@ interface BackButtonProps {
   fallbackToRouter?: boolean;
 }
 
+/**
+ * Unified back navigation component. Always renders at the top
+ * with consistent spacing across all pages.
+ */
 export function BackButton({
   href,
   label = "Volver",
@@ -21,15 +25,12 @@ export function BackButton({
 }: BackButtonProps) {
   const router = useRouter();
 
+  const baseStyles =
+    "inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-4 md:mb-6 mt-0";
+
   if (href) {
     return (
-      <Link
-        href={href}
-        className={cn(
-          "inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6",
-          className,
-        )}
-      >
+      <Link href={href} className={cn(baseStyles, className)}>
         <ArrowLeft className="h-4 w-4" />
         {label}
       </Link>
@@ -40,10 +41,7 @@ export function BackButton({
     return (
       <button
         onClick={() => router.back()}
-        className={cn(
-          "inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6",
-          className,
-        )}
+        className={cn(baseStyles, className)}
       >
         <ArrowLeft className="h-4 w-4" />
         {label}

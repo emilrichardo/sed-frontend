@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ReportSidebar } from "@/components/ReportSidebar";
 import { BackButton } from "@/components/BackButton";
@@ -23,6 +23,27 @@ interface Heading {
   id: string;
   text: string;
   level: number;
+}
+
+// ── Reading progress hook ────────────────────────────────────────────────────
+function useReadingProgress() {
+  const [progress, setProgress] = useState(0);
+
+  const handleScroll = useCallback(() => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight =
+      document.documentElement.scrollHeight -
+      document.documentElement.clientHeight;
+    const pct = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
+    setProgress(pct);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  return progress;
 }
 
 const FAVORITES_KEY = "sed_favorites";
@@ -125,8 +146,17 @@ function MobilePublicationNav({
 
   const showActions = !!(title && publicationId);
 
+  const progress = useReadingProgress();
+
   return (
     <div className="md:hidden sticky top-0 z-30 bg-background/90 backdrop-blur-sm border-b border-border">
+      {/* Reading progress bar */}
+      <div className="absolute bottom-0 left-0 h-[2px] bg-primary/20 w-full">
+        <div
+          className="h-full bg-primary transition-none"
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
       <div className="flex items-center h-12">
         <Link
           href={backLink.href}

@@ -109,15 +109,15 @@ export function FeaturedPublicationsSlider({ items }: Props) {
         onMouseLeave={() => setIsHovered(false)}
       >
         <div
-          className="flex gap-4"
+          className="flex gap-4 slider-track"
           onTransitionEnd={handleTransitionEnd}
           style={{
             transition: isTransitioning
               ? "transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)"
               : "none",
-            // On desktop: 1.3 visible.
-            // Translation: currentIndex * (100% / 1.3 + gap)
-            transform: `translateX(calc(-${currentIndex} * (100% / 1.3 + 12.3px)))`,
+            // Mobile: 1 slide visible, Desktop: 1.3 slides visible
+            // --slides-visible is set via CSS below
+            transform: `translateX(calc(-${currentIndex} * (100% / var(--slides-visible, 1) + 16px)))`,
           }}
         >
           {extendedItems.map((item, index) => {
@@ -243,6 +243,17 @@ export function FeaturedPublicationsSlider({ items }: Props) {
           </div>
         )}
       </div>
+
+      <style jsx global>{`
+        .slider-track {
+          --slides-visible: 1;
+        }
+        @media (min-width: 768px) {
+          .slider-track {
+            --slides-visible: 1.3;
+          }
+        }
+      `}</style>
     </div>
   );
 }
