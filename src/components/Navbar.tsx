@@ -14,6 +14,8 @@ import {
   Sun,
   Moon,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ArrowUpRight,
   Home,
   FileText,
@@ -24,6 +26,13 @@ import type { Category } from "@/lib/api";
 
 interface CategoryWithChildren extends Category {
   children: Category[];
+}
+
+interface Publication {
+  id: number | string;
+  titulo: string;
+  slug: string;
+  tipo_publicacion?: { nombre: string } | string | null;
 }
 
 const navLinks = [
@@ -40,6 +49,15 @@ export function Navbar() {
   const [categoryTree, setCategoryTree] = useState<CategoryWithChildren[]>([]);
   const [mobileCategOpen, setMobileCategOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Animated category drawer state
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryWithChildren | null>(null);
+  const [categoryPublications, setCategoryPublications] = useState<
+    Publication[]
+  >([]);
+  const [loadingPubs, setLoadingPubs] = useState(false);
+
   const megaMenuTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
   const { user, logout, isEditing, toggleEditMode, layoutMode, setLayoutMode } =
@@ -93,6 +111,14 @@ export function Navbar() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [userMenuOpen]);
 
+  // Reset category selection when drawer closes
+  useEffect(() => {
+    if (!mobileSearchOpen) {
+      setSelectedCategory(null);
+      setCategoryPublications([]);
+    }
+  }, [mobileSearchOpen]);
+
   const toggleTheme = () => {
     const newDark = !isDark;
     setIsDark(newDark);
@@ -107,6 +133,26 @@ export function Navbar() {
 
   const closeMega = () => {
     megaMenuTimeout.current = setTimeout(() => setMegaMenuOpen(false), 120);
+  };
+
+  const handleCategorySelect = (cat: CategoryWithChildren) => {
+    setSelectedCategory(cat);
+    setLoadingPubs(true);
+    setCategoryPublications([]);
+    fetch(
+      `/api-proxy/publicaciones?where[categorias][in][0]=${cat.id}&limit=10&sort=-createdAt&depth=1`,
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        setCategoryPublications(data.docs || []);
+        setLoadingPubs(false);
+      })
+      .catch(() => setLoadingPubs(false));
+  };
+
+  const handleBackToCategories = () => {
+    setSelectedCategory(null);
+    setCategoryPublications([]);
   };
 
   return (
@@ -491,42 +537,142 @@ export function Navbar() {
         </button>
       </div>
 
-      {/* ── Mobile Search / Categories Drawer ── */}
+      {/* ── Mobile Categories Drawer ── */}
       {mobileSearchOpen && (
-        <div className="md:hidden fixed inset-0 z-[60] bg-background animate-in fade-in slide-in-from-bottom-5">
-          <div className="flex flex-col h-full mt-safe">
-            <div className="flex items-center justify-between px-4 py-4 border-b">
-              <h2 className="text-xl font-heading font-bold">Categorías</h2>
+        <div className="md:hidden fixed inset-0 z-[60] bg-background animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className="flex flex-col h-full">
+            {/* Header — changes based on selected category */}
+            <div className="flex items-center gap-2 px-4 py-4 border-b shrink-0">
+              {selectedCategory ? (
+                <button
+                  onClick={handleBackToCategories}
+                  className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors shrink-0"
+                  aria-label="Volver"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              ) : null}
+
+              <h2 className="flex-1 text-xl font-heading font-bold truncate">
+                {selectedCategory ? selectedCategory.nombre : "Categorías"}
+              </h2>
+
+              {selectedCategory && (
+                <Link
+                  href={`/categorias/${selectedCategory.slug}`}
+                  onClick={() => setMobileSearchOpen(false)}
+                  className="flex items-center gap-1 text-xs text-primary font-medium shrink-0"
+                >
+                  Ver todo
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
+
               <button
                 onClick={() => setMobileSearchOpen(false)}
-                className="p-2 border rounded-full hover:bg-muted"
+                className="p-2 border rounded-full hover:bg-muted shrink-0 ml-1"
+                aria-label="Cerrar"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto pb-24">
-              <div className="relative mx-4 mt-6 mb-4">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Buscar general..."
-                  className="w-full pl-10 pr-4 py-3 border rounded-lg bg-muted/50 text-base"
-                />
+
+            {/* Content — two panels with slide animation */}
+            <div className="flex-1 overflow-hidden relative">
+              {/* Panel 1: Category list */}
+              <div
+                className={`absolute inset-0 transition-transform duration-300 ease-in-out overflow-y-auto pb-24 ${
+                  selectedCategory ? "-translate-x-full" : "translate-x-0"
+                }`}
+              >
+                <div className="flex flex-col">
+                  {categoryTree.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategorySelect(cat)}
+                      className="flex items-center justify-between w-full px-4 py-5 border-b border-border hover:bg-muted/50 transition-colors group text-left"
+                    >
+                      <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                        {cat.nombre}
+                      </span>
+                      <ChevronRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-col">
-                {categoryTree.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={`/categorias/${cat.slug}`}
-                    onClick={() => setMobileSearchOpen(false)}
-                    className="flex items-center justify-between w-full px-4 py-5 border-t border-border hover:bg-muted/50 transition-colors group"
-                  >
-                    <span className="text-2xl md:text-3xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
-                      {cat.nombre}
-                    </span>
-                    <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </Link>
-                ))}
+
+              {/* Panel 2: Selected category detail */}
+              <div
+                className={`absolute inset-0 transition-transform duration-300 ease-in-out overflow-y-auto pb-24 ${
+                  selectedCategory ? "translate-x-0" : "translate-x-full"
+                }`}
+              >
+                {selectedCategory && (
+                  <>
+                    {/* Subcategories */}
+                    {selectedCategory.children.length > 0 && (
+                      <div>
+                        <p className="px-4 pt-5 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                          Subcategorías
+                        </p>
+                        {selectedCategory.children.map((sub) => (
+                          <Link
+                            key={sub.id}
+                            href={`/categorias/${sub.slug}`}
+                            onClick={() => setMobileSearchOpen(false)}
+                            className="flex items-center justify-between w-full px-4 py-4 border-b border-border hover:bg-muted/50 transition-colors group"
+                          >
+                            <span className="text-base font-medium group-hover:text-primary transition-colors">
+                              {sub.nombre}
+                            </span>
+                            <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Publications */}
+                    <div>
+                      <p className="px-4 pt-5 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                        Publicaciones
+                      </p>
+
+                      {loadingPubs ? (
+                        <div className="px-4 py-8 flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : categoryPublications.length > 0 ? (
+                        <>
+                          {categoryPublications.map((pub) => (
+                            <Link
+                              key={pub.id}
+                              href={`/publicaciones/${pub.slug}`}
+                              onClick={() => setMobileSearchOpen(false)}
+                              className="flex items-center justify-between w-full px-4 py-4 border-b border-border hover:bg-muted/50 transition-colors group"
+                            >
+                              <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 pr-4">
+                                {pub.titulo}
+                              </span>
+                              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </Link>
+                          ))}
+                          <Link
+                            href={`/categorias/${selectedCategory.slug}`}
+                            onClick={() => setMobileSearchOpen(false)}
+                            className="flex items-center justify-center gap-2 w-full px-4 py-4 text-sm text-primary font-medium hover:bg-muted/50 transition-colors"
+                          >
+                            Ver todas las publicaciones
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Link>
+                        </>
+                      ) : (
+                        <p className="px-4 py-4 text-sm text-muted-foreground">
+                          No hay publicaciones en esta categoría.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

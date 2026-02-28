@@ -111,7 +111,9 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
             })()}
 
             <EditContentButton collection="publicaciones" id={initialData.id} />
-            <PublicationActions title={initialData.titulo} publicationId={initialData.id} />
+            <div className="hidden md:block">
+              <PublicationActions title={initialData.titulo} publicationId={initialData.id} />
+            </div>
           </div>
         )}
 
