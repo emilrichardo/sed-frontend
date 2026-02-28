@@ -258,7 +258,7 @@ export function CategoryMenu({
               {/* Arrow → navigates to category page */}
               <Link
                 href={`/categorias/${cat.slug}`}
-                className="flex items-center justify-center px-5 md:px-8 border-l border-border hover:bg-muted/50 transition-colors shrink-0 group"
+                className="flex items-center justify-center px-5 md:px-8 hover:bg-muted/50 transition-colors shrink-0 group"
                 title={`Ir a ${cat.nombre}`}
               >
                 <ArrowUpRight className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -395,7 +395,7 @@ export function CategoryMenu({
                 <Link
                   href={`/categorias/${cat.slug}`}
                   onClick={handleNavigate}
-                  className="flex items-center justify-center px-5 border-l border-border hover:bg-muted/50 transition-colors shrink-0 group"
+                  className="flex items-center justify-center px-5 hover:bg-muted/50 transition-colors shrink-0 group"
                   title={`Ir a ${cat.nombre}`}
                 >
                   <ArrowUpRight className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
