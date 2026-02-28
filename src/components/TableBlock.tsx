@@ -788,7 +788,7 @@ export const TableBlock = ({
     >
       {/* Header */}
       {!isWidget && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2 bg-muted/30 border-b gap-3 sm:gap-0">
+        <div className="flex flex-row items-center justify-between px-4 py-2 bg-muted/30 border-b gap-2">
           <div className="flex items-center gap-2">
             {activeTab === "visualizacion" ? (
               <h4 className="font-bold text-sm uppercase tracking-wider">
