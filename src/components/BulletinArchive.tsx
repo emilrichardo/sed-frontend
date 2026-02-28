@@ -142,7 +142,6 @@ export default function BulletinArchive({
       setLoading(true);
       const queryFilters = { ...filters };
       const search = queryFilters.search as string;
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete queryFilters.search;
 
       const data = await getBulletins({
@@ -168,7 +167,6 @@ export default function BulletinArchive({
       try {
         const queryFilters = { ...filters };
         const search = queryFilters.search as string;
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete queryFilters.search;
 
         const data = await getBulletins({
@@ -230,13 +228,15 @@ export default function BulletinArchive({
           </div>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/admin/subir-boletin"
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 transition-all rounded-md shadow-sm font-bold text-sm tracking-normal whitespace-nowrap"
-            >
-              <Upload className="w-4 h-4" />
-              Cargar Boletín
-            </Link>
+            {isEditing && (
+              <Link
+                href="/admin/subir-boletin"
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 transition-all rounded-md shadow-sm font-bold text-sm tracking-normal whitespace-nowrap"
+              >
+                <Upload className="w-4 h-4" />
+                Cargar Boletín
+              </Link>
+            )}
             <div className="flex border rounded-md overflow-hidden bg-card">
               <button
                 onClick={() => setViewMode("table")}

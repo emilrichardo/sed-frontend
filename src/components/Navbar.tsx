@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 import {
   Menu,
   X,
-  LogIn,
   LogOut,
   User,
   Edit3,
@@ -105,8 +104,6 @@ export function Navbar() {
     megaMenuTimeout.current = setTimeout(() => setMegaMenuOpen(false), 120);
   };
 
-  if (!user) return null;
-
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 md:px-8">
@@ -182,7 +179,10 @@ export function Navbar() {
                       </div>
                       <div className="py-1">
                         <button
-                          onClick={() => { toggleEditMode(); setUserMenuOpen(false); }}
+                          onClick={() => {
+                            toggleEditMode();
+                            setUserMenuOpen(false);
+                          }}
                           className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
                             isEditing
                               ? "text-primary bg-primary/5 font-semibold"
@@ -193,25 +193,44 @@ export function Navbar() {
                           Modo Edición: {isEditing ? "Activado" : "Desactivado"}
                         </button>
                         <button
-                          onClick={() => { setLayoutMode(layoutMode === "dashboard" ? "web" : "dashboard"); setUserMenuOpen(false); }}
+                          onClick={() => {
+                            setLayoutMode(
+                              layoutMode === "dashboard" ? "web" : "dashboard",
+                            );
+                            setUserMenuOpen(false);
+                          }}
                           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                         >
                           <LayoutDashboard className="h-4 w-4" />
-                          {layoutMode === "dashboard" ? "Cambiar a Vista Web" : "Cambiar a Vista Panel"}
+                          {layoutMode === "dashboard"
+                            ? "Cambiar a Vista Web"
+                            : "Cambiar a Vista Panel"}
                         </button>
                         <button
-                          onClick={() => { toggleTheme(); setUserMenuOpen(false); }}
+                          onClick={() => {
+                            toggleTheme();
+                            setUserMenuOpen(false);
+                          }}
                           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                         >
                           {isDark ? (
-                            <><Sun className="h-4 w-4" />Modo Claro</>
+                            <>
+                              <Sun className="h-4 w-4" />
+                              Modo Claro
+                            </>
                           ) : (
-                            <><Moon className="h-4 w-4" />Modo Oscuro</>
+                            <>
+                              <Moon className="h-4 w-4" />
+                              Modo Oscuro
+                            </>
                           )}
                         </button>
                         <div className="my-1 border-t border-border" />
                         <button
-                          onClick={() => { logout(); setUserMenuOpen(false); }}
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
                           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                         >
                           <LogOut className="h-4 w-4" />
@@ -225,9 +244,10 @@ export function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted p-2 rounded-full transition-colors"
+                title="Iniciar Sesión"
               >
-                <LogIn className="h-4 w-4" />
+                <User className="h-5 w-5" />
               </Link>
             )}
           </div>
@@ -239,7 +259,11 @@ export function Navbar() {
               className="p-2 text-muted-foreground hover:text-primary transition-colors"
               aria-label="Toggle menu"
             >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -339,7 +363,10 @@ export function Navbar() {
                         <div key={cat.id}>
                           <Link
                             href={`/categorias/${cat.slug}`}
-                            onClick={() => { setIsOpen(false); setMobileCategOpen(false); }}
+                            onClick={() => {
+                              setIsOpen(false);
+                              setMobileCategOpen(false);
+                            }}
                             className="block px-4 py-1.5 text-sm font-heading font-bold hover:text-primary transition-colors"
                           >
                             {cat.nombre}
@@ -348,7 +375,10 @@ export function Navbar() {
                             <Link
                               key={sub.id}
                               href={`/categorias/${sub.slug}`}
-                              onClick={() => { setIsOpen(false); setMobileCategOpen(false); }}
+                              onClick={() => {
+                                setIsOpen(false);
+                                setMobileCategOpen(false);
+                              }}
                               className="block px-6 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
                             >
                               {sub.nombre}
@@ -370,21 +400,32 @@ export function Navbar() {
                     <span>{user.email}</span>
                   </div>
                   <button
-                    onClick={() => { toggleEditMode(); setIsOpen(false); }}
+                    onClick={() => {
+                      toggleEditMode();
+                      setIsOpen(false);
+                    }}
                     className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
                   >
                     <Edit3 className="h-5 w-5" />
                     Modo Edición: {isEditing ? "ON" : "OFF"}
                   </button>
                   <button
-                    onClick={() => { setLayoutMode(layoutMode === "dashboard" ? "web" : "dashboard"); setIsOpen(false); }}
+                    onClick={() => {
+                      setLayoutMode(
+                        layoutMode === "dashboard" ? "web" : "dashboard",
+                      );
+                      setIsOpen(false);
+                    }}
                     className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
                   >
                     <LayoutDashboard className="h-5 w-5" />
                     {layoutMode === "dashboard" ? "Vista Web" : "Vista Panel"}
                   </button>
                   <button
-                    onClick={() => { logout(); setIsOpen(false); }}
+                    onClick={() => {
+                      logout();
+                      setIsOpen(false);
+                    }}
                     className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                   >
                     <LogOut className="h-5 w-5" />
@@ -397,7 +438,7 @@ export function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-colors"
                 >
-                  <LogIn className="h-5 w-5" />
+                  <User className="h-5 w-5" />
                   Iniciar Sesión
                 </Link>
               )}

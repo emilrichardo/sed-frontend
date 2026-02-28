@@ -568,10 +568,33 @@ export async function getPublicacionesByCategoria(
   const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=-createdAt&depth=1&where[categorias][in][0]=${categoriaId}`;
   try {
     const res = await fetch(url, { next: { revalidate: 60 } });
-    if (!res.ok) return { docs: [], totalDocs: 0, limit, totalPages: 0, page: 1, pagingCounter: 0, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null };
+    if (!res.ok)
+      return {
+        docs: [],
+        totalDocs: 0,
+        limit,
+        totalPages: 0,
+        page: 1,
+        pagingCounter: 0,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      };
     return res.json();
   } catch {
-    return { docs: [], totalDocs: 0, limit, totalPages: 0, page: 1, pagingCounter: 0, hasPrevPage: false, hasNextPage: false, prevPage: null, nextPage: null };
+    return {
+      docs: [],
+      totalDocs: 0,
+      limit,
+      totalPages: 0,
+      page: 1,
+      pagingCounter: 0,
+      hasPrevPage: false,
+      hasNextPage: false,
+      prevPage: null,
+      nextPage: null,
+    };
   }
 }
 
@@ -731,9 +754,41 @@ export async function getBulletins(
     });
   }
 
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch bulletins");
-  return res.json();
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      console.warn(
+        `[getBulletins] Failed to fetch: ${res.status} ${res.statusText} - ${url}`,
+      );
+      return {
+        docs: [],
+        totalDocs: 0,
+        limit,
+        totalPages: 0,
+        page: 1,
+        pagingCounter: 0,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      };
+    }
+    return await res.json();
+  } catch (error) {
+    console.error(`[getBulletins] Error:`, error);
+    return {
+      docs: [],
+      totalDocs: 0,
+      limit,
+      totalPages: 0,
+      page: 1,
+      pagingCounter: 0,
+      hasPrevPage: false,
+      hasNextPage: false,
+      prevPage: null,
+      nextPage: null,
+    };
+  }
 }
 
 export async function getBulletin(

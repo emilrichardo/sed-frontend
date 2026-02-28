@@ -12,7 +12,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
   // If no user, we might be on login page, or just showing public content.
   // The RootLayout in RootLayout.tsx has ProtectedRoute, so user is likely present or being checked.
 
-  if (layoutMode === "web") {
+  if (layoutMode === "web" || !user) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />

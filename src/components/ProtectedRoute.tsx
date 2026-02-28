@@ -11,7 +11,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && !user && pathname !== "/login") {
+    // Only protect /admin routes for now. Everything else is public.
+    if (!isLoading && !user && pathname.startsWith("/admin")) {
       const returnUrl = encodeURIComponent(pathname);
       router.push(`/login?returnUrl=${returnUrl}`);
     }
@@ -25,8 +26,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user && pathname !== "/login") {
-    return null; // Don't render anything while redirecting
+  if (!user && pathname.startsWith("/admin")) {
+    return null; // Don't render protected content while redirecting
   }
 
   return <>{children}</>;
