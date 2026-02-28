@@ -5,7 +5,7 @@ import { BlockRenderer } from "@/components/BlockRenderer";
 import { EditContentButton } from "@/components/EditContentButton";
 import { SourcesSection } from "@/components/SourcesSection";
 import { hasRealContent } from "@/utils/publicacion";
-import { ShareButton } from "@/components/ShareButton";
+import { PublicationActions } from "@/components/PublicationActions";
 
 interface NewsDetailProps {
   initialData: NewsItem;
@@ -111,7 +111,7 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
             })()}
 
             <EditContentButton collection="publicaciones" id={initialData.id} />
-            <ShareButton title={initialData.titulo} />
+            <PublicationActions title={initialData.titulo} publicationId={initialData.id} />
           </div>
         )}
 

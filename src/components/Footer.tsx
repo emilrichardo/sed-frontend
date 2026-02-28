@@ -8,7 +8,8 @@ export function Footer() {
 
   return (
     <footer className="bg-card border-t border-border mt-auto">
-      <div className="max-w-[1440px] mx-auto px-4 pt-12 pb-24 md:px-8 md:py-16">
+      {/* Desktop full footer */}
+      <div className="hidden md:block max-w-[1440px] mx-auto px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-12 lg:gap-8">
           {/* Logo & About */}
           <div className="space-y-6">
@@ -91,6 +92,13 @@ export function Footer() {
             <span className="font-bold text-foreground">Santiago en Datos</span>
           </div>
         </div>
+      </div>
+
+      {/* Mobile: only copyright */}
+      <div className="md:hidden px-4 py-4 text-center">
+        <p className="text-xs text-muted-foreground">
+          © {currentYear} Santiago en Datos. Todos los derechos reservados.
+        </p>
       </div>
     </footer>
   );

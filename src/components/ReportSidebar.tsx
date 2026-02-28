@@ -4,22 +4,15 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ReportItem } from "@/lib/api";
 import {
-  ChevronLeft, // Added
+  ChevronLeft,
   ChevronRight,
   FileText,
-  Menu,
   PanelLeftClose,
   PanelLeftOpen,
   User,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -417,43 +410,6 @@ export function ReportSidebar({
         )}
       </aside>
 
-      {/* Mobile Drawer (Visible ONLY on LG Hidden) */}
-      <div className="lg:hidden w-full bg-background border-b p-4">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full flex justify-between items-center"
-            >
-              <span className="flex items-center gap-2">
-                <Menu className="h-4 w-4" />
-                Índice y Estructura
-              </span>
-              <ChevronRight className="h-4 w-4 rotate-90" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent
-            side="left"
-            className="w-[85vw] sm:w-[350px] overflow-y-auto"
-          >
-            <SheetTitle className="sr-only">
-              Navegación de la Publicación
-            </SheetTitle>
-            <div className="mt-6">
-              <SidebarContent
-                headings={headings}
-                childrenReports={childrenReports}
-                parentReport={parentReport}
-                currentSlug={currentSlug}
-                activeId={activeId}
-                onHeadingClick={handleHeadingClick}
-                backLink={backLink}
-                isCollapsed={false}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
     </>
   );
 }

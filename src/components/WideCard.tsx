@@ -135,21 +135,25 @@ export function WideCard({ item, showParent = true }: WideCardProps) {
         </div>
 
         {/* Media (Right) */}
-        <div className="lg:w-[45%] xl:w-[50%] shrink-0 bg-background border-t lg:border-t-0 lg:border-l border-border relative overflow-hidden flex items-center justify-center min-h-[300px]">
+        <div className="lg:w-[45%] xl:w-[50%] shrink-0 bg-background border-t lg:border-t-0 lg:border-l border-border relative overflow-hidden flex items-center justify-center h-[260px] lg:h-auto lg:self-stretch">
           {!useChart && img?.url ? (
-            <Link
-              href={`/publicaciones/${item.slug}`}
-              className="block w-full h-full relative"
-            >
-              <Image
-                src={img.url}
-                alt={img.alt || item.titulo}
-                fill
-                unoptimized
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                sizes="(max-width: 1024px) 100vw, 50vw"
+            <>
+              <div className="absolute inset-0">
+                <Image
+                  src={img.url}
+                  alt={img.alt || item.titulo}
+                  fill
+                  unoptimized
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+              </div>
+              <Link
+                href={`/publicaciones/${item.slug}`}
+                className="absolute inset-0 z-10"
+                aria-label={`Ver ${item.titulo}`}
               />
-            </Link>
+            </>
           ) : hasTables ? (
             <div className="w-full h-full p-4">
               <PublicationTableSlider blocks={tablaBlocks.slice(0, 1)} />
