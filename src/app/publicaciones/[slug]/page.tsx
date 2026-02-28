@@ -144,6 +144,8 @@ export default async function PublicationPage({ params }: PageProps) {
       parentReport={parent}
       currentSlug={slug}
       backLink={backLink}
+      title={reportItem.titulo}
+      publicationId={reportItem.id}
     >
       {/* Main Content */}
       <NewsDetail initialData={reportItem} hideSources={true} />
