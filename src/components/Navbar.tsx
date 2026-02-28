@@ -314,9 +314,7 @@ export function Navbar() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-xs text-muted-foreground/50 italic">
-                      Sin subcategorías
-                    </p>
+                    <p className="text-xs text-muted-foreground/50 italic"></p>
                   )}
                 </div>
               ))}

@@ -6,7 +6,8 @@ import {
 import { CategoryPublicationsList } from "@/components/CategoryPublicationsList";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRight, ChevronLeft } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
 import { Metadata } from "next";
 
 export const revalidate = 300;
@@ -37,13 +38,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
   return (
     <div className="py-8 md:py-12">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
-      >
-        <ChevronLeft className="h-3.5 w-3.5" />
-        Inicio
-      </Link>
+      <BackButton className="mb-8" />
 
       <div className="mb-10">
         <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
@@ -65,7 +60,10 @@ export default async function CategoryPage({ params }: PageProps) {
           <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
             Subcategorías
           </p>
-          <nav className="-mx-4 md:-mx-8 border-b border-border" aria-label="Subcategorías">
+          <nav
+            className="-mx-4 md:-mx-8 border-b border-border"
+            aria-label="Subcategorías"
+          >
             {children.map((child) => (
               <Link
                 key={child.id}

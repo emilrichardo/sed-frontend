@@ -3,6 +3,7 @@
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ReportSidebar } from "@/components/ReportSidebar";
+import { BackButton } from "@/components/BackButton";
 
 import type { ReportItem } from "@/lib/api";
 
@@ -37,6 +38,7 @@ export function PublicationLayoutWrapper({
       <div className="flex flex-col min-h-screen">
         <main className="flex-1 bg-background">
           <article className="max-w-[960px] mx-auto py-10 px-4 md:py-14 md:px-8">
+            <BackButton href={backLink.href} label={backLink.label} />
             {children}
           </article>
         </main>

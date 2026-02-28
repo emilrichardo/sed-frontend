@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { SourcesSection } from "@/components/SourcesSection";
 import { PublicationLayoutWrapper } from "@/components/PublicationLayoutWrapper";
+import { RelatedPublications } from "@/components/RelatedPublications";
 import { getTextFromNodes } from "@/components/RichTextParser";
 import slugify from "slugify";
 import { PublicationTableSlider } from "@/components/PublicationTableSlider";
@@ -267,6 +268,16 @@ export default async function PublicationPage({ params }: PageProps) {
       <div className="mt-12">
         <SourcesSection content={reportItem.fuentes} />
       </div>
+
+      {/* Related Publications */}
+      <RelatedPublications
+        currentId={reportItem.id}
+        tipoId={
+          typeof reportItem.tipo_publicacion === "object"
+            ? reportItem.tipo_publicacion?.id
+            : reportItem.tipo_publicacion
+        }
+      />
     </PublicationLayoutWrapper>
   );
 }
