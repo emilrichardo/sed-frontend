@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { WideCard } from "@/components/WideCard";
+import Link from "next/link";
 import type { ReportItem } from "@/lib/api";
 import { LayoutGrid } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,9 +70,25 @@ export function RelatedPublications({
         <LayoutGrid className="h-5 w-5 text-muted-foreground" />
         Más publicaciones relacionadas
       </h3>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {related.map((pub) => (
-          <WideCard key={pub.id} item={pub} showParent={false} />
+          <Link
+            key={pub.id}
+            href={`/publicaciones/${pub.slug}`}
+            className="block p-5 border bg-card hover:bg-muted/50 transition-colors group rounded-lg"
+          >
+            <h4 className="font-bold text-lg group-hover:text-primary leading-tight">
+              {pub.titulo}
+            </h4>
+            {pub.publishedDate && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {new Date(pub.publishedDate).toLocaleDateString("es-AR", {
+                  year: "numeric",
+                  month: "long",
+                })}
+              </p>
+            )}
+          </Link>
         ))}
       </div>
     </div>

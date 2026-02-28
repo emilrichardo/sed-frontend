@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
 import { getTextFromNodes } from "./RichTextParser";
+import { useAuth } from "@/context/AuthContext";
+import { Download } from "lucide-react";
 
 // --- Column type detection ---
 
@@ -489,6 +491,8 @@ export const TableBlock = ({
   const [activeTab, setActiveTab] = useState<"visualizacion" | "json">(
     "visualizacion",
   );
+  const { user, isEditing } = useAuth();
+  const isPublicUser = !user || !isEditing;
 
   const {
     title: fieldTitle,
@@ -738,6 +742,42 @@ export const TableBlock = ({
   const showChart =
     activeTab === "visualizacion" && selectedChartType !== "table";
 
+  const handleDownloadCSV = () => {
+    if (!columns || !filteredRows) return;
+    const headerRow = columns.map((col: any) => col.header || col.id).join(",");
+    const dataRows = filteredRows.map((row: any) => {
+      return columns
+        .map((col: any) => {
+          let val = row.cells
+            ? row.cells.find((c: any) => c.columnId === col.id)?.value
+            : row[col.id];
+          if (val === null || val === undefined) val = "";
+          // Escape quotes and wrap in quotes if contains comma
+          val = String(val).replace(/"/g, '""');
+          if (val.includes(",")) val = `"${val}"`;
+          return val;
+        })
+        .join(",");
+    });
+    const csvContent = [headerRow, ...dataRows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${slugifyText(title || "datos")}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  function slugifyText(text: string) {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+  }
+
   return (
     <div
       className={
@@ -748,7 +788,7 @@ export const TableBlock = ({
     >
       {/* Header */}
       {!isWidget && (
-        <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2 bg-muted/30 border-b gap-3 sm:gap-0">
           <div className="flex items-center gap-2">
             {activeTab === "visualizacion" ? (
               <h4 className="font-bold text-sm uppercase tracking-wider">
@@ -761,35 +801,47 @@ export const TableBlock = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
+          <div className="flex flex-wrap items-center gap-2">
+            {!isPublicUser && (
+              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
+                <button
+                  onClick={() => setActiveTab("visualizacion")}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+                    activeTab === "visualizacion"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                  }`}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Visualización
+                </button>
+                <button
+                  onClick={() => setActiveTab("json")}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
+                    activeTab === "json"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                  }`}
+                >
+                  <Code className="h-3.5 w-3.5" />
+                  JSON
+                </button>
+              </div>
+            )}
+
             <button
-              onClick={() => setActiveTab("visualizacion")}
-              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
-                activeTab === "visualizacion"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              }`}
+              onClick={handleDownloadCSV}
+              className="flex items-center justify-center p-1.5 w-8 h-8 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-md transition-all shadow-sm border border-border shrink-0 ml-auto sm:ml-0"
+              title="Descargar tabla en formato CSV"
             >
-              <Eye className="h-3.5 w-3.5" />
-              Visualización
-            </button>
-            <button
-              onClick={() => setActiveTab("json")}
-              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-sm transition-all ${
-                activeTab === "json"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              }`}
-            >
-              <Code className="h-3.5 w-3.5" />
-              JSON
+              <Download className="h-4 w-4" />
             </button>
           </div>
         </div>
       )}
 
       {/* Chart type switcher */}
-      {!isWidget && activeTab === "visualizacion" && (
+      {!isWidget && activeTab === "visualizacion" && !isPublicUser && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 bg-muted/10 border-b flex-wrap">
           {CHART_CATALOG.map(({ id, label, Icon }) => {
             const isCompatible = compatibleIds.has(id);
@@ -907,7 +959,7 @@ export const TableBlock = ({
                         <th
                           key={col.id || i}
                           onClick={() => requestSort(col.id)}
-                          className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap cursor-pointer hover:bg-muted/80 transition-colors group"
+                          className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap text-xs sm:text-sm cursor-pointer hover:bg-muted/80 transition-colors group"
                         >
                           <div className="flex items-center justify-between">
                             {col.header}
@@ -977,8 +1029,9 @@ export const TableBlock = ({
                         return (
                           <td
                             key={col.id || j}
-                            className="px-4 py-3 border-r last:border-0 border-border/20"
+                            className={`px-4 py-2 sm:py-3 border-r last:border-0 border-border/20 text-xs sm:text-sm whitespace-nowrap max-w-[200px] sm:max-w-[400px] truncate`}
                             style={style}
+                            title={String(cellValue)}
                           >
                             {cellValue}
                           </td>

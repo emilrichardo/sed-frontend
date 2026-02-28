@@ -1865,6 +1865,8 @@ export const ChartRenderer = ({
                 height: 480,
               }}
               config={{ displayModeBar: false }}
+              useResizeHandler={true}
+              style={{ width: "100%", height: "100%" }}
             />
           </div>
         );
@@ -1906,7 +1908,8 @@ export const ChartRenderer = ({
                 xaxis: { tickangle: -45 },
               }}
               config={{ displayModeBar: false }}
-              style={{ width: "100%" }}
+              useResizeHandler={true}
+              style={{ width: "100%", height: "100%" }}
             />
           </div>
         );
@@ -2142,6 +2145,8 @@ export const ChartRenderer = ({
                 showlegend: false,
               }}
               config={{ displayModeBar: false }}
+              useResizeHandler={true}
+              style={{ width: "100%", height: "100%" }}
             />
           </div>
         );

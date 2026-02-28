@@ -8,8 +8,8 @@ export function Footer() {
 
   return (
     <footer className="bg-card border-t border-border mt-auto">
-      <div className="max-w-[1440px] mx-auto px-4 py-12 md:px-8 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+      <div className="max-w-[1440px] mx-auto px-4 pt-12 pb-24 md:px-8 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-12 lg:gap-8">
           {/* Logo & About */}
           <div className="space-y-6">
             <Link href="/" className="inline-block">
@@ -47,47 +47,6 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="space-y-6">
-            <h4 className="text-sm font-bold uppercase tracking-widest text-foreground">
-              Navegación
-            </h4>
-            <ul className="space-y-4">
-              <li>
-                <Link
-                  href="/"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-                >
-                  Inicio
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/boletines"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-                >
-                  Boletines Oficiales
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/publicaciones"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-                >
-                  Todas las Publicaciones
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/widgets"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-                >
-                  Widgets e Indicadores
-                </Link>
-              </li>
-            </ul>
-          </div>
-
           {/* Resources / Support */}
           <div className="space-y-6">
             <h4 className="text-sm font-bold uppercase tracking-widest text-foreground">
@@ -113,47 +72,12 @@ export function Footer() {
                 </div>
               </li>
             </ul>
-          </div>
-
-          {/* Legal / More */}
-          <div className="space-y-6">
-            <h4 className="text-sm font-bold uppercase tracking-widest text-foreground">
-              Legal
-            </h4>
-            <ul className="space-y-4 text-sm text-muted-foreground">
-              <li>
-                <Link
-                  href="/privacidad"
-                  className="hover:text-primary transition-colors"
-                >
-                  Política de Privacidad
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terminos"
-                  className="hover:text-primary transition-colors"
-                >
-                  Términos de Uso
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/cookies"
-                  className="hover:text-primary transition-colors"
-                >
-                  Política de Cookies
-                </Link>
-              </li>
-              <li>
-                <div className="pt-4 border-t border-border">
-                  <p className="text-xs italic">
-                    Los datos presentados son de carácter público y se
-                    actualizan periódicamente según fuentes oficiales.
-                  </p>
-                </div>
-              </li>
-            </ul>
+            <div className="pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground italic">
+                Los datos presentados son de carácter público y se actualizan
+                periódicamente según fuentes oficiales.
+              </p>
+            </div>
           </div>
         </div>
 
