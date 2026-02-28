@@ -455,42 +455,6 @@ export function Navbar() {
         )}
       </nav>
 
-      {/* ── Mobile Bottom Navigation ── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background flex items-center justify-around z-50 px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-        <Link
-          href="/"
-          className="flex flex-col items-center gap-1 text-muted-foreground transition-colors p-2 hover:text-primary"
-        >
-          <Home className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">Inicio</span>
-        </Link>
-        <Link
-          href="/publicaciones"
-          className="flex flex-col items-center gap-1 text-muted-foreground transition-colors p-2 hover:text-primary"
-        >
-          <FileText className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">Informes</span>
-        </Link>
-        <Link
-          href="/boletines"
-          className="flex flex-col items-center gap-1 text-muted-foreground transition-colors p-2 hover:text-primary"
-        >
-          <Newspaper className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">
-            Boletines
-          </span>
-        </Link>
-        <button
-          onClick={() => setMobileSearchOpen(true)}
-          className="flex flex-col items-center gap-1 text-muted-foreground transition-colors p-2 hover:text-primary"
-        >
-          <Search className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">
-            Categorías
-          </span>
-        </button>
-      </div>
-
       {/* ── Mobile Search / Categories Drawer ── */}
       {mobileSearchOpen && (
         <div className="md:hidden fixed inset-0 z-[60] bg-background animate-in fade-in slide-in-from-bottom-5">

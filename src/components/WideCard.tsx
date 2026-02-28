@@ -139,7 +139,7 @@ export function WideCard({ item, showParent = true }: WideCardProps) {
           {!useChart && img?.url ? (
             <Link
               href={`/publicaciones/${item.slug}`}
-              className="block w-full h-full relative"
+              className="absolute inset-0"
             >
               <Image
                 src={img.url}
