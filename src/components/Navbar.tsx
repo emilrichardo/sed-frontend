@@ -28,7 +28,7 @@ interface CategoryWithChildren extends Category {
 const navLinks = [
   { name: "Inicio", href: "/" },
   { name: "Boletines", href: "/boletines" },
-  { name: "Informes", href: "/publicaciones" },
+  { name: "Publicaciones", href: "/publicaciones" },
 ];
 
 // ── Compact rotating stats ticker ──────────────────────────────────────────
@@ -411,7 +411,7 @@ export function Navbar() {
           }`}
         >
           <FileText className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">Informes</span>
+          <span className="text-[10px] font-medium leading-none">Publicaciones</span>
         </Link>
         <Link
           href="/boletines"

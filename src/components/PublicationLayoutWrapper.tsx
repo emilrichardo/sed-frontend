@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ReportSidebar } from "@/components/ReportSidebar";
-import { BackButton } from "@/components/BackButton";
 import Link from "next/link";
 import {
   ChevronLeft,
@@ -149,7 +148,7 @@ function MobilePublicationNav({
   const progress = useReadingProgress();
 
   return (
-    <div className="md:hidden sticky top-0 z-30 bg-background/90 backdrop-blur-sm border-b border-border">
+    <div className="sticky top-14 md:top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
       {/* Reading progress bar */}
       <div className="absolute bottom-0 left-0 h-[2px] bg-primary/20 w-full">
         <div
@@ -290,11 +289,6 @@ export function PublicationLayoutWrapper({
         />
         <main className="flex-1 bg-background">
           <article className="max-w-[960px] mx-auto py-10 px-4 md:py-14 md:px-8">
-            <BackButton
-              href={backLink.href}
-              label={backLink.label}
-              className="hidden md:inline-flex"
-            />
             {children}
           </article>
         </main>
