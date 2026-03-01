@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface DollarRate {
   casa: string;
@@ -40,34 +39,24 @@ export function DollarWidget() {
   if (error) return null;
 
   return (
-    <div className="p-3 rounded-lg border bg-card shadow-sm">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-        Dólar · Argentina
-      </p>
+    <div className="flex items-center gap-2 px-2 py-1 rounded border bg-card text-[10px] min-w-0 overflow-hidden">
+      <span className="font-bold uppercase tracking-wider text-muted-foreground shrink-0">USD</span>
       {rates.length === 0 ? (
-        <div className="space-y-2">
+        <>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex justify-between items-center">
-              <div className="h-3 w-14 bg-muted rounded animate-pulse" />
-              <div className="h-3 w-20 bg-muted rounded animate-pulse" />
-            </div>
+            <div key={i} className="h-2.5 w-14 bg-muted rounded animate-pulse" />
           ))}
-        </div>
+        </>
       ) : (
-        <div className="space-y-1.5">
-          {rates.map((rate) => (
-            <div key={rate.casa} className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold text-muted-foreground capitalize truncate">
-                {rate.nombre}
-              </span>
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="text-xs text-muted-foreground">{formatPrice(rate.compra)}</span>
-                <span className="text-[10px] text-muted-foreground">/</span>
-                <span className="text-xs font-bold">{formatPrice(rate.venta)}</span>
-              </div>
-            </div>
+        <>
+          {rates.map((rate, idx) => (
+            <span key={rate.casa} className="flex items-center gap-1 shrink-0">
+              {idx > 0 && <span className="text-muted-foreground">·</span>}
+              <span className="text-muted-foreground capitalize">{rate.nombre}</span>
+              <span className="font-bold">{formatPrice(rate.venta)}</span>
+            </span>
           ))}
-        </div>
+        </>
       )}
     </div>
   );

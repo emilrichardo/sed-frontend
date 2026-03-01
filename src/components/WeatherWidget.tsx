@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Thermometer } from "lucide-react";
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning } from "lucide-react";
 
 interface WeatherData {
   temperature: number;
@@ -44,32 +44,22 @@ export function WeatherWidget() {
   const info = weather ? getWeatherInfo(weather.weathercode) : null;
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card shadow-sm min-w-0">
-      <div className="shrink-0">
-        {info ? (
-          <info.Icon className={`h-8 w-8 ${info.color}`} />
-        ) : (
-          <Thermometer className="h-8 w-8 text-muted-foreground animate-pulse" />
-        )}
-      </div>
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
-          Santiago del Estero
-        </p>
-        {weather ? (
-          <>
-            <p className="text-xl font-bold leading-tight">{weather.temperature}°C</p>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {info?.label} · {weather.windspeed} km/h
-            </p>
-          </>
-        ) : (
-          <div className="space-y-1 mt-0.5">
-            <div className="h-5 w-12 bg-muted rounded animate-pulse" />
-            <div className="h-3 w-20 bg-muted rounded animate-pulse" />
-          </div>
-        )}
-      </div>
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded border bg-card text-[10px] shrink-0">
+      {info ? (
+        <info.Icon className={`h-3 w-3 shrink-0 ${info.color}`} />
+      ) : (
+        <div className="h-3 w-3 bg-muted rounded-full animate-pulse shrink-0" />
+      )}
+      <span className="font-semibold text-muted-foreground">Sgo. del Estero</span>
+      {weather ? (
+        <>
+          <span className="text-muted-foreground">·</span>
+          <span className="font-bold">{weather.temperature}°C</span>
+          <span className="text-muted-foreground hidden sm:inline">· {info?.label}</span>
+        </>
+      ) : (
+        <div className="h-2.5 w-8 bg-muted rounded animate-pulse" />
+      )}
     </div>
   );
 }
