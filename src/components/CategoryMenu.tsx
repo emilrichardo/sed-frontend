@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { Search, ChevronLeft, ArrowUpRight, X } from "lucide-react";
 
@@ -209,6 +209,11 @@ export function CategoryMenu({
     useState<CategoryWithChildren | null>(null);
   const [searchValue, setSearchValue] = useState("");
 
+  // Real-time search: publications from API
+  const [searchPubs, setSearchPubs] = useState<Publication[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // For home-page inline mode: overlay state
   const [overlayCategory, setOverlayCategory] =
     useState<CategoryWithChildren | null>(null);
@@ -216,11 +221,13 @@ export function CategoryMenu({
   const handleBack = () => {
     setSelectedCategory(null);
     setSearchValue("");
+    setSearchPubs([]);
   };
 
   const handleClose = () => {
     setSelectedCategory(null);
     setSearchValue("");
+    setSearchPubs([]);
     onClose?.();
   };
 
@@ -229,12 +236,39 @@ export function CategoryMenu({
     setOverlayCategory(null);
   };
 
-  // Filter categories by search
+  // Filter categories by search (local)
   const filteredCategories = searchValue
     ? categories.filter((cat) =>
         cat.nombre.toLowerCase().includes(searchValue.toLowerCase()),
       )
     : categories;
+
+  // Debounced real-time search for publications
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!searchValue.trim() || searchValue.trim().length < 2) {
+      setSearchPubs([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    debounceRef.current = setTimeout(() => {
+      fetch(
+        `/api-proxy/publicaciones?where[titulo][like]=${encodeURIComponent(searchValue.trim())}&limit=10&depth=0`,
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          setSearchPubs(data.docs || []);
+          setSearchLoading(false);
+        })
+        .catch(() => setSearchLoading(false));
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchValue]);
+
+  const isSearching = searchValue.trim().length >= 2;
 
   // ── HOME PAGE inline mode (with overlay on click) ───────────────────────────
   if (!isDrawer) {
@@ -375,37 +409,112 @@ export function CategoryMenu({
             </div>
           </div>
 
-          {/* Categories list */}
+          {/* Categories + real-time publication results */}
           <div className="flex-1 overflow-y-auto pb-24">
-            {filteredCategories.map((cat) => (
-              <div
-                key={cat.id}
-                className="border-b border-border flex items-stretch"
-              >
-                {/* Text → slides to detail */}
-                <button
-                  onClick={() => setSelectedCategory(cat)}
-                  className="flex-1 flex items-center px-4 py-5 hover:bg-muted/50 transition-colors group text-left min-w-0"
-                >
-                  <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
-                    {cat.nombre}
-                  </span>
-                </button>
-                {/* Arrow → navigates to category page */}
-                <Link
-                  href={`/categorias/${cat.slug}`}
-                  onClick={handleNavigate}
-                  className="flex items-center justify-center px-5 hover:bg-muted/50 transition-colors shrink-0 group"
-                  title={`Ir a ${cat.nombre}`}
-                >
-                  <ArrowUpRight className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                </Link>
-              </div>
-            ))}
-            {filteredCategories.length === 0 && (
-              <p className="px-4 py-12 text-sm text-muted-foreground text-center">
-                No se encontraron categorías.
-              </p>
+            {isSearching ? (
+              <>
+                {/* Matching categories */}
+                {filteredCategories.length > 0 && (
+                  <>
+                    <p className="px-4 pt-4 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                      Categorías
+                    </p>
+                    {filteredCategories.map((cat) => (
+                      <div
+                        key={cat.id}
+                        className="border-b border-border flex items-stretch"
+                      >
+                        <button
+                          onClick={() => setSelectedCategory(cat)}
+                          className="flex-1 flex items-center px-4 py-4 hover:bg-muted/50 transition-colors group text-left min-w-0"
+                        >
+                          <span className="text-xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                            {cat.nombre}
+                          </span>
+                        </button>
+                        <Link
+                          href={`/categorias/${cat.slug}`}
+                          onClick={handleNavigate}
+                          className="flex items-center justify-center px-5 hover:bg-muted/50 transition-colors shrink-0 group"
+                          title={`Ir a ${cat.nombre}`}
+                        >
+                          <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </Link>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Matching publications */}
+                <p className="px-4 pt-4 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                  Publicaciones
+                  {!searchLoading && searchPubs.length > 0 && (
+                    <span className="ml-2 text-foreground">{searchPubs.length}</span>
+                  )}
+                </p>
+                {searchLoading ? (
+                  <div className="px-4 py-8 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : searchPubs.length > 0 ? (
+                  searchPubs.map((pub) => (
+                    <Link
+                      key={pub.id}
+                      href={`/publicaciones/${pub.slug}`}
+                      onClick={handleNavigate}
+                      className="flex items-center justify-between w-full px-4 py-3.5 border-b border-border hover:bg-muted/50 transition-colors group"
+                    >
+                      <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 pr-4 leading-snug">
+                        {pub.titulo}
+                      </span>
+                      <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </Link>
+                  ))
+                ) : (
+                  <p className="px-4 py-4 text-sm text-muted-foreground">
+                    No se encontraron publicaciones.
+                  </p>
+                )}
+
+                {filteredCategories.length === 0 && searchPubs.length === 0 && !searchLoading && (
+                  <p className="px-4 pt-4 text-sm text-muted-foreground text-center">
+                    No se encontraron resultados.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                {filteredCategories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="border-b border-border flex items-stretch"
+                  >
+                    {/* Text → slides to detail */}
+                    <button
+                      onClick={() => setSelectedCategory(cat)}
+                      className="flex-1 flex items-center px-4 py-5 hover:bg-muted/50 transition-colors group text-left min-w-0"
+                    >
+                      <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                        {cat.nombre}
+                      </span>
+                    </button>
+                    {/* Arrow → navigates to category page */}
+                    <Link
+                      href={`/categorias/${cat.slug}`}
+                      onClick={handleNavigate}
+                      className="flex items-center justify-center px-5 hover:bg-muted/50 transition-colors shrink-0 group"
+                      title={`Ir a ${cat.nombre}`}
+                    >
+                      <ArrowUpRight className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </Link>
+                  </div>
+                ))}
+                {filteredCategories.length === 0 && (
+                  <p className="px-4 py-12 text-sm text-muted-foreground text-center">
+                    No se encontraron categorías.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -10,13 +10,13 @@ import {
   Edit3,
   Sun,
   Moon,
-  ChevronDown,
   Home,
   FileText,
   Newspaper,
   Search,
   Heart,
   LogIn,
+  Share2,
 } from "lucide-react";
 import type { Category } from "@/lib/api";
 import { CategoryMenu } from "@/components/CategoryMenu";
@@ -209,43 +209,79 @@ export function Navbar() {
                 </Link>
               )}
 
-              {/* Theme toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                title={isDark ? "Modo claro" : "Modo oscuro"}
-              >
-                {isDark ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </button>
-
               {/* User menu */}
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background hover:bg-muted transition-colors"
+                  className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  title="Menú de usuario"
                 >
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  <User className="h-4 w-4" />
                 </button>
 
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 rounded-md border border-border bg-background shadow-lg z-[70]">
                     <div className="py-1">
-                      <Link
-                        href="/favoritos"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                      >
-                        <Heart className="h-4 w-4" />
-                        Mis Favoritos
-                      </Link>
-
-                      {user && (
+                      {!user ? (
                         <>
+                          {/* Public user menu */}
+                          <button
+                            onClick={() => {
+                              toggleTheme();
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            {isDark ? (
+                              <Sun className="h-4 w-4" />
+                            ) : (
+                              <Moon className="h-4 w-4" />
+                            )}
+                            {isDark ? "Modo Claro" : "Modo Oscuro"}
+                          </button>
+                          <Link
+                            href="/favoritos"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Heart className="h-4 w-4" />
+                            Favoritos
+                          </Link>
+                          <div className="my-1 border-t border-border" />
+                          <Link
+                            href="/login"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <LogIn className="h-4 w-4" />
+                            Iniciar Sesión
+                          </Link>
+                          <button
+                            onClick={() => {
+                              if (navigator.share) {
+                                navigator.share({ url: window.location.href, title: document.title });
+                              } else {
+                                navigator.clipboard.writeText(window.location.href);
+                              }
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Share2 className="h-4 w-4" />
+                            Compartir
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {/* Authenticated user menu */}
+                          <Link
+                            href="/favoritos"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Heart className="h-4 w-4" />
+                            Mis Favoritos
+                          </Link>
                           <button
                             onClick={() => {
                               toggleEditMode();
@@ -277,20 +313,6 @@ export function Navbar() {
                           </button>
                         </>
                       )}
-
-                      {!user && (
-                        <>
-                          <div className="my-1 border-t border-border" />
-                          <Link
-                            href="/login"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                          >
-                            <LogIn className="h-4 w-4" />
-                            Iniciar Sesión
-                          </Link>
-                        </>
-                      )}
                     </div>
                   </div>
                 )}
@@ -309,46 +331,78 @@ export function Navbar() {
           Santiago en Datos
         </Link>
 
-        {user ? (
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-input bg-background hover:bg-muted transition-colors"
-            >
-              <User className="h-4 w-4 text-muted-foreground" />
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
-            </button>
-            {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-md border border-border bg-background shadow-lg z-[70]">
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
-                    Usuario
-                  </p>
-                  <p className="text-sm font-medium truncate">{user.email}</p>
-                </div>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            title="Menú de usuario"
+          >
+            <User className="h-5 w-5" />
+          </button>
+
+          {userMenuOpen && (
+            <div className="absolute right-0 mt-2 w-56 rounded-md border border-border bg-background shadow-lg z-[70]">
+              {user ? (
+                <>
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
+                      Usuario
+                    </p>
+                    <p className="text-sm font-medium truncate">{user.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link
+                      href="/favoritos"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Heart className="h-4 w-4" />
+                      Mis Favoritos
+                    </Link>
+                    <button
+                      onClick={() => {
+                        toggleEditMode();
+                        setUserMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                        isEditing
+                          ? "text-primary bg-primary/5 font-semibold"
+                          : "text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      Edición: {isEditing ? "ON" : "OFF"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        toggleTheme();
+                        setUserMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      {isDark ? (
+                        <Sun className="h-4 w-4" />
+                      ) : (
+                        <Moon className="h-4 w-4" />
+                      )}
+                      {isDark ? "Modo Claro" : "Modo Oscuro"}
+                    </button>
+                    <div className="my-1 border-t border-border" />
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                </>
+              ) : (
                 <div className="py-1">
-                  <Link
-                    href="/favoritos"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                  >
-                    <Heart className="h-4 w-4" />
-                    Mis Favoritos
-                  </Link>
-                  <button
-                    onClick={() => {
-                      toggleEditMode();
-                      setUserMenuOpen(false);
-                    }}
-                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                      isEditing
-                        ? "text-primary bg-primary/5 font-semibold"
-                        : "text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    Edición: {isEditing ? "ON" : "OFF"}
-                  </button>
+                  {/* Public user menu (mobile) */}
                   <button
                     onClick={() => {
                       toggleTheme();
@@ -363,30 +417,42 @@ export function Navbar() {
                     )}
                     {isDark ? "Modo Claro" : "Modo Oscuro"}
                   </button>
+                  <Link
+                    href="/favoritos"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    <Heart className="h-4 w-4" />
+                    Favoritos
+                  </Link>
                   <div className="my-1 border-t border-border" />
+                  <Link
+                    href="/login"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Iniciar Sesión
+                  </Link>
                   <button
                     onClick={() => {
-                      logout();
+                      if (navigator.share) {
+                        navigator.share({ url: window.location.href, title: document.title });
+                      } else {
+                        navigator.clipboard.writeText(window.location.href);
+                      }
                       setUserMenuOpen(false);
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                   >
-                    <LogOut className="h-4 w-4" />
-                    Cerrar Sesión
+                    <Share2 className="h-4 w-4" />
+                    Compartir
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Link
-            href="/login"
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
-          >
-            <User className="h-4 w-4" />
-            Iniciar sesión
-          </Link>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Mobile Bottom Navigation ── */}
