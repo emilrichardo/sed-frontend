@@ -8,6 +8,8 @@ import { CategoryPublicationsList } from "@/components/CategoryPublicationsList"
 import { CategoryPageNav } from "@/components/CategoryPageNav";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
 export const revalidate = 300;
 
@@ -70,6 +72,29 @@ export default async function CategoryPage({ params }: PageProps) {
             </p>
           )}
         </div>
+
+        {/* Subcategorías */}
+        {children.length > 0 && (
+          <section className="mb-10">
+            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
+              Subcategorías
+            </p>
+            <div className="border-t border-border">
+              {children.map((sub) => (
+                <Link
+                  key={sub.id}
+                  href={`/categorias/${sub.slug}`}
+                  className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
+                >
+                  <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                    {sub.nombre}
+                  </span>
+                  <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Publicaciones */}
         <section>
