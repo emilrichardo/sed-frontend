@@ -4,6 +4,9 @@ import { HomeHero } from "@/components/HomeHero";
 import { HomeCategorySection } from "@/components/HomeCategorySection";
 import { StatsCarousel } from "@/components/StatsCarousel";
 import { ResponsivePublicationCard } from "@/components/PublicationCard";
+import { WeatherWidget } from "@/components/WeatherWidget";
+import { DollarWidget } from "@/components/DollarWidget";
+import { MobileScrollTransition } from "@/components/MobileScrollTransition";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -38,6 +41,12 @@ export default async function Home() {
       {/* ── Stats ticker ── */}
       <div className="-mx-4 md:-mx-8 border-b border-border">
         <StatsCarousel />
+      </div>
+
+      {/* ── Info Widgets: Clima + Dólar ── */}
+      <div className="py-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <WeatherWidget />
+        <DollarWidget />
       </div>
 
       {/* ── Categories ── */}
@@ -104,6 +113,9 @@ export default async function Home() {
           </p>
         )}
       </section>
+
+      {/* ── Mobile scroll transition → Publicaciones ── */}
+      <MobileScrollTransition nextPage="/publicaciones" nextLabel="Publicaciones" />
     </div>
   );
 }
