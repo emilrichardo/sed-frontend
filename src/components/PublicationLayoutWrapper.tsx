@@ -126,7 +126,7 @@ function MobilePublicationNav({
   const showActions = !!(title && publicationId);
 
   return (
-    <div className="sticky top-14 md:top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
+    <div className="sticky top-0 md:top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="flex items-center h-12">
         <Link
           href={backLink.href}
