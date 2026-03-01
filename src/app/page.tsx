@@ -44,7 +44,7 @@ export default async function Home() {
       </div>
 
       {/* ── Info Widgets: Clima + Dólar ── */}
-      <div className="py-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="py-2 flex items-center gap-2 flex-wrap">
         <WeatherWidget />
         <DollarWidget />
       </div>
