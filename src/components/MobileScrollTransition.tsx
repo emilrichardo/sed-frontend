@@ -13,11 +13,20 @@ export function MobileScrollTransition({ nextPage, nextLabel }: MobileScrollTran
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [ready, setReady] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigatingRef = useRef(false);
   const router = useRouter();
 
+  // Delay before activating the observer so that an inherited scroll position
+  // from the previous page doesn't immediately trigger the transition.
   useEffect(() => {
+    const t = setTimeout(() => setReady(true), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -49,7 +58,7 @@ export function MobileScrollTransition({ nextPage, nextLabel }: MobileScrollTran
       observer.disconnect();
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [nextPage, router]);
+  }, [ready, nextPage, router]);
 
   return (
     <div className="md:hidden mt-6 mb-20">

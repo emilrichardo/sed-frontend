@@ -6,14 +6,12 @@ import { ReportSidebar } from "@/components/ReportSidebar";
 import Link from "next/link";
 import {
   ChevronLeft,
-  ChevronDown,
   MoreVertical,
   Send,
   Link as LinkIcon,
   Bookmark,
   BookmarkCheck,
   Check,
-  X,
 } from "lucide-react";
 
 import type { ReportItem } from "@/lib/api";
@@ -108,22 +106,7 @@ function MobilePublicationNav({
     setMenuOpen(false);
   };
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    if (!value) return;
-    if (value.startsWith("pub:")) {
-      window.location.href = `/publicaciones/${value.slice(4)}`;
-    } else if (value.startsWith("heading:")) {
-      const id = value.slice(8);
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-      e.target.value = "";
-    }
-  };
-
-  const hasOptions =
-    parentReport || childrenReports.length > 0 || headings.length > 0;
-
-  const showActions = !!(title && publicationId);
+  const showActions = !!title;
 
   return (
     <div className="sticky top-0 md:top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
@@ -136,48 +119,9 @@ function MobilePublicationNav({
           <ChevronLeft className="h-4 w-4 text-muted-foreground" />
         </Link>
 
-        {hasOptions ? (
-          <>
-            <select
-              className="flex-1 bg-transparent text-sm px-3 py-2 border-none outline-none appearance-none cursor-pointer text-muted-foreground"
-              onChange={handleSelectChange}
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Ir a sección...
-              </option>
-              {parentReport && (
-                <option value={`pub:${parentReport.slug}`}>
-                  ↑ {parentReport.titulo} (Principal)
-                </option>
-              )}
-              {childrenReports.map((child) => (
-                <option key={child.id} value={`pub:${child.slug}`}>
-                  {currentSlug === child.slug ? "▸ " : ""}
-                  {child.titulo}
-                </option>
-              ))}
-              {headings.length > 0 && (
-                <>
-                  {(parentReport || childrenReports.length > 0) && (
-                    <option disabled>──────────</option>
-                  )}
-                  {headings.map((h) => (
-                    <option key={h.id} value={`heading:${h.id}`}>
-                      {h.level === 2 ? "  " : ""}
-                      {h.text}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-            <ChevronDown className="h-4 w-4 text-muted-foreground pointer-events-none shrink-0" />
-          </>
-        ) : (
-          <span className="flex-1 px-4 text-sm text-muted-foreground truncate">
-            {backLink.label}
-          </span>
-        )}
+        <span className="flex-1 px-4 text-sm font-medium truncate">
+          {title || backLink.label}
+        </span>
 
         {/* Three-dot menu */}
         {showActions && (
