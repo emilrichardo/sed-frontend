@@ -291,8 +291,8 @@ function WideVariant({
           </div>
         </div>
 
-        {/* Media (Right) */}
-        <div className="lg:w-[45%] xl:w-[50%] shrink-0 bg-background border-t lg:border-t-0 lg:border-l border-border relative overflow-hidden flex items-center justify-center h-[260px] lg:h-auto lg:self-stretch">
+        {/* Media (Right) — 40% */}
+        <div className="lg:w-[40%] shrink-0 bg-background border-t lg:border-t-0 lg:border-l border-border relative overflow-hidden flex items-center justify-center h-[260px] lg:h-auto lg:self-stretch">
           {!useChart && img?.url ? (
             <>
               <div className="absolute inset-0">
