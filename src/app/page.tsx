@@ -36,9 +36,11 @@ export default async function Home() {
   return (
     <div className="w-full">
       {/* ── Info Widgets: Clima + Dólar ── */}
-      <div className="py-2 flex items-center gap-2 flex-wrap">
-        <WeatherWidget />
-        <DollarWidget />
+      <div className="py-2 overflow-x-auto">
+        <div className="flex items-center gap-2 min-w-max">
+          <WeatherWidget />
+          <DollarWidget />
+        </div>
       </div>
 
       {/* ── Hero — compacts vertically on scroll ── */}
