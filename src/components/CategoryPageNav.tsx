@@ -15,7 +15,7 @@ interface Props {
  */
 export function CategoryPageNav({ title, backHref, backLabel }: Props) {
   return (
-    <div className="sticky top-14 md:top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="sticky top-0 md:top-16 z-40 bg-background/95 backdrop-blur-sm border-b border-border animate-in fade-in slide-in-from-top-1 duration-200">
       <div className="flex items-center h-11">
         <Link
           href={backHref}

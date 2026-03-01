@@ -102,6 +102,12 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, logout, isEditing, toggleEditMode } = useAuth();
 
+  // On detail pages the inner nav takes over; hide the main mobile top bar
+  const isDetailPage =
+    (pathname.startsWith("/publicaciones/") &&
+      pathname !== "/publicaciones/") ||
+    pathname.startsWith("/categorias/");
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Theme
@@ -322,8 +328,8 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* ── Mobile Top Bar ── */}
-      <div className="md:hidden sticky top-0 z-50 w-full h-14 border-b border-border bg-background/95 backdrop-blur flex items-center px-4 justify-between">
+      {/* ── Mobile Top Bar (home + list pages only) ── */}
+      <div className={`${isDetailPage ? "hidden" : ""} md:hidden sticky top-0 z-50 w-full h-14 border-b border-border bg-background/95 backdrop-blur flex items-center px-4 justify-between`}>
         <Link
           href="/"
           className="font-extrabold font-heading text-lg tracking-tight"
