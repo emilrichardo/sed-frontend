@@ -599,6 +599,50 @@ export async function getPublicacionesByCategoria(
 }
 
 /**
+ * Fetches publications for multiple category IDs (OR filter)
+ */
+export async function getPublicacionesByCategoriaIds(
+  categoriaIds: (string | number)[],
+  params: { page?: number; limit?: number } = {},
+): Promise<PayloadResponse<ReportItem>> {
+  const { page = 1, limit = 100 } = params;
+  const inParams = categoriaIds
+    .map((id, i) => `where[categorias][in][${i}]=${id}`)
+    .join("&");
+  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=-createdAt&depth=1&${inParams}`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 60 } });
+    if (!res.ok)
+      return {
+        docs: [],
+        totalDocs: 0,
+        limit,
+        totalPages: 0,
+        page: 1,
+        pagingCounter: 0,
+        hasPrevPage: false,
+        hasNextPage: false,
+        prevPage: null,
+        nextPage: null,
+      };
+    return res.json();
+  } catch {
+    return {
+      docs: [],
+      totalDocs: 0,
+      limit,
+      totalPages: 0,
+      page: 1,
+      pagingCounter: 0,
+      hasPrevPage: false,
+      hasNextPage: false,
+      prevPage: null,
+      nextPage: null,
+    };
+  }
+}
+
+/**
  * Fetches a list of reports (Informes)
  */
 export async function getReports(

@@ -10,7 +10,6 @@ import { RelatedPublications } from "@/components/RelatedPublications";
 import { getTextFromNodes } from "@/components/RichTextParser";
 import slugify from "slugify";
 import { PublicationTableSlider } from "@/components/PublicationTableSlider";
-import { ScrollProgressBar } from "@/components/ScrollProgressBar";
 import {
   extractAllTablaBlocks,
   shouldShowChart,
@@ -108,7 +107,6 @@ export default async function PublicationPage({ params }: PageProps) {
 
   return (
     <>
-      <ScrollProgressBar />
       <PublicationLayoutWrapper
         headings={headings}
         childrenReports={children}
