@@ -5,6 +5,7 @@ import { BarChart } from "lucide-react";
 import { PublicationsList } from "@/components/PublicationsList";
 import type { FlatPublication } from "@/components/PublicationsList";
 import { FeaturedPublicationsSlider } from "@/components/FeaturedPublicationsSlider";
+import { MobileScrollTransition } from "@/components/MobileScrollTransition";
 
 export const revalidate = 60;
 
@@ -88,6 +89,9 @@ export default async function PublicationsArchivePage() {
       )}
 
       <PublicationsList items={flatItems} allCategories={allCategories} />
+
+      {/* ── Mobile scroll transition → Boletines ── */}
+      <MobileScrollTransition nextPage="/boletines" nextLabel="Boletines" />
     </div>
   );
 }

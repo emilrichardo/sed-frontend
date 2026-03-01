@@ -13,7 +13,7 @@ import {
   Home,
   FileText,
   Newspaper,
-  Search,
+  LayoutList,
   Heart,
   LogIn,
   Share2,
@@ -506,7 +506,7 @@ export function Navbar() {
               : "text-muted-foreground hover:text-primary"
           }`}
         >
-          <Search className="h-5 w-5" />
+          <LayoutList className="h-5 w-5" />
           <span className="text-[10px] font-medium leading-none">
             Categorías
           </span>
