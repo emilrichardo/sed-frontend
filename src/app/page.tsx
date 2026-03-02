@@ -36,7 +36,7 @@ export default async function Home() {
   return (
     <div className="w-full">
       {/* ── Info Widgets: Clima + Dólar ── */}
-      <div className="py-2 overflow-x-auto">
+      <div className="py-2 overflow-x-auto scrollbar-hide">
         <div className="flex items-center gap-2 min-w-max">
           <WeatherWidget />
           <DollarWidget />
