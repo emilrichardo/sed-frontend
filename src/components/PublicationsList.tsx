@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -13,6 +13,8 @@ import {
   Newspaper,
   TrendingUp,
   BookOpen,
+  SlidersHorizontal,
+  MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -89,7 +91,6 @@ function getImg(item: ReportItem) {
 // ── Grid card ─────────────────────────────────────────────────────────────────
 
 function GridCard({ item }: { item: FlatPublication }) {
-  const description = getDescription(item);
   const date = item.publishedDate || item.createdAt;
   const img = getImg(item);
   const tags = getItemTags(item);
@@ -158,12 +159,6 @@ function GridCard({ item }: { item: FlatPublication }) {
           </Link>
         </h3>
 
-        {description && (
-          <p className="mt-1.5 text-xs text-muted-foreground line-clamp-3 leading-relaxed flex-1">
-            {description}
-          </p>
-        )}
-
         <div className="mt-3 flex items-end justify-between gap-2">
           <div className="flex gap-1 flex-wrap">
             {tags.slice(0, 2).map((t) => (
@@ -196,7 +191,6 @@ interface GroupedNode extends FlatPublication {
 }
 
 function GroupedCard({ node }: { node: GroupedNode }) {
-  const description = getDescription(node);
   const date = node.publishedDate || node.createdAt;
   const img = getImg(node);
   const tags = getItemTags(node);
@@ -265,12 +259,6 @@ function GroupedCard({ node }: { node: GroupedNode }) {
             )}
           </div>
 
-          {description && (
-            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-              {description}
-            </p>
-          )}
-
           <div className="mt-2 flex gap-1.5 flex-wrap">
             {tags.map((t) => (
               <span
@@ -311,6 +299,19 @@ export function PublicationsList({ items, allCategories }: Props) {
     Set<string | number>
   >(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>("wide");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const matchesFilters = (item: FlatPublication) => {
     if (search && !item.titulo.toLowerCase().includes(search.toLowerCase()))
@@ -368,9 +369,9 @@ export function PublicationsList({ items, allCategories }: Props) {
   return (
     <div className="space-y-4">
       {/* ── Toolbar ── */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2">
         {/* Search */}
-        <div className="relative shrink-0 w-52">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <input
             type="text"
@@ -389,61 +390,102 @@ export function PublicationsList({ items, allCategories }: Props) {
           )}
         </div>
 
-        {/* Category pills */}
-        {allCategories.map((cat) => (
+        {/* Filter button */}
+        <div className="relative shrink-0" ref={filterRef}>
           <button
-            key={cat.id}
-            onClick={() => toggleCategory(cat.id)}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-              selectedCategories.has(cat.id)
-                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
+            onClick={() => { setFilterOpen((o) => !o); setMoreOpen(false); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+              selectedCategories.size > 0
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:text-foreground"
             }`}
           >
-            {cat.nombre}
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filtros
+            {selectedCategories.size > 0 && (
+              <span className="ml-0.5 bg-primary-foreground/20 rounded-full px-1.5 text-[10px] font-bold">
+                {selectedCategories.size}
+              </span>
+            )}
           </button>
-        ))}
+          {filterOpen && (
+            <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-background shadow-lg z-50 p-2 space-y-1">
+              {allCategories.length === 0 ? (
+                <p className="text-xs text-muted-foreground px-2 py-1">Sin categorías</p>
+              ) : (
+                allCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => toggleCategory(cat.id)}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      selectedCategories.has(cat.id)
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {cat.nombre}
+                  </button>
+                ))
+              )}
+              {selectedCategories.size > 0 && (
+                <>
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    onClick={() => { setSelectedCategories(new Set()); setFilterOpen(false); }}
+                    className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-all"
+                  >
+                    Limpiar filtros
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
-        <div className="flex-1" />
-
-        {/* View toggle */}
-        <div className="flex items-center gap-0.5 bg-muted/50 p-1 rounded-lg border">
+        {/* 3-dot menu */}
+        <div className="relative shrink-0" ref={moreRef}>
           <button
-            title="Vista horizontal"
-            onClick={() => setViewMode("wide")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-              viewMode === "wide"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            onClick={() => { setMoreOpen((o) => !o); setFilterOpen(false); }}
+            className="p-1.5 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors"
+            title="Más opciones"
           >
-            <LayoutList className="h-3.5 w-3.5" />
-            Amplio
+            <MoreHorizontal className="h-4 w-4" />
           </button>
-          <button
-            title="Vista grid"
-            onClick={() => setViewMode("grid")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-              viewMode === "grid"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Grid2X2 className="h-3.5 w-3.5" />
-            Grid
-          </button>
-          <button
-            title="Vista agrupada"
-            onClick={() => setViewMode("agrupado")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
-              viewMode === "agrupado"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <ChevronRight className="h-3.5 w-3.5 rotate-90" />
-            Agrupado
-          </button>
+          {moreOpen && (
+            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-border bg-background shadow-lg z-50 p-2 space-y-1">
+              <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vista</p>
+              {([
+                { mode: "wide" as ViewMode, Icon: LayoutList, label: "Amplio" },
+                { mode: "grid" as ViewMode, Icon: Grid2X2, label: "Grid" },
+                { mode: "agrupado" as ViewMode, Icon: ChevronRight, label: "Agrupado" },
+              ] as const).map(({ mode, Icon, label }) => (
+                <button
+                  key={mode}
+                  onClick={() => { setViewMode(mode); setMoreOpen(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    viewMode === mode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
+              {hasActiveFilters && (
+                <>
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    onClick={() => { clearAll(); setMoreOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-all"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Limpiar todo
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
