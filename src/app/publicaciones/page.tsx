@@ -78,7 +78,6 @@ export default async function PublicationsArchivePage() {
     <div className="w-full max-w-[1440px] mx-auto py-8 md:py-12 space-y-8">
       <PageHeader
         title="Publicaciones"
-        description="Publicaciones técnicas y análisis detallados de Santiago en Datos."
         icon={BarChart}
       />
 

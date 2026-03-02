@@ -173,7 +173,7 @@ export function Navbar() {
   return (
     <>
       {/* ── Desktop Navbar ── */}
-      <nav className="hidden md:block sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="hidden md:block sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 md:px-8">
           <div className="flex h-16 items-center gap-6">
             {/* Logo */}
@@ -329,13 +329,16 @@ export function Navbar() {
       </nav>
 
       {/* ── Mobile Top Bar (home + list pages only) ── */}
-      <div className={`${isDetailPage ? "hidden" : ""} md:hidden sticky top-0 z-50 w-full h-14 border-b border-border bg-background/95 backdrop-blur flex items-center px-4 justify-between`}>
-        <Link
-          href="/"
-          className="font-extrabold font-heading text-lg tracking-tight"
-        >
-          Santiago en Datos
-        </Link>
+      <div className={`${isDetailPage ? "hidden" : ""} md:hidden sticky top-0 z-50 w-full h-14 bg-background/95 backdrop-blur flex items-center px-4 justify-between`}>
+        {pathname.startsWith("/publicaciones") ? (
+          <span className="font-extrabold font-heading text-lg tracking-tight">Publicaciones</span>
+        ) : pathname.startsWith("/boletines") ? (
+          <span className="font-extrabold font-heading text-lg tracking-tight">Boletines</span>
+        ) : (
+          <Link href="/" className="font-extrabold font-heading text-lg tracking-tight">
+            Santiago en Datos
+          </Link>
+        )}
 
         <div className="relative" ref={menuRef}>
           <button

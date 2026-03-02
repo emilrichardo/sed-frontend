@@ -78,11 +78,7 @@ export function FeaturedPublicationsSlider({ items }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold font-heading flex items-center gap-2">
-          <span className="w-2 h-8 bg-primary rounded-full" />
-          Destacados
-        </h2>
+      <div className="flex items-center justify-end">
         {items.length > 1 && (
           <div className="flex gap-2">
             <button
@@ -115,8 +111,6 @@ export function FeaturedPublicationsSlider({ items }: Props) {
             transition: isTransitioning
               ? "transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)"
               : "none",
-            // Mobile: 1 slide visible, Desktop: 1.3 slides visible
-            // --slides-visible is set via CSS below
             transform: `translateX(calc(-${currentIndex} * (100% / var(--slides-visible, 1) + 16px)))`,
           }}
         >
@@ -129,91 +123,130 @@ export function FeaturedPublicationsSlider({ items }: Props) {
             return (
               <div
                 key={`${item.id}-${index}`}
-                className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm aspect-[4/5] md:aspect-[21/9] shrink-0 w-full md:w-[calc((100%-32px)/1.3)]"
+                className="shrink-0 w-full md:w-[calc((100%-32px)/1.3)]"
               >
-                {/* Background Image with Overlay */}
-                <div className="absolute inset-0 bg-muted">
-                  {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt={img?.alt || item.titulo}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      priority
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-muted" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-                </div>
-
-                {/* Content */}
-                <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10 space-y-4">
-                  <div className="max-w-3xl space-y-2">
-                    {item.parentTitle && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase tracking-widest backdrop-blur-sm">
-                        {item.parentTitle}
-                      </span>
-                    )}
-
-                    <h3 className="text-xl md:text-3xl font-extrabold font-heading leading-tight text-foreground tracking-tight line-clamp-2">
-                      <Link
-                        href={`/publicaciones/${item.slug}`}
-                        className="hover:text-primary transition-colors"
-                      >
-                        {item.titulo}
-                      </Link>
-                    </h3>
-                  </div>
-
-                  {/* Children Links */}
-                  {item.children && item.children.length > 0 && (
-                    <div className="hidden md:block py-2">
-                      <ul className="flex flex-wrap gap-x-6 gap-y-3">
-                        {item.children.slice(0, 3).map((child) => (
-                          <li key={child.id}>
-                            <Link
-                              href={`/publicaciones/${child.slug}`}
-                              className="group/item flex items-center gap-2 text-sm text-foreground/90 hover:text-primary transition-colors font-medium bg-background/40 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shadow-sm"
-                            >
-                              <ChevronRight className="h-4 w-4 text-primary shrink-0 group-hover/item:translate-x-0.5 transition-transform" />
-                              <span className="max-w-[200px] truncate">
-                                {child.titulo}
-                              </span>
-                            </Link>
-                          </li>
-                        ))}
-                        {item.children.length > 3 && (
-                          <li className="text-xs text-muted-foreground font-semibold self-center flex items-center">
-                            + {item.children.length - 3} secciones adicionales
-                          </li>
-                        )}
-                      </ul>
+                {/* Mobile: compact card (image top, text bottom) */}
+                <div className="md:hidden rounded-xl border border-border bg-card overflow-hidden">
+                  <Link href={`/publicaciones/${item.slug}`} className="block">
+                    <div className="relative aspect-[16/9] bg-muted overflow-hidden">
+                      {imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt={img?.alt || item.titulo}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                          priority
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-muted" />
+                      )}
                     </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                    <div className="p-4 space-y-2">
+                      {item.parentTitle && (
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                          {item.parentTitle}
+                        </span>
+                      )}
+                      <h3 className="font-bold text-base leading-snug line-clamp-2 font-heading">
+                        {item.titulo}
+                      </h3>
                       {(item.publishedDate || item.createdAt) && (
-                        <>
-                          <Calendar className="h-4 w-4" />
+                        <p className="text-xs text-muted-foreground">
                           {new Date(
                             item.publishedDate || item.createdAt!,
                           ).toLocaleDateString("es-AR", {
                             year: "numeric",
                             month: "short",
                           })}
-                        </>
+                        </p>
                       )}
                     </div>
-                    <Link
-                      href={`/publicaciones/${item.slug}`}
-                      className="inline-flex items-center gap-3 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:scale-105"
-                    >
-                      Ver Informe Completo
-                      <ArrowRight className="h-5 w-5" />
-                    </Link>
+                  </Link>
+                </div>
+
+                {/* Desktop: hero overlay */}
+                <div className="hidden md:block relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm aspect-[21/9]">
+                  <div className="absolute inset-0 bg-muted">
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={img?.alt || item.titulo}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                        priority
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/10 to-muted" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                  </div>
+
+                  <div className="absolute inset-0 flex flex-col justify-end p-10 space-y-4">
+                    <div className="max-w-3xl space-y-2">
+                      {item.parentTitle && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase tracking-widest backdrop-blur-sm">
+                          {item.parentTitle}
+                        </span>
+                      )}
+                      <h3 className="text-3xl font-extrabold font-heading leading-tight text-foreground tracking-tight line-clamp-2">
+                        <Link
+                          href={`/publicaciones/${item.slug}`}
+                          className="hover:text-primary transition-colors"
+                        >
+                          {item.titulo}
+                        </Link>
+                      </h3>
+                    </div>
+
+                    {item.children && item.children.length > 0 && (
+                      <div className="py-2">
+                        <ul className="flex flex-wrap gap-x-6 gap-y-3">
+                          {item.children.slice(0, 3).map((child) => (
+                            <li key={child.id}>
+                              <Link
+                                href={`/publicaciones/${child.slug}`}
+                                className="group/item flex items-center gap-2 text-sm text-foreground/90 hover:text-primary transition-colors font-medium bg-background/40 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shadow-sm"
+                              >
+                                <ChevronRight className="h-4 w-4 text-primary shrink-0 group-hover/item:translate-x-0.5 transition-transform" />
+                                <span className="max-w-[200px] truncate">
+                                  {child.titulo}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                          {item.children.length > 3 && (
+                            <li className="text-xs text-muted-foreground font-semibold self-center flex items-center">
+                              + {item.children.length - 3} secciones adicionales
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                        {(item.publishedDate || item.createdAt) && (
+                          <>
+                            <Calendar className="h-4 w-4" />
+                            {new Date(
+                              item.publishedDate || item.createdAt!,
+                            ).toLocaleDateString("es-AR", {
+                              year: "numeric",
+                              month: "short",
+                            })}
+                          </>
+                        )}
+                      </div>
+                      <Link
+                        href={`/publicaciones/${item.slug}`}
+                        className="inline-flex items-center gap-3 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:scale-105"
+                      >
+                        Ver Informe Completo
+                        <ArrowRight className="h-5 w-5" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -221,9 +254,9 @@ export function FeaturedPublicationsSlider({ items }: Props) {
           })}
         </div>
 
-        {/* Indicators - Mapped only to original items */}
+        {/* Indicators */}
         {items.length > 1 && (
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center gap-2 mt-4">
             {items.map((_, i) => (
               <button
                 key={i}
