@@ -72,7 +72,7 @@ export function PublicationTableCard({
           </div>
         )}
 
-        {/* TableBlock — exactly as it appears inside the publication */}
+        {/* TableBlock — widget mode: shows only the chart, no toolbar */}
         <TableBlock
           fields={{
             ...current,
@@ -80,6 +80,7 @@ export function PublicationTableCard({
             configuracion_visualizacion:
               current.configuracion_visualizacion ?? current.config_viz,
           }}
+          isWidget={true}
         />
       </div>
 

@@ -9,7 +9,7 @@ import { PublicationLayoutWrapper } from "@/components/PublicationLayoutWrapper"
 import { RelatedPublications } from "@/components/RelatedPublications";
 import { getTextFromNodes } from "@/components/RichTextParser";
 import slugify from "slugify";
-import { PublicationTableSlider } from "@/components/PublicationTableSlider";
+import { PublicationTableCard } from "@/components/PublicationTableCard";
 import {
   extractAllTablaBlocks,
   shouldShowChart,
@@ -170,28 +170,25 @@ export default async function PublicationPage({ params }: PageProps) {
                           id={child.slug}
                           className="flex flex-col"
                         >
-                          <Card
-                            title={child.titulo}
-                            description={description}
-                            date={child.createdAt}
-                            href={`/publicaciones/${child.slug}`}
-                            imageUrl={
-                              !showChart
-                                ? child.imagen_destacada?.url
-                                : undefined
-                            }
-                            imageAlt={child.imagen_destacada?.alt}
-                            tipoPublicacion={child.tipo_publicacion}
-                            chartPreview={
-                              tablaBlocks.length > 0 ? (
-                                <div className="w-full h-full relative">
-                                  <PublicationTableSlider
-                                    blocks={tablaBlocks}
-                                  />
-                                </div>
-                              ) : undefined
-                            }
-                          />
+                          {showChart && tablaBlocks.length > 0 ? (
+                            <PublicationTableCard
+                              titulo={child.titulo}
+                              slug={child.slug}
+                              description={description}
+                              date={child.createdAt}
+                              tablas={tablaBlocks}
+                            />
+                          ) : (
+                            <Card
+                              title={child.titulo}
+                              description={description}
+                              date={child.createdAt}
+                              href={`/publicaciones/${child.slug}`}
+                              imageUrl={child.imagen_destacada?.url}
+                              imageAlt={child.imagen_destacada?.alt}
+                              tipoPublicacion={child.tipo_publicacion}
+                            />
+                          )}
                         </div>
                       );
                     })}
