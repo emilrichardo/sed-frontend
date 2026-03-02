@@ -103,7 +103,7 @@ function GridCard({ item }: { item: FlatPublication }) {
     <div className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-all h-full">
       {/* Image / Chart preview */}
       <div
-        className={`relative ${hasTables ? "h-[500px]" : "aspect-[16/9]"} shrink-0 bg-background overflow-hidden border-b border-border`}
+        className={`relative aspect-[16/9] shrink-0 bg-background overflow-hidden border-b border-border`}
       >
         {!useChart && img ? (
           <Link
@@ -201,7 +201,7 @@ function GroupedCard({ node }: { node: GroupedNode }) {
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className={`flex ${hasTables ? "flex-col" : "items-stretch"}`}>
+      <div className="flex items-stretch">
         {/* Image / Chart preview */}
         {!hasTables ? (
           <Link
@@ -235,8 +235,19 @@ function GroupedCard({ node }: { node: GroupedNode }) {
             )}
           </Link>
         ) : (
-          <div className="relative h-[500px] w-full shrink-0 border-b border-border bg-background">
-            <PublicationTableSlider blocks={tablaBlocks} />
+          <div className="relative w-48 min-h-[120px] shrink-0 bg-background overflow-hidden border-r border-border">
+            <div className="absolute inset-0 pointer-events-none">
+              <div
+                style={{
+                  transform: "scale(0.45)",
+                  transformOrigin: "top left",
+                  width: "222%",
+                  height: "222%",
+                }}
+              >
+                <PublicationTableSlider blocks={tablaBlocks.slice(0, 1)} />
+              </div>
+            </div>
           </div>
         )}
 
