@@ -245,35 +245,35 @@ function MonthRow({
   data,
   compact = false,
   isYear = false,
+  yearFallback,
 }: {
   data: MonthData;
   compact?: boolean;
   isYear?: boolean;
+  yearFallback?: MonthData;
 }) {
   const pendingIngresos =
     !isYear && data.coparticipacion > 0 && data.ingresos === 0;
-  const pct = pendingIngresos
-    ? 100
-    : copaPct(data.coparticipacion, data.ingresos);
+
+  // When pending, use year-to-date data for the bar and amounts
+  const display = pendingIngresos && yearFallback ? yearFallback : data;
+  const pct = copaPct(display.coparticipacion, display.ingresos);
 
   return (
     <div
-      className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 ${compact ? "px-4 py-2.5" : "px-5 py-3.5"} border-b border-border/50 last:border-b-0 ${pendingIngresos ? "opacity-70" : ""}`}
+      className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 ${compact ? "px-4 py-2.5" : "px-5 py-3.5"} border-b border-border/50 last:border-b-0`}
     >
       <span
         className={`${compact ? "text-xs" : "text-sm"} font-semibold shrink-0 min-w-[60px]`}
       >
         {data.nombre}
-      </span>
-      {pendingIngresos ? (
-        <div className="flex-1 flex items-center justify-center bg-muted/40 rounded-full h-4">
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/80 font-semibold px-2 truncate">
-            Esperando ingresos
+        {pendingIngresos && yearFallback && (
+          <span className="block text-[9px] font-normal text-muted-foreground leading-tight">
+            Lo que va del año
           </span>
-        </div>
-      ) : (
-        <CompBar pct={pct} small={compact} />
-      )}
+        )}
+      </span>
+      <CompBar pct={pct} small={compact} />
       <div
         className={`text-right shrink-0 ${compact ? "min-w-[80px]" : "min-w-[110px]"}`}
       >
@@ -281,17 +281,15 @@ function MonthRow({
           className={`font-bold font-mono tabular-nums text-primary ${compact ? "text-[10px]" : "text-xs"}`}
         >
           {compact
-            ? fmtMShort(data.coparticipacion)
-            : fmtM(data.coparticipacion)}
+            ? fmtMShort(display.coparticipacion)
+            : fmtM(display.coparticipacion)}
         </p>
         <p
           className={`text-muted-foreground font-mono tabular-nums ${compact ? "text-[9px]" : "text-[10px]"}`}
         >
-          {pendingIngresos
-            ? "Pendiente"
-            : compact
-              ? fmtMShort(data.ingresos)
-              : fmtM(data.ingresos)}
+          {compact
+            ? fmtMShort(display.ingresos)
+            : fmtM(display.ingresos)}
         </p>
       </div>
     </div>
@@ -303,27 +301,18 @@ function MonthRow({
 function VariantXS({ data, titulo }: { data: FiscalData; titulo: string }) {
   const pendingIngresos =
     data.month.coparticipacion > 0 && data.month.ingresos === 0;
-  const pct = pendingIngresos
-    ? 100
-    : copaPct(data.month.coparticipacion, data.month.ingresos);
+  const display = pendingIngresos ? data.year : data.month;
+  const pct = copaPct(display.coparticipacion, display.ingresos);
 
   return (
-    <div
-      className={`inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-border bg-card text-xs ${pendingIngresos ? "opacity-75" : ""}`}
-    >
+    <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-border bg-card text-xs">
       <Landmark className="h-3 w-3 text-primary shrink-0" />
       <span className="font-semibold shrink-0">{titulo}</span>
       <span className="text-muted-foreground shrink-0">
-        {data.month.nombre}
+        {pendingIngresos ? `Lo que va del ${data.yearLabel}` : data.month.nombre}
       </span>
       <div className="w-28 flex">
-        {pendingIngresos ? (
-          <span className="text-[9px] text-muted-foreground uppercase tracking-widest bg-muted/50 px-2 py-0.5 rounded-full w-full text-center">
-            Pendiente
-          </span>
-        ) : (
-          <CompBar pct={pct} small />
-        )}
+        <CompBar pct={pct} small />
       </div>
     </div>
   );
@@ -335,7 +324,7 @@ function VariantSM({ data, titulo }: { data: FiscalData; titulo: string }) {
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <Header titulo={titulo} />
-      <MonthRow data={data.month} compact />
+      <MonthRow data={data.month} compact yearFallback={data.year} />
       <Legend />
     </div>
   );
@@ -362,7 +351,7 @@ function VariantMD({ data, titulo }: { data: FiscalData; titulo: string }) {
         </span>
       </div>
 
-      <MonthRow data={data.month} />
+      <MonthRow data={data.month} yearFallback={data.year} />
       <MonthRow data={data.year} isYear />
       <Legend />
     </div>
@@ -392,7 +381,7 @@ function VariantLG({ data, titulo }: { data: FiscalData; titulo: string }) {
         </span>
       </div>
 
-      <MonthRow data={data.month} />
+      <MonthRow data={data.month} yearFallback={data.year} />
       <MonthRow data={data.year} isYear />
 
       {/* Expandable months */}
@@ -498,7 +487,7 @@ function VariantXL({ data, titulo }: { data: FiscalData; titulo: string }) {
       </div>
 
       {/* Current month always visible */}
-      <MonthRow data={data.month} />
+      <MonthRow data={data.month} yearFallback={data.year} />
 
       {/* Expandable all months */}
       {expanded &&
