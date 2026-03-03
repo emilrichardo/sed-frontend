@@ -39,7 +39,7 @@ interface DetailPanelProps {
   onNavigate: () => void;
 }
 
-function CategoryDetailPanel({ category, onNavigate }: DetailPanelProps) {
+export function CategoryDetailPanel({ category, onNavigate }: DetailPanelProps) {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTipo, setSelectedTipo] = useState<string | number | null>(null);

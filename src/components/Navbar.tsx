@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   LogOut,
@@ -18,6 +18,8 @@ import {
   LogIn,
   Share2,
   LayoutGrid,
+  ChevronDown,
+  ArrowUpRight,
 } from "lucide-react";
 import type { Category } from "@/lib/api";
 import { API_URL } from "@/lib/api";
@@ -90,6 +92,98 @@ function StatsTicker() {
         <span className="text-foreground font-bold">{current.value}</span>{" "}
         {current.label}
       </span>
+    </div>
+  );
+}
+
+// ── Desktop category megamenu ───────────────────────────────────────────────
+function DesktopCategoryDropdown({
+  categories,
+  pathname,
+}: {
+  categories: CategoryWithChildren[];
+  pathname: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close on route change
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!dropdownRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+          pathname.startsWith("/categorias")
+            ? "text-primary"
+            : "text-muted-foreground"
+        }`}
+      >
+        Categorías
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="fixed top-[60px] right-4 bg-background border border-border rounded-xl shadow-xl z-[60] overflow-hidden flex gap-0">
+          {categories.map((cat) => (
+            <div key={cat.id} className="min-w-[200px]">
+              {/* Category heading */}
+              <Link
+                href={`/categorias/${cat.slug}`}
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-muted/50 transition-colors group"
+              >
+                <span className="text-lg font-heading font-bold tracking-tight group-hover:text-primary transition-colors whitespace-nowrap">
+                  {cat.nombre}
+                </span>
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+              </Link>
+
+              {/* Subcategories */}
+              {cat.children.length > 0 && (
+                <ul className="pb-3">
+                  {cat.children.map((sub) => (
+                    <li key={sub.id}>
+                      <Link
+                        href={`/categorias/${sub.slug}`}
+                        onClick={() => setOpen(false)}
+                        className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
+                      >
+                        {sub.nombre}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -228,16 +322,10 @@ export function Navbar() {
               ))}
 
               {categoryTree.length > 0 && (
-                <Link
-                  href="/categorias"
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    pathname.startsWith("/categorias")
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  Categorías
-                </Link>
+                <DesktopCategoryDropdown
+                  categories={categoryTree}
+                  pathname={pathname}
+                />
               )}
 
               {/* User menu */}
