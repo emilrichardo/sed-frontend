@@ -16,8 +16,18 @@ interface IngresoRecord {
 }
 
 const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
 const CATEGORIA_LABELS: Record<string, string> = {
@@ -97,7 +107,8 @@ function MonthBlock({
               className="flex items-center justify-between px-5 py-3 border-b border-border/50 last:border-b-0 hover:bg-muted/20 transition-colors"
             >
               <span className="text-sm text-muted-foreground">
-                {CATEGORIA_LABELS[r.categoria] ?? r.label}
+                {CATEGORIA_LABELS[r.categoria] ??
+                  r.label.replace(/^.*? - /, "")}
               </span>
               <span className="text-sm font-mono tabular-nums">
                 {fmt(r.monto)}

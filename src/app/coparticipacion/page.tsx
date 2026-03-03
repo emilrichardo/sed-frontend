@@ -33,12 +33,14 @@ const MONTH_NAMES = [
 ];
 
 function fmt(val: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(val);
+  return (
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(val) + " M"
+  );
 }
 
 // ── Month Block (collapsible) ────────────────────────────────────────────────
@@ -279,6 +281,12 @@ export default function CoparticipacionPage() {
         description="Distribución diaria de recursos de origen nacional y compensación del Consenso Fiscal."
         icon={Landmark}
       />
+
+      <div className="flex">
+        <p className="text-sm text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-md inline-flex border border-border/50 shadow-sm">
+          Los montos están expresados en millones de pesos argentinos (M$).
+        </p>
+      </div>
 
       {sortedYears.length === 0 ? (
         <p className="text-center text-muted-foreground py-12">
