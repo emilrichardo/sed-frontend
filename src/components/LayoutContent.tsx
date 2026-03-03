@@ -16,7 +16,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/categorias/");
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background md:pt-16">
       <Navbar />
       <main
         className={`flex-1 w-full max-w-[1440px] mx-auto px-4 md:px-8 pb-20 md:pb-6 animate-in fade-in duration-500 ${
