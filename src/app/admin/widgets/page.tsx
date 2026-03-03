@@ -81,13 +81,22 @@ interface WidgetApiResponse {
 // ── Dynamic widget loader ───────────────────────────────────────────────────
 // Tries to load components/widgets/{nombre_widget}, falls back to WidgetJson
 
-function DynamicWidget({ widget }: { widget: WidgetDoc }) {
+function DynamicWidget({
+  widget,
+  dataOverride,
+}: {
+  widget: WidgetDoc;
+  dataOverride?: Record<string, unknown>;
+}) {
   const [WidgetComponent, setWidgetComponent] = useState<React.ComponentType<{
     data: Record<string, unknown>;
   }> | null>(null);
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
+    setWidgetComponent(null);
+    setLoadError(false);
+
     if (!widget.nombre_widget) {
       setLoadError(true);
       return;
@@ -95,9 +104,7 @@ function DynamicWidget({ widget }: { widget: WidgetDoc }) {
 
     const loadWidget = async () => {
       try {
-        const mod = await import(
-          `@/components/widgets/${widget.nombre_widget}`
-        );
+        const mod = await import(`@/components/widgets/${widget.nombre_widget}`);
         setWidgetComponent(() => mod.default);
       } catch {
         console.warn(
@@ -127,12 +134,17 @@ function DynamicWidget({ widget }: { widget: WidgetDoc }) {
     );
   }
 
-  return (
-    <WidgetComponent data={widget as unknown as Record<string, unknown>} />
-  );
+  const widgetData = dataOverride ?? (widget as unknown as Record<string, unknown>);
+  return <WidgetComponent data={widgetData} />;
 }
 
 // ── Single widget card ──────────────────────────────────────────────────────
+
+// Widgets with multiple display variants and the variants they support
+const VERSIONED_WIDGETS: Record<string, string[]> = {
+  WidgetAhorros: ["xs", "md"],
+  WidgetList: ["xs", "md", "lg"],
+};
 
 function WidgetPanel({ widget }: { widget: WidgetDoc }) {
   const [expanded, setExpanded] = useState(false);
@@ -140,6 +152,19 @@ function WidgetPanel({ widget }: { widget: WidgetDoc }) {
   const categoryLabels = widget.categorias?.map((c) => c.nombre) || [];
   const hasCustomWidget = !!widget.nombre_widget;
   const isCollection = widget.tipo_fuente === "coleccion";
+
+  // Detect available versions for this widget
+  const availableVersions = widget.nombre_widget
+    ? (VERSIONED_WIDGETS[widget.nombre_widget] ?? null)
+    : null;
+  const hasVersions = !!availableVersions;
+  const [previewVersion, setPreviewVersion] = useState<string>(
+    availableVersions?.[0] ?? "md",
+  );
+  // Inject _variant into data so the component can pick the right layout
+  const dataOverride = hasVersions
+    ? { ...(widget as unknown as Record<string, unknown>), _variant: previewVersion }
+    : undefined;
 
   return (
     <div className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
@@ -195,8 +220,8 @@ function WidgetPanel({ widget }: { widget: WidgetDoc }) {
         )}
       </div>
 
-      {/* Expand/Preview toggle */}
-      <div className="px-5 pb-3">
+      {/* Expand/Preview toggle + version selector */}
+      <div className="px-5 pb-3 flex items-center gap-3">
         <button
           onClick={() => setExpanded((v) => !v)}
           className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
@@ -209,13 +234,31 @@ function WidgetPanel({ widget }: { widget: WidgetDoc }) {
             }`}
           />
         </button>
+
+        {hasVersions && availableVersions && (
+          <div className="flex items-center gap-1 ml-auto">
+            {availableVersions.map((v) => (
+              <button
+                key={v}
+                onClick={() => setPreviewVersion(v)}
+                className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border transition-all ${
+                  previewVersion === v
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Expanded content */}
       {expanded && (
         <div className="px-5 pb-5 border-t border-border pt-4 animate-in slide-in-from-top-2 duration-200">
           {hasCustomWidget ? (
-            <DynamicWidget widget={widget} />
+            <DynamicWidget widget={widget} dataOverride={dataOverride} />
           ) : isCollection ? (
             <WidgetList data={widget as unknown as Record<string, unknown>} />
           ) : (
