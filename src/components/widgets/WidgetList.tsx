@@ -88,6 +88,28 @@ function VariantMD({ entries, coleccion }: { entries: ReportItem[]; coleccion: s
   );
 }
 
+// ── SM — lista con separadores leves ─────────────────────────────────────────
+
+function VariantSM({ entries, coleccion }: { entries: ReportItem[]; coleccion: string | null }) {
+  return (
+    <ul className="divide-y divide-border">
+      {entries.map((entry) => (
+        <li key={entry.id}>
+          <Link
+            href={entryHref(entry, coleccion)}
+            className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-muted/40 transition-colors group"
+          >
+            <span className="flex-1 text-[13px] font-medium leading-snug group-hover:text-primary transition-colors">
+              {entry.titulo}
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 // ── LG — lista con fecha y flecha prominente ─────────────────────────────────
 
 function VariantLG({ entries, coleccion }: { entries: ReportItem[]; coleccion: string | null }) {
@@ -128,7 +150,56 @@ function VariantLG({ entries, coleccion }: { entries: ReportItem[]; coleccion: s
   );
 }
 
-// ── Export — variant via data._variant ("xs" | "md" | "lg", default "md") ────
+// ── XL — lista con imagen destacada si existe ────────────────────────────────
+
+function VariantXL({ entries, coleccion }: { entries: ReportItem[]; coleccion: string | null }) {
+  return (
+    <ul className="divide-y divide-border">
+      {entries.map((entry) => {
+        const date = entry.publishedDate ?? entry.createdAt;
+        const formattedDate = date
+          ? new Date(date).toLocaleDateString("es-AR", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+          : null;
+        const img = entry.imagen_destacada as { url?: string } | undefined;
+
+        return (
+          <li key={entry.id}>
+            <Link
+              href={entryHref(entry, coleccion)}
+              className="flex items-start gap-4 px-5 py-5 hover:bg-muted/40 transition-colors group"
+            >
+              {img?.url && (
+                <div className="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={entry.titulo}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-snug group-hover:text-primary transition-colors mb-1">
+                  {entry.titulo}
+                </p>
+                {formattedDate && (
+                  <p className="text-[11px] text-muted-foreground">{formattedDate}</p>
+                )}
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// ── Export — variant via data._variant ("xs"|"sm"|"md"|"lg"|"xl") ────────────
 
 export default function WidgetList({ data }: { data: Record<string, unknown> }) {
   const widget = data as unknown as WidgetData;
@@ -239,8 +310,12 @@ export default function WidgetList({ data }: { data: Record<string, unknown> }) 
           </div>
         ) : variant === "xs" ? (
           <VariantXS entries={entries} coleccion={widget.coleccion} />
+        ) : variant === "sm" ? (
+          <VariantSM entries={entries} coleccion={widget.coleccion} />
         ) : variant === "lg" ? (
           <VariantLG entries={entries} coleccion={widget.coleccion} />
+        ) : variant === "xl" ? (
+          <VariantXL entries={entries} coleccion={widget.coleccion} />
         ) : (
           <VariantMD entries={entries} coleccion={widget.coleccion} />
         )}

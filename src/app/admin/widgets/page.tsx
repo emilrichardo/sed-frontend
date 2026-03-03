@@ -11,8 +11,6 @@ import {
   Database,
   Search,
   RefreshCw,
-  ChevronRight,
-  Eye,
   X,
 } from "lucide-react";
 import { API_URL } from "@/lib/api";
@@ -37,19 +35,26 @@ interface WidgetDoc {
   titulo: string;
   descripcion: string | null;
   slug: string;
-  tipo_fuente: "coleccion" | "tabla" | "api" | string;
+  tipo_fuente: "coleccion" | "tabla" | "api" | "estatico" | string;
   tabla_relacionada: unknown;
   tipo_visualizacion: string;
   config_viz: Record<string, unknown>;
   nombre_widget: string | null;
+  nombre_widget_custom?: string | null;
   coleccion: string | null;
   modo_seleccion: string;
   cantidad: number;
+  entradas: unknown[];
   entradas_publicaciones: ReportItem[];
   entradas_tablas: unknown[];
   entradas_ahorros: unknown[];
   entradas_boletines: unknown[];
   entradas_actos: unknown[];
+  campos_publicaciones?: string[];
+  campos_tablas?: string[];
+  campos_ahorros?: string[];
+  campos_boletines?: string[];
+  campos_actos?: string[];
   categorias: WidgetCategory[];
   tags: unknown[];
   mostrar_en_home: boolean;
@@ -142,13 +147,85 @@ function DynamicWidget({
 
 // Widgets with multiple display variants and the variants they support
 const VERSIONED_WIDGETS: Record<string, string[]> = {
-  WidgetAhorros: ["xs", "md"],
-  WidgetList: ["xs", "md", "lg"],
+  WidgetAhorros: ["xs", "sm", "md", "lg", "xl"],
+  WidgetList:    ["xs", "sm", "md", "lg", "xl"],
+  WidgetClima:   ["xs", "sm", "md", "lg", "xl"],
+  WidgetDolar:   ["xs", "sm", "md", "lg", "xl"],
 };
 
-function WidgetPanel({ widget }: { widget: WidgetDoc }) {
-  const [expanded, setExpanded] = useState(false);
+// Static widgets — not in Payload, always shown in the list
+const STATIC_WIDGETS: WidgetDoc[] = [
+  {
+    id: -1,
+    titulo: "Clima",
+    descripcion: "Condiciones climáticas actuales de Santiago del Estero.",
+    slug: "widget-clima",
+    tipo_fuente: "estatico",
+    tabla_relacionada: null,
+    tipo_visualizacion: "",
+    config_viz: {},
+    nombre_widget: "WidgetClima",
+    nombre_widget_custom: null,
+    coleccion: null,
+    modo_seleccion: "",
+    cantidad: 0,
+    entradas_publicaciones: [],
+    entradas_tablas: [],
+    entradas_ahorros: [],
+    entradas_boletines: [],
+    entradas_actos: [],
+    campos_publicaciones: [],
+    campos_tablas: [],
+    campos_ahorros: [],
+    campos_boletines: [],
+    campos_actos: [],
+    entradas: [],
+    categorias: [],
+    tags: [],
+    mostrar_en_home: false,
+    orden: null,
+    imagen_destacada: null,
+    cta: { texto: null, tipo_enlace: "interno", url_interna: null, url_externa: null },
+    updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: -2,
+    titulo: "Dólar",
+    descripcion: "Cotizaciones del dólar en tiempo real (dolarapi.com).",
+    slug: "widget-dolar",
+    tipo_fuente: "estatico",
+    tabla_relacionada: null,
+    tipo_visualizacion: "",
+    config_viz: {},
+    nombre_widget: "WidgetDolar",
+    nombre_widget_custom: null,
+    coleccion: null,
+    modo_seleccion: "",
+    cantidad: 0,
+    entradas_publicaciones: [],
+    entradas_tablas: [],
+    entradas_ahorros: [],
+    entradas_boletines: [],
+    entradas_actos: [],
+    campos_publicaciones: [],
+    campos_tablas: [],
+    campos_ahorros: [],
+    campos_boletines: [],
+    campos_actos: [],
+    entradas: [],
+    categorias: [],
+    tags: [],
+    mostrar_en_home: false,
+    orden: null,
+    imagen_destacada: null,
+    cta: { texto: null, tipo_enlace: "interno", url_interna: null, url_externa: null },
+    updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  },
+];
 
+function WidgetPanel({ widget }: { widget: WidgetDoc }) {
   const categoryLabels = widget.categorias?.map((c) => c.nombre) || [];
   const hasCustomWidget = !!widget.nombre_widget;
   const isCollection = widget.tipo_fuente === "coleccion";
@@ -161,15 +238,14 @@ function WidgetPanel({ widget }: { widget: WidgetDoc }) {
   const [previewVersion, setPreviewVersion] = useState<string>(
     availableVersions?.[0] ?? "md",
   );
-  // Inject _variant into data so the component can pick the right layout
   const dataOverride = hasVersions
     ? { ...(widget as unknown as Record<string, unknown>), _variant: previewVersion }
     : undefined;
 
   return (
-    <div className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
-      {/* Header */}
-      <div className="p-5 pb-3 space-y-2">
+    <div className="flex flex-col rounded-xl border border-border overflow-hidden h-full bg-background">
+      {/* Header — metadata strip */}
+      <div className="px-4 py-3 border-b border-border bg-muted/30 space-y-1.5">
         {/* Tags row */}
         <div className="flex items-center gap-2 flex-wrap">
           <span
@@ -188,87 +264,65 @@ function WidgetPanel({ widget }: { widget: WidgetDoc }) {
           )}
           {hasCustomWidget && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
-              Custom: {widget.nombre_widget}
+              {widget.nombre_widget}
             </span>
           )}
-        </div>
-
-        {/* Title */}
-        <h3 className="text-lg font-bold leading-tight group-hover:text-primary transition-colors">
-          {widget.titulo}
-        </h3>
-
-        {/* Description */}
-        {widget.descripcion && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {widget.descripcion}
-          </p>
-        )}
-
-        {/* Categories */}
-        {categoryLabels.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap pt-1">
-            {categoryLabels.map((label) => (
-              <span
-                key={label}
-                className="px-2 py-0.5 bg-muted rounded-md text-[10px] font-medium text-muted-foreground"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Expand/Preview toggle + version selector */}
-      <div className="px-5 pb-3 flex items-center gap-3">
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-        >
-          <Eye className="h-3.5 w-3.5" />
-          {expanded ? "Ocultar" : "Vista previa"}
-          <ChevronRight
-            className={`h-3.5 w-3.5 transition-transform duration-200 ${
-              expanded ? "rotate-90" : ""
-            }`}
-          />
-        </button>
-
-        {hasVersions && availableVersions && (
-          <div className="flex items-center gap-1 ml-auto">
-            {availableVersions.map((v) => (
-              <button
-                key={v}
-                onClick={() => setPreviewVersion(v)}
-                className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border transition-all ${
-                  previewVersion === v
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Expanded content */}
-      {expanded && (
-        <div className="px-5 pb-5 border-t border-border pt-4 animate-in slide-in-from-top-2 duration-200">
-          {hasCustomWidget ? (
-            <DynamicWidget widget={widget} dataOverride={dataOverride} />
-          ) : isCollection ? (
-            <WidgetList data={widget as unknown as Record<string, unknown>} />
-          ) : (
-            <DynamicWidget widget={widget} />
+          {hasVersions && availableVersions && (
+            <div className="flex items-center gap-1 ml-auto">
+              {availableVersions.map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setPreviewVersion(v)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border transition-all ${
+                    previewVersion === v
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
           )}
         </div>
-      )}
+
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold leading-tight truncate">{widget.titulo}</h3>
+            {widget.descripcion && (
+              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                {widget.descripcion}
+              </p>
+            )}
+          </div>
+          {categoryLabels.length > 0 && (
+            <div className="flex gap-1 flex-wrap shrink-0">
+              {categoryLabels.map((label) => (
+                <span
+                  key={label}
+                  className="px-1.5 py-0.5 bg-muted rounded text-[10px] text-muted-foreground"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Widget preview — always visible, bg-background */}
+      <div className="flex-1 p-4 bg-background">
+        {hasCustomWidget ? (
+          <DynamicWidget widget={widget} dataOverride={dataOverride} />
+        ) : isCollection ? (
+          <WidgetList data={widget as unknown as Record<string, unknown>} />
+        ) : (
+          <DynamicWidget widget={widget} />
+        )}
+      </div>
 
       {/* Footer */}
-      <div className="mt-auto px-5 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
+      <div className="px-4 py-2.5 border-t border-border bg-muted/20 flex items-center justify-between">
         <span className="text-[10px] text-muted-foreground">
           Actualizado:{" "}
           {new Date(widget.updatedAt).toLocaleDateString("es-AR", {
@@ -331,9 +385,15 @@ export default function AdminWidgetsPage() {
     if (user) fetchWidgets();
   }, [user]);
 
+  // All widgets = fetched from API + static ones
+  const allWidgets = useMemo(
+    () => [...STATIC_WIDGETS, ...widgets],
+    [widgets],
+  );
+
   // Filtered widgets
   const filteredWidgets = useMemo(() => {
-    let result = widgets;
+    let result = allWidgets;
 
     if (search) {
       const q = search.toLowerCase();
@@ -351,13 +411,13 @@ export default function AdminWidgetsPage() {
     }
 
     return result;
-  }, [widgets, search, filterType]);
+  }, [allWidgets, search, filterType]);
 
-  // Unique typed for filter buttons
+  // Unique types for filter buttons
   const uniqueTypes = useMemo(() => {
-    const types = new Set(widgets.map((w) => w.tipo_fuente));
+    const types = new Set(allWidgets.map((w) => w.tipo_fuente));
     return Array.from(types);
-  }, [widgets]);
+  }, [allWidgets]);
 
   // Not authenticated
   if (!user) {
@@ -441,7 +501,7 @@ export default function AdminWidgetsPage() {
           >
             Todos
             <span className="ml-1.5 tabular-nums opacity-60">
-              {widgets.length}
+              {allWidgets.length}
             </span>
           </button>
           {uniqueTypes.map((type) => {
