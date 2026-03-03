@@ -17,8 +17,10 @@ import {
   Heart,
   LogIn,
   Share2,
+  LayoutGrid,
 } from "lucide-react";
 import type { Category } from "@/lib/api";
+import { API_URL } from "@/lib/api";
 import { CategoryMenu } from "@/components/CategoryMenu";
 
 interface CategoryWithChildren extends Category {
@@ -100,7 +102,26 @@ export function Navbar() {
   const [mobileCatOpen, setMobileCatOpen] = useState(false);
 
   const pathname = usePathname();
-  const { user, logout, isEditing, toggleEditMode } = useAuth();
+  const { user, logout, isEditing, toggleEditMode, openLoginModal } = useAuth();
+
+  // Enhanced logout that also calls the server endpoint
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("payload-token");
+      if (token) {
+        await fetch(`${API_URL}/users/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }).catch(() => {});
+      }
+    } finally {
+      logout();
+      setUserMenuOpen(false);
+    }
+  };
 
   // On detail pages the inner nav takes over; hide the main mobile top bar
   const isDetailPage =
@@ -108,7 +129,8 @@ export function Navbar() {
       pathname !== "/publicaciones/") ||
     pathname.startsWith("/categorias/");
 
-  const menuRef = useRef<HTMLDivElement>(null);
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Theme
   useEffect(() => {
@@ -150,7 +172,10 @@ export function Navbar() {
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!userMenuOpen) return;
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inDesktop = desktopMenuRef.current?.contains(target);
+      const inMobile = mobileMenuRef.current?.contains(target);
+      if (!inDesktop && !inMobile) {
         setUserMenuOpen(false);
       }
     };
@@ -216,7 +241,7 @@ export function Navbar() {
               )}
 
               {/* User menu */}
-              <div className="relative" ref={menuRef}>
+              <div className="relative" ref={desktopMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -253,21 +278,17 @@ export function Navbar() {
                             <Heart className="h-4 w-4" />
                             Favoritos
                           </Link>
-                          <div className="my-1 border-t border-border" />
-                          <Link
-                            href="/login"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                          >
-                            <LogIn className="h-4 w-4" />
-                            Iniciar Sesión
-                          </Link>
                           <button
                             onClick={() => {
                               if (navigator.share) {
-                                navigator.share({ url: window.location.href, title: document.title });
+                                navigator.share({
+                                  url: window.location.href,
+                                  title: document.title,
+                                });
                               } else {
-                                navigator.clipboard.writeText(window.location.href);
+                                navigator.clipboard.writeText(
+                                  window.location.href,
+                                );
                               }
                               setUserMenuOpen(false);
                             }}
@@ -275,6 +296,17 @@ export function Navbar() {
                           >
                             <Share2 className="h-4 w-4" />
                             Compartir
+                          </button>
+                          <div className="my-1 border-t border-border" />
+                          <button
+                            onClick={() => {
+                              openLoginModal();
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <LogIn className="h-4 w-4" />
+                            Iniciar Sesión
                           </button>
                         </>
                       ) : (
@@ -287,6 +319,14 @@ export function Navbar() {
                           >
                             <Heart className="h-4 w-4" />
                             Mis Favoritos
+                          </Link>
+                          <Link
+                            href="/admin/widgets"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <LayoutGrid className="h-4 w-4" />
+                            Widgets
                           </Link>
                           <button
                             onClick={() => {
@@ -303,15 +343,45 @@ export function Navbar() {
                             Modo Edición:{" "}
                             {isEditing ? "Activado" : "Desactivado"}
                           </button>
+                          <button
+                            onClick={() => {
+                              toggleTheme();
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            {isDark ? (
+                              <Sun className="h-4 w-4" />
+                            ) : (
+                              <Moon className="h-4 w-4" />
+                            )}
+                            {isDark ? "Modo Claro" : "Modo Oscuro"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (navigator.share) {
+                                navigator.share({
+                                  url: window.location.href,
+                                  title: document.title,
+                                });
+                              } else {
+                                navigator.clipboard.writeText(
+                                  window.location.href,
+                                );
+                              }
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Share2 className="h-4 w-4" />
+                            Compartir
+                          </button>
                           <div className="my-1 border-t border-border" />
                           <div className="px-4 py-1.5 text-xs text-muted-foreground truncate">
                             {user.email}
                           </div>
                           <button
-                            onClick={() => {
-                              logout();
-                              setUserMenuOpen(false);
-                            }}
+                            onClick={handleLogout}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                           >
                             <LogOut className="h-4 w-4" />
@@ -329,18 +399,27 @@ export function Navbar() {
       </nav>
 
       {/* ── Mobile Top Bar (home + list pages only) ── */}
-      <div className={`${isDetailPage ? "hidden" : ""} md:hidden sticky top-0 z-50 w-full h-14 bg-background/95 backdrop-blur flex items-center px-4 justify-between`}>
+      <div
+        className={`${isDetailPage ? "hidden" : ""} md:hidden sticky top-0 z-50 w-full h-14 bg-background/95 backdrop-blur flex items-center px-4 justify-between`}
+      >
         {pathname.startsWith("/publicaciones") ? (
-          <span className="font-extrabold font-heading text-lg tracking-tight">Publicaciones</span>
+          <span className="font-extrabold font-heading text-lg tracking-tight">
+            Publicaciones
+          </span>
         ) : pathname.startsWith("/boletines") ? (
-          <span className="font-extrabold font-heading text-lg tracking-tight">Boletines</span>
+          <span className="font-extrabold font-heading text-lg tracking-tight">
+            Boletines
+          </span>
         ) : (
-          <Link href="/" className="font-extrabold font-heading text-lg tracking-tight">
+          <Link
+            href="/"
+            className="font-extrabold font-heading text-lg tracking-tight"
+          >
             Santiago en Datos
           </Link>
         )}
 
-        <div className="relative" ref={menuRef}>
+        <div className="relative" ref={mobileMenuRef}>
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
             className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -367,6 +446,14 @@ export function Navbar() {
                     >
                       <Heart className="h-4 w-4" />
                       Mis Favoritos
+                    </Link>
+                    <Link
+                      href="/admin/widgets"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                      Widgets
                     </Link>
                     <button
                       onClick={() => {
@@ -396,12 +483,26 @@ export function Navbar() {
                       )}
                       {isDark ? "Modo Claro" : "Modo Oscuro"}
                     </button>
-                    <div className="my-1 border-t border-border" />
                     <button
                       onClick={() => {
-                        logout();
+                        if (navigator.share) {
+                          navigator.share({
+                            url: window.location.href,
+                            title: document.title,
+                          });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href);
+                        }
                         setUserMenuOpen(false);
                       }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartir
+                    </button>
+                    <div className="my-1 border-t border-border" />
+                    <button
+                      onClick={handleLogout}
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
@@ -434,19 +535,13 @@ export function Navbar() {
                     <Heart className="h-4 w-4" />
                     Favoritos
                   </Link>
-                  <div className="my-1 border-t border-border" />
-                  <Link
-                    href="/login"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                  >
-                    <LogIn className="h-4 w-4" />
-                    Iniciar Sesión
-                  </Link>
                   <button
                     onClick={() => {
                       if (navigator.share) {
-                        navigator.share({ url: window.location.href, title: document.title });
+                        navigator.share({
+                          url: window.location.href,
+                          title: document.title,
+                        });
                       } else {
                         navigator.clipboard.writeText(window.location.href);
                       }
@@ -456,6 +551,17 @@ export function Navbar() {
                   >
                     <Share2 className="h-4 w-4" />
                     Compartir
+                  </button>
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    onClick={() => {
+                      openLoginModal();
+                      setUserMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Iniciar Sesión
                   </button>
                 </div>
               )}
@@ -486,7 +592,9 @@ export function Navbar() {
           }`}
         >
           <FileText className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">Publicaciones</span>
+          <span className="text-[10px] font-medium leading-none">
+            Publicaciones
+          </span>
         </Link>
         <Link
           href="/boletines"
