@@ -39,10 +39,15 @@ interface DetailPanelProps {
   onNavigate: () => void;
 }
 
-export function CategoryDetailPanel({ category, onNavigate }: DetailPanelProps) {
+export function CategoryDetailPanel({
+  category,
+  onNavigate,
+}: DetailPanelProps) {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedTipo, setSelectedTipo] = useState<string | number | null>(null);
+  const [selectedTipo, setSelectedTipo] = useState<string | number | null>(
+    null,
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -83,7 +88,7 @@ export function CategoryDetailPanel({ category, onNavigate }: DetailPanelProps) 
   );
 
   return (
-    <div className="overflow-y-auto h-full pb-24">
+    <div className="overflow-y-auto h-full pb-4">
       {/* Subcategories */}
       {category.children.length > 0 && (
         <div>
@@ -153,7 +158,9 @@ export function CategoryDetailPanel({ category, onNavigate }: DetailPanelProps) 
                   }`}
                 >
                   {tp.nombre}
-                  <span className="ml-1.5 opacity-60 tabular-nums">{count}</span>
+                  <span className="ml-1.5 opacity-60 tabular-nums">
+                    {count}
+                  </span>
                 </button>
               );
             })}
@@ -303,7 +310,7 @@ export function CategoryMenu({
 
         {/* Full-screen overlay when a category is selected from home page */}
         {overlayCategory && (
-          <div className="md:hidden fixed inset-0 z-[60] bg-background flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="md:hidden fixed top-0 left-0 right-0 bottom-16 z-[55] bg-background flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
             {/* Overlay header */}
             <div className="flex items-center gap-2 px-4 border-b border-border shrink-0 h-14">
               <h2 className="flex-1 text-base font-heading font-bold truncate">
@@ -342,7 +349,7 @@ export function CategoryMenu({
   // ── MOBILE DRAWER mode (full-screen from bottom nav) ────────────────────────
 
   return (
-    <div className="md:hidden fixed inset-0 z-[60] bg-background animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col">
+    <div className="md:hidden fixed top-0 left-0 right-0 bottom-16 z-[55] bg-background animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 border-b border-border shrink-0 h-14">
         {selectedCategory ? (
@@ -410,7 +417,7 @@ export function CategoryMenu({
           </div>
 
           {/* Categories + real-time publication results */}
-          <div className="flex-1 overflow-y-auto pb-24">
+          <div className="flex-1 overflow-y-auto pb-4">
             {isSearching ? (
               <>
                 {/* Matching categories */}
@@ -449,7 +456,9 @@ export function CategoryMenu({
                 <p className="px-4 pt-4 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
                   Publicaciones
                   {!searchLoading && searchPubs.length > 0 && (
-                    <span className="ml-2 text-foreground">{searchPubs.length}</span>
+                    <span className="ml-2 text-foreground">
+                      {searchPubs.length}
+                    </span>
                   )}
                 </p>
                 {searchLoading ? (
@@ -476,11 +485,13 @@ export function CategoryMenu({
                   </p>
                 )}
 
-                {filteredCategories.length === 0 && searchPubs.length === 0 && !searchLoading && (
-                  <p className="px-4 pt-4 text-sm text-muted-foreground text-center">
-                    No se encontraron resultados.
-                  </p>
-                )}
+                {filteredCategories.length === 0 &&
+                  searchPubs.length === 0 &&
+                  !searchLoading && (
+                    <p className="px-4 pt-4 text-sm text-muted-foreground text-center">
+                      No se encontraron resultados.
+                    </p>
+                  )}
               </>
             ) : (
               <>

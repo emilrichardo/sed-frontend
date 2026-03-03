@@ -662,6 +662,7 @@ export function Navbar() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background flex items-center justify-around z-50 px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <Link
           href="/"
+          onClick={() => setMobileCatOpen(false)}
           className={`flex flex-col items-center gap-1 p-2 transition-colors ${
             pathname === "/"
               ? "text-primary"
@@ -673,6 +674,7 @@ export function Navbar() {
         </Link>
         <Link
           href="/publicaciones"
+          onClick={() => setMobileCatOpen(false)}
           className={`flex flex-col items-center gap-1 p-2 transition-colors ${
             pathname.startsWith("/publicaciones")
               ? "text-primary"
@@ -686,6 +688,7 @@ export function Navbar() {
         </Link>
         <Link
           href="/boletines"
+          onClick={() => setMobileCatOpen(false)}
           className={`flex flex-col items-center gap-1 p-2 transition-colors ${
             pathname.startsWith("/boletines")
               ? "text-primary"
@@ -698,7 +701,7 @@ export function Navbar() {
           </span>
         </Link>
         <button
-          onClick={() => setMobileCatOpen(true)}
+          onClick={() => setMobileCatOpen((v) => !v)}
           className={`flex flex-col items-center gap-1 p-2 transition-colors ${
             mobileCatOpen
               ? "text-primary"
