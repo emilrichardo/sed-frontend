@@ -32,6 +32,7 @@ interface CategoryWithChildren extends Category {
 const navLinks = [
   { name: "Inicio", href: "/" },
   { name: "Coparticipación", href: "/coparticipacion" },
+  { name: "Ingresos", href: "/ingresos" },
   { name: "Boletines", href: "/boletines" },
   { name: "Publicaciones", href: "/publicaciones" },
 ];
