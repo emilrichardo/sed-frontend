@@ -33,72 +33,9 @@ interface CategoryWithChildren extends Category {
 
 const navLinks = [
   { name: "Inicio", href: "/" },
-  { name: "Coparticipación", href: "/coparticipacion" },
-  { name: "Ingresos", href: "/ingresos" },
   { name: "Boletines", href: "/boletines" },
   { name: "Publicaciones", href: "/publicaciones" },
 ];
-
-// ── Compact rotating stats ticker ──────────────────────────────────────────
-interface StatItem {
-  label: string;
-  value: string;
-}
-
-function StatsTicker() {
-  const [stats, setStats] = useState<StatItem[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    Promise.all([
-      fetch("/api-proxy/publicaciones?limit=1")
-        .then((r) => r.json())
-        .catch(() => ({ totalDocs: 0 })),
-      fetch("/api-proxy/taxonomias?limit=1&where[tipo][equals]=categoria")
-        .then((r) => r.json())
-        .catch(() => ({ totalDocs: 0 })),
-      fetch("/api-proxy/boletines?limit=1")
-        .then((r) => r.json())
-        .catch(() => ({ totalDocs: 0 })),
-    ]).then(([pubs, cats, bols]) => {
-      const items: StatItem[] = [];
-      if (pubs.totalDocs > 0)
-        items.push({ value: String(pubs.totalDocs), label: "publicaciones" });
-      if (cats.totalDocs > 0)
-        items.push({ value: String(cats.totalDocs), label: "categorías" });
-      if (bols.totalDocs > 0)
-        items.push({ value: String(bols.totalDocs), label: "boletines" });
-      setStats(items);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (stats.length < 2) return;
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIdx((i) => (i + 1) % stats.length);
-        setVisible(true);
-      }, 300);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [stats]);
-
-  if (stats.length === 0) return null;
-  const current = stats[idx];
-
-  return (
-    <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground font-mono">
-      <span
-        className={`transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
-      >
-        <span className="text-foreground font-bold">{current.value}</span>{" "}
-        {current.label}
-      </span>
-    </div>
-  );
-}
 
 // ── Desktop category megamenu ───────────────────────────────────────────────
 function DesktopCategoryDropdown({
@@ -305,9 +242,6 @@ export function Navbar() {
                 Santiago en Datos
               </span>
             </Link>
-
-            {/* Stats ticker */}
-            <StatsTicker />
 
             {/* Nav links */}
             <div className="flex items-center gap-6 ml-auto">
