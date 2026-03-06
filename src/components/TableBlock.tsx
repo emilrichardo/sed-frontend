@@ -621,6 +621,7 @@ export const TableBlock = ({
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
   const [useHeatmap, setUseHeatmap] = useState(false);
+  const [showTableView, setShowTableView] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
@@ -739,8 +740,14 @@ export const TableBlock = ({
       : {}),
   };
 
+  const isNonTableChart =
+    selectedChartType !== "table" && selectedChartType !== "advanced_table";
+  const showPublicTable = isPublicUser && isNonTableChart && showTableView;
+
   const showChart =
-    activeTab === "visualizacion" && selectedChartType !== "table";
+    activeTab === "visualizacion" &&
+    selectedChartType !== "table" &&
+    !showPublicTable;
 
   const handleDownloadCSV = () => {
     if (!columns || !filteredRows) return;
@@ -827,6 +834,21 @@ export const TableBlock = ({
                   JSON
                 </button>
               </div>
+            )}
+
+            {isPublicUser && isNonTableChart && (
+              <button
+                onClick={() => setShowTableView((v) => !v)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all border shrink-0 ${
+                  showTableView
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
+                }`}
+                title={showTableView ? "Ver gráfico" : "Ver datos en tabla"}
+              >
+                <TableIcon className="h-3.5 w-3.5" />
+                {showTableView ? "Ver gráfico" : "Ver datos"}
+              </button>
             )}
 
             <button
@@ -947,10 +969,35 @@ export const TableBlock = ({
                   data={filteredRows}
                   columns={columns}
                 />
+                {isWidget && isPublicUser && isNonTableChart && (
+                  <div className="flex justify-end mt-2">
+                    <button
+                      onClick={() => setShowTableView((v) => !v)}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      title="Ver datos en tabla"
+                    >
+                      <TableIcon className="h-3 w-3" />
+                      Ver datos
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
-            {selectedChartType === "table" && (
+            {(selectedChartType === "table" || showPublicTable) && (
+              <>
+              {isWidget && showPublicTable && (
+                <div className="flex justify-end px-3 pt-2">
+                  <button
+                    onClick={() => setShowTableView(false)}
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    title="Ver gráfico"
+                  >
+                    <Eye className="h-3 w-3" />
+                    Ver gráfico
+                  </button>
+                </div>
+              )}
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-muted/50 border-b">
@@ -1041,8 +1088,38 @@ export const TableBlock = ({
                   ))}
                 </tbody>
               </table>
+              </>
             )}
           </div>
+
+          {/* Fuente y notas — always shown for table/public table views */}
+          {(selectedChartType === "table" || showPublicTable) &&
+            (notas || fuente) && (
+              <div className="px-4 py-3 border-t border-border/50 text-xs space-y-1.5">
+                {notas && (
+                  <div className="text-muted-foreground italic leading-relaxed">
+                    <span className="font-semibold text-foreground/70 not-italic mr-1.5">
+                      Notas:
+                    </span>
+                    {typeof notas === "string"
+                      ? notas
+                      : getTextFromNodes(notas)}
+                  </div>
+                )}
+                {fuente && (
+                  <div className="text-muted-foreground leading-relaxed flex items-start gap-1.5">
+                    <span className="font-semibold text-foreground/70 shrink-0">
+                      Fuente:
+                    </span>
+                    <span>
+                      {typeof fuente === "string"
+                        ? fuente
+                        : getTextFromNodes(fuente)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
         </>
       )}
     </div>
