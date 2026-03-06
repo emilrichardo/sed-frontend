@@ -74,14 +74,13 @@ export default async function CategoryPage({ params }: PageProps) {
         </div>
 
         {/* Subcategorías */}
-        {(children.length > 0 ||
-          category.slug === "ingresos-de-la-provincia") && (
+        {(children.length > 0 || category.slug === "finanzas-provinciales") && (
           <section className="mb-10">
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
               Subcategorías
             </p>
             <div className="border-t border-border">
-              {category.slug === "ingresos-de-la-provincia" && (
+              {category.slug === "finanzas-provinciales" && (
                 <>
                   <Link
                     href="/ingresos"
@@ -103,18 +102,20 @@ export default async function CategoryPage({ params }: PageProps) {
                   </Link>
                 </>
               )}
-              {children.map((sub) => (
-                <Link
-                  key={sub.id}
-                  href={`/categorias/${sub.slug}`}
-                  className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
-                >
-                  <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
-                    {sub.nombre}
-                  </span>
-                  <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
-                </Link>
-              ))}
+              {children
+                .filter((sub) => sub.slug !== "ingresos-de-la-provincia")
+                .map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={`/categorias/${sub.slug}`}
+                    className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
+                  >
+                    <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                      {sub.nombre}
+                    </span>
+                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </Link>
+                ))}
             </div>
           </section>
         )}

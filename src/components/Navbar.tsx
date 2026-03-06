@@ -111,19 +111,44 @@ function DesktopCategoryDropdown({
               </Link>
 
               {/* Subcategories */}
-              {cat.children.length > 0 && (
+              {(cat.children.length > 0 ||
+                cat.slug === "finanzas-provinciales") && (
                 <ul className="pb-3">
-                  {cat.children.map((sub) => (
-                    <li key={sub.id}>
-                      <Link
-                        href={`/categorias/${sub.slug}`}
-                        onClick={() => setOpen(false)}
-                        className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
-                      >
-                        {sub.nombre}
-                      </Link>
-                    </li>
-                  ))}
+                  {cat.slug === "finanzas-provinciales" && (
+                    <>
+                      <li>
+                        <Link
+                          href="/ingresos"
+                          onClick={() => setOpen(false)}
+                          className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
+                        >
+                          Ingresos de la Provincia
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/coparticipacion"
+                          onClick={() => setOpen(false)}
+                          className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
+                        >
+                          Coparticipación
+                        </Link>
+                      </li>
+                    </>
+                  )}
+                  {cat.children
+                    .filter((sub) => sub.slug !== "ingresos-de-la-provincia")
+                    .map((sub) => (
+                      <li key={sub.id}>
+                        <Link
+                          href={`/categorias/${sub.slug}`}
+                          onClick={() => setOpen(false)}
+                          className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
+                        >
+                          {sub.nombre}
+                        </Link>
+                      </li>
+                    ))}
                 </ul>
               )}
             </div>

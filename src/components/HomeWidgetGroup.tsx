@@ -5,7 +5,7 @@ import WidgetFiscal from "@/components/widgets/WidgetFiscal";
 import WidgetAhorros from "@/components/widgets/WidgetAhorros";
 import WidgetClima from "@/components/widgets/WidgetClima";
 import WidgetDolar from "@/components/widgets/WidgetDolar";
-import { Landmark } from "lucide-react";
+import WidgetBoletin from "@/components/widgets/WidgetBoletin";
 
 export function HomeWidgetGroup() {
   const [ahorrosData, setAhorrosData] = useState<Record<string, unknown>>({
@@ -43,6 +43,9 @@ export function HomeWidgetGroup() {
 
         {/* Finanzas Provinciales */}
         <WidgetFiscal data={{ titulo: "Finanzas Provinciales" }} variant="sm" />
+
+        {/* Último Boletín */}
+        <WidgetBoletin variant="md" />
       </div>
     </section>
   );

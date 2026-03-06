@@ -91,12 +91,12 @@ export function CategoryDetailPanel({
     <div className="overflow-y-auto h-full pb-4">
       {/* Subcategories */}
       {(category.children.length > 0 ||
-        category.slug === "ingresos-de-la-provincia") && (
+        category.slug === "finanzas-provinciales") && (
         <div>
           <p className="px-4 pt-5 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
             Subcategorías
           </p>
-          {category.slug === "ingresos-de-la-provincia" && (
+          {category.slug === "finanzas-provinciales" && (
             <>
               <Link
                 href="/ingresos"
@@ -120,7 +120,9 @@ export function CategoryDetailPanel({
               </Link>
             </>
           )}
-          {category.children.map((sub) => (
+          {category.children
+            .filter((sub) => sub.slug !== "ingresos-de-la-provincia")
+            .map((sub) => (
             <Link
               key={sub.id}
               href={`/categorias/${sub.slug}`}

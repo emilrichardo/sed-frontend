@@ -8,7 +8,7 @@ import type { Category } from "@/lib/api";
 import { HomeHero } from "@/components/HomeHero";
 import { HomeCategorySection } from "@/components/HomeCategorySection";
 import { StatsCarousel } from "@/components/StatsCarousel";
-import { ResponsivePublicationCard } from "@/components/PublicationCard";
+import { PublicationCarousel } from "@/components/PublicationCarousel";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { DollarWidget } from "@/components/DollarWidget";
 import { HomeWidgetGroup } from "@/components/HomeWidgetGroup";
@@ -22,7 +22,7 @@ export const revalidate = 60;
 export default async function Home() {
   const [bulletins, reports, allCategories, statCounts] = await Promise.all([
     getBulletins({ limit: 1 }),
-    getReports({ limit: 4 }),
+    getReports({ limit: 12 }),
     getCategories({ limit: 100 }),
     getSiteStatCounts(),
   ]);
@@ -44,7 +44,7 @@ export default async function Home() {
   return (
     <div className="w-full">
       {/* ── Stats ticker ── */}
-      <div className="-mx-4 md:-mx-8 border-b border-border">
+      <div className="-mx-4 md:-mx-8">
         <StatsCarousel counts={statCounts} />
       </div>
       {/* ── Hero — compacts vertically on scroll ── */}
@@ -57,12 +57,12 @@ export default async function Home() {
       </div>
 
       {/* ── Desktop horizontal category bar ── */}
-      <div className="-mx-4 md:-mx-8 border-b border-t border-border">
+      <div className="-mx-4 md:-mx-8 border-b border-t border-border mt-4">
         <DesktopCategoryBar categories={categoryTree} />
       </div>
 
       {/* ── Mobile vertical category list ── */}
-      <div className="md:hidden -mx-4 border-b border-border">
+      <div className="md:hidden -mx-4">
         <HomeCategorySection categories={categoryTree} />
       </div>
 
@@ -80,51 +80,16 @@ export default async function Home() {
               Ver más <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="space-y-4">
-            {reports.docs.map((pub) => (
-              <ResponsivePublicationCard
-                key={pub.id}
-                item={pub}
-                showParent={true}
-              />
-            ))}
-          </div>
+          <PublicationCarousel
+            items={reports.docs.filter((pub) => {
+              const tp = pub.tipo_publicacion;
+              return typeof tp === "object" && tp !== null && "slug" in tp
+                ? tp.slug === "informes"
+                : String(tp) === "informes";
+            })}
+          />
         </section>
       )}
-
-      {/* ── Último Boletín ── */}
-      <section className="pb-8 md:pb-12">
-        {latestBulletin ? (
-          <Link
-            href={`/boletines/${latestBulletin.slug}`}
-            className="block p-5 md:p-6 border bg-card hover:bg-muted/50 transition-all group rounded-lg shadow-sm hover:shadow-md"
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors">
-                  Boletín Oficial Nº {latestBulletin.numero}
-                </h3>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Publicado el{" "}
-                  {new Date(
-                    latestBulletin.fecha_publicacion,
-                  ).toLocaleDateString("es-AR")}
-                </p>
-              </div>
-              <span className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold font-mono border border-primary rounded-full shrink-0">
-                {latestBulletin.año_edicion}
-              </span>
-            </div>
-            <div className="flex gap-4 text-xs md:text-sm text-muted-foreground">
-              <span>{latestBulletin.cantidad_paginas} páginas</span>
-            </div>
-          </Link>
-        ) : (
-          <p className="text-muted-foreground italic text-sm">
-            No hay boletines disponibles.
-          </p>
-        )}
-      </section>
 
       {/* ── Mobile scroll transition → Publicaciones ── */}
       <MobileScrollTransition
