@@ -71,7 +71,7 @@ const COLORS_MULTICOLOR = [
 ];
 
 const SANTIAGO_RED = "#c95b4a";
-const BLACK = "#262624";
+const DEFAULT_BAR = "#64748b"; // Slate 500 for better contrast in both modes
 
 // Province name mappings
 const PROVINCE_ALIASES: Record<string, string[]> = {
@@ -166,6 +166,7 @@ const getItemColor = (
   name: string | number | undefined,
   index: number,
   palette: string[],
+  forceColors: boolean = false,
 ) => {
   const strName = String(name || "").toLowerCase();
   const isSantiago = strName.includes("santiago del estero");
@@ -174,8 +175,8 @@ const getItemColor = (
     return SANTIAGO_RED;
   }
 
-  if (palette === COLORS_DEFAULT) {
-    return BLACK;
+  if (palette === COLORS_DEFAULT && !forceColors) {
+    return DEFAULT_BAR;
   }
 
   return palette[index % palette.length];
@@ -1378,7 +1379,7 @@ export const ChartRenderer = ({
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={getItemColor(entry[xKey], index, colors)}
+                    fill={getItemColor(entry[xKey], index, colors, true)}
                   />
                 ))}
               </Pie>
@@ -1784,7 +1785,7 @@ export const ChartRenderer = ({
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={getItemColor(entry[xKey], index, colors)}
+                    fill={getItemColor(entry[xKey], index, colors, true)}
                   />
                 ))}
               </RadialBar>
@@ -1844,7 +1845,7 @@ export const ChartRenderer = ({
         const sunburstData = chartData.map((d) => ({
           id: String(d[xKey]),
           value: Number(d[yKey]) || 0,
-          color: getItemColor(d[xKey], chartData.indexOf(d), colors),
+          color: getItemColor(d[xKey], chartData.indexOf(d), colors, true),
         }));
         return (
           <div className="h-[500px] w-full">

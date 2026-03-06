@@ -177,3 +177,20 @@ body {
   --sidebar: #1a1a18;
   --sidebar-foreground: oklch(0.95 0 0);
 }
+
+/* Recharts Dark Mode Contrast Fixes */
+.recharts-text {
+  fill: currentColor !important;
+  opacity: 0.8;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: currentColor !important;
+  opacity: 0.6;
+}
+.recharts-legend-item-text {
+  color: currentColor !important;
+}
+.recharts-cartesian-grid line {
+  stroke: var(--border) !important;
+  stroke-opacity: 0.6;
+}

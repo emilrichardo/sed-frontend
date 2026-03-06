@@ -39,7 +39,7 @@ export function HomeHero({ className }: { className?: string }) {
   return (
     <section
       ref={heroRef}
-      className={`relative overflow-hidden bg-primary text-primary-foreground px-4 md:px-8 rounded-2xl transition-[padding] duration-100 ease-out ${className || ""}`}
+      className={`relative overflow-hidden bg-primary flex items-center justify-center text-primary-foreground px-4 md:px-8 rounded-2xl transition-[padding] duration-100 ease-out ${className || ""}`}
       style={{
         paddingTop: `${padY}px`,
         paddingBottom: `${padY}px`,
@@ -60,7 +60,7 @@ export function HomeHero({ className }: { className?: string }) {
           className="text-xs font-mono uppercase tracking-[0.2em] text-primary-foreground/60 mb-4 transition-opacity duration-100"
           style={{ opacity: Math.max(1 - progress * 3, 0) }}
         >
-          Santiago en Datos
+          Santiago del Estero | Argentina
         </p>
 
         <div

@@ -42,7 +42,7 @@ export function HomeWidgetGroup() {
         <WidgetAhorros data={ahorrosData} variant="sm" />
 
         {/* Finanzas Provinciales */}
-        <WidgetFiscal data={{ titulo: "Finanzas Provinciales" }} variant="sm" />
+        <WidgetFiscal data={{ titulo: "Finanzas Provinciales" }} variant="md" />
 
         {/* Último Boletín */}
         <WidgetBoletin variant="md" />

@@ -357,6 +357,10 @@ function VariantSM({ data, titulo }: { data: FiscalData; titulo: string }) {
 // ── MD ────────────────────────────────────────────────────────────────────────
 
 function VariantMD({ data, titulo }: { data: FiscalData; titulo: string }) {
+  // Only show the month row when the current month's ingresos data actually exists
+  const hasMonthIngresos =
+    data.month.coparticipacion > 0 && data.month.ingresos > 0;
+
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <Header titulo={titulo} />
@@ -375,7 +379,7 @@ function VariantMD({ data, titulo }: { data: FiscalData; titulo: string }) {
         </span>
       </div>
 
-      <MonthRow data={data.month} yearFallback={data.year} />
+      {hasMonthIngresos && <MonthRow data={data.month} yearFallback={data.year} />}
       <MonthRow data={data.year} isYear />
       <Legend />
       <FiscalCTAs />
