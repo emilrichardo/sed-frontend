@@ -90,11 +90,36 @@ export function CategoryDetailPanel({
   return (
     <div className="overflow-y-auto h-full pb-4">
       {/* Subcategories */}
-      {category.children.length > 0 && (
+      {(category.children.length > 0 ||
+        category.slug === "ingresos-de-la-provincia") && (
         <div>
           <p className="px-4 pt-5 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
             Subcategorías
           </p>
+          {category.slug === "ingresos-de-la-provincia" && (
+            <>
+              <Link
+                href="/ingresos"
+                onClick={onNavigate}
+                className="flex items-center justify-between w-full px-4 py-5 border-b border-border hover:bg-muted/50 transition-colors group"
+              >
+                <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                  Ingresos de la Provincia
+                </span>
+                <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+              </Link>
+              <Link
+                href="/coparticipacion"
+                onClick={onNavigate}
+                className="flex items-center justify-between w-full px-4 py-5 border-b border-border hover:bg-muted/50 transition-colors group"
+              >
+                <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                  Coparticipación
+                </span>
+                <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+              </Link>
+            </>
+          )}
           {category.children.map((sub) => (
             <Link
               key={sub.id}
@@ -282,7 +307,7 @@ export function CategoryMenu({
     return (
       <>
         <nav aria-label="Categorías principales">
-          {categories.map((cat) => (
+          {categories.map((cat, idx) => (
             <div
               key={cat.id}
               className="border-t border-border flex items-stretch"
@@ -290,8 +315,11 @@ export function CategoryMenu({
               {/* Text → opens overlay */}
               <button
                 onClick={() => setOverlayCategory(cat)}
-                className="flex-1 flex items-center px-4 md:px-8 py-5 hover:bg-muted/50 transition-colors group text-left min-w-0"
+                className="flex-1 flex items-center gap-4 px-4 md:px-8 py-5 hover:bg-muted/50 transition-colors group text-left min-w-0"
               >
+                <span className="text-xs font-mono text-muted-foreground shrink-0 tabular-nums w-5 text-right">
+                  {String(idx + 1).padStart(2, "0")}
+                </span>
                 <span className="text-2xl md:text-3xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
                   {cat.nombre}
                 </span>
@@ -426,15 +454,18 @@ export function CategoryMenu({
                     <p className="px-4 pt-4 pb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
                       Categorías
                     </p>
-                    {filteredCategories.map((cat) => (
+                    {filteredCategories.map((cat, idx) => (
                       <div
                         key={cat.id}
                         className="border-b border-border flex items-stretch"
                       >
                         <button
                           onClick={() => setSelectedCategory(cat)}
-                          className="flex-1 flex items-center px-4 py-4 hover:bg-muted/50 transition-colors group text-left min-w-0"
+                          className="flex-1 flex items-center gap-4 px-4 py-4 hover:bg-muted/50 transition-colors group text-left min-w-0"
                         >
+                          <span className="text-xs font-mono text-muted-foreground shrink-0 tabular-nums w-5 text-right">
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
                           <span className="text-xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
                             {cat.nombre}
                           </span>
@@ -495,7 +526,7 @@ export function CategoryMenu({
               </>
             ) : (
               <>
-                {filteredCategories.map((cat) => (
+                {filteredCategories.map((cat, idx) => (
                   <div
                     key={cat.id}
                     className="border-b border-border flex items-stretch"
@@ -503,8 +534,11 @@ export function CategoryMenu({
                     {/* Text → slides to detail */}
                     <button
                       onClick={() => setSelectedCategory(cat)}
-                      className="flex-1 flex items-center px-4 py-5 hover:bg-muted/50 transition-colors group text-left min-w-0"
+                      className="flex-1 flex items-center gap-4 px-4 py-5 hover:bg-muted/50 transition-colors group text-left min-w-0"
                     >
+                      <span className="text-xs font-mono text-muted-foreground shrink-0 tabular-nums w-5 text-right">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
                       <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
                         {cat.nombre}
                       </span>

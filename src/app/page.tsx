@@ -1,4 +1,9 @@
-import { getBulletins, getReports, getCategories } from "@/lib/api";
+import {
+  getBulletins,
+  getReports,
+  getCategories,
+  getSiteStatCounts,
+} from "@/lib/api";
 import type { Category } from "@/lib/api";
 import { HomeHero } from "@/components/HomeHero";
 import { HomeCategorySection } from "@/components/HomeCategorySection";
@@ -7,6 +12,7 @@ import { ResponsivePublicationCard } from "@/components/PublicationCard";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { DollarWidget } from "@/components/DollarWidget";
 import { HomeWidgetGroup } from "@/components/HomeWidgetGroup";
+import { DesktopCategoryBar } from "@/components/DesktopCategoryBar";
 import { MobileScrollTransition } from "@/components/MobileScrollTransition";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -14,10 +20,11 @@ import { ArrowRight } from "lucide-react";
 export const revalidate = 60;
 
 export default async function Home() {
-  const [bulletins, reports, allCategories] = await Promise.all([
+  const [bulletins, reports, allCategories, statCounts] = await Promise.all([
     getBulletins({ limit: 1 }),
     getReports({ limit: 4 }),
     getCategories({ limit: 100 }),
+    getSiteStatCounts(),
   ]);
 
   const latestBulletin = bulletins.docs[0];
@@ -36,19 +43,26 @@ export default async function Home() {
 
   return (
     <div className="w-full">
-      {/* ── Hero — compacts vertically on scroll ── */}
-      <HomeHero />
-
-      {/* ── Finanzas Provinciales widgets ── */}
-      <HomeWidgetGroup />
-
       {/* ── Stats ticker ── */}
       <div className="-mx-4 md:-mx-8 border-b border-border">
-        <StatsCarousel />
+        <StatsCarousel counts={statCounts} />
+      </div>
+      {/* ── Hero — compacts vertically on scroll ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 -mx-4 md:-mx-8 ">
+        <HomeHero className="col-span-2" />
+        {/* ── Finanzas Provinciales widgets ── */}
+        <div className="col-span-1">
+          <HomeWidgetGroup />
+        </div>
       </div>
 
-      {/* ── Categories ── */}
-      <div className="-mx-4 md:-mx-8 border-b border-border">
+      {/* ── Desktop horizontal category bar ── */}
+      <div className="-mx-4 md:-mx-8 border-b border-t border-border">
+        <DesktopCategoryBar categories={categoryTree} />
+      </div>
+
+      {/* ── Mobile vertical category list ── */}
+      <div className="md:hidden -mx-4 border-b border-border">
         <HomeCategorySection categories={categoryTree} />
       </div>
 

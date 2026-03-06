@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import type { SiteStatCounts } from "@/lib/api";
 
 interface StatItem {
   label: string;
@@ -8,22 +9,46 @@ interface StatItem {
   suffix?: string;
 }
 
-const stats: StatItem[] = [
-  { label: "Publicaciones", value: "320", suffix: "+" },
-  { label: "Categorías", value: "15" },
-  { label: "Boletines Oficiales", value: "1.200", suffix: "+" },
-  { label: "Datos Abiertos", value: "48" },
-  { label: "Informes Estadísticos", value: "85" },
-  { label: "Municipios", value: "28" },
-];
+// Santiago del Estero has 27 departments — fixed geographic fact
+const DEPTOS_SANTIAGO = 27;
+
+function buildStats(counts?: SiteStatCounts): StatItem[] {
+  if (!counts) {
+    return [
+      { label: "Publicaciones", value: "320", suffix: "+" },
+      { label: "Categorías", value: "15" },
+      { label: "Boletines Oficiales", value: "1.200", suffix: "+" },
+      { label: "Datos Estadísticos", value: "48" },
+      { label: "Informes", value: "85" },
+      { label: "Departamentos", value: String(DEPTOS_SANTIAGO) },
+    ];
+  }
+
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
+
+  return [
+    { label: "Publicaciones", value: fmt(counts.informes) },
+    { label: "Categorías", value: fmt(counts.categorias) },
+    { label: "Boletines Oficiales", value: fmt(counts.boletines) },
+    ...(counts.estadisticas > 0
+      ? [{ label: "Datos Estadísticos", value: fmt(counts.estadisticas) }]
+      : []),
+    { label: "Departamentos", value: String(DEPTOS_SANTIAGO) },
+  ];
+}
+
+interface Props {
+  counts?: SiteStatCounts;
+}
 
 /**
  * Compact scrolling stats carousel that auto-animates.
  * Shows small stat widgets sliding horizontally.
  */
-export function StatsCarousel() {
+export function StatsCarousel({ counts }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
   const animRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -34,9 +59,8 @@ export function StatsCarousel() {
     const speed = 0.5; // px per frame
 
     const animate = () => {
-      if (!isPaused && el) {
+      if (!isPausedRef.current && el) {
         pos += speed;
-        // Reset when halfway (since content is duplicated)
         if (pos >= el.scrollWidth / 2) {
           pos = 0;
         }
@@ -49,16 +73,17 @@ export function StatsCarousel() {
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [isPaused]);
+  }, []);
 
-  // Double the stats for seamless loop
+  const stats = buildStats(counts);
+  // Double for seamless loop
   const allStats = [...stats, ...stats];
 
   return (
     <div
       className="relative overflow-hidden py-4"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseEnter={() => { isPausedRef.current = true; }}
+      onMouseLeave={() => { isPausedRef.current = false; }}
     >
       {/* Fade edges */}
       <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />

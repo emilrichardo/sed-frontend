@@ -91,7 +91,7 @@ function DesktopCategoryDropdown({
 
       {open && (
         <div className="fixed top-[60px] right-4 bg-background border border-border rounded-xl shadow-xl z-[60] overflow-hidden flex gap-0">
-          {categories.map((cat) => (
+          {categories.map((cat, idx) => (
             <div key={cat.id} className="min-w-[200px]">
               {/* Category heading */}
               <Link
@@ -99,8 +99,13 @@ function DesktopCategoryDropdown({
                 onClick={() => setOpen(false)}
                 className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-muted/50 transition-colors group"
               >
-                <span className="text-lg font-heading font-bold tracking-tight group-hover:text-primary transition-colors whitespace-nowrap">
-                  {cat.nombre}
+                <span className="flex items-center gap-2.5">
+                  <span className="text-[10px] font-mono text-muted-foreground tabular-nums shrink-0">
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-lg font-heading font-bold tracking-tight group-hover:text-primary transition-colors whitespace-nowrap">
+                    {cat.nombre}
+                  </span>
                 </span>
                 <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>

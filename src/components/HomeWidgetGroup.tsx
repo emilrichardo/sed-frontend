@@ -31,19 +31,18 @@ export function HomeWidgetGroup() {
   }, []);
 
   return (
-    <section className="py-3 md:-mx-8 ">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <section className="">
+      <div className="grid grid-cols-1 gap-3">
+        {/* Clima + Dólar stacked */}
+        <div className="flex flex-col gap-3">
+          <WidgetClima data={{}} variant="sm" />
+          <WidgetDolar data={{}} variant="sm" />
+        </div>
         {/* El Ahorro Provincial */}
         <WidgetAhorros data={ahorrosData} variant="sm" />
 
         {/* Finanzas Provinciales */}
         <WidgetFiscal data={{ titulo: "Finanzas Provinciales" }} variant="sm" />
-
-        {/* Clima + Dólar stacked */}
-        <div className="flex flex-col gap-3">
-          <WidgetClima data={{}} variant="md" />
-          <WidgetDolar data={{}} variant="sm" />
-        </div>
       </div>
     </section>
   );

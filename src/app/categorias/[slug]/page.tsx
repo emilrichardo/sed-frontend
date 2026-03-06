@@ -74,12 +74,35 @@ export default async function CategoryPage({ params }: PageProps) {
         </div>
 
         {/* Subcategorías */}
-        {children.length > 0 && (
+        {(children.length > 0 ||
+          category.slug === "ingresos-de-la-provincia") && (
           <section className="mb-10">
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
               Subcategorías
             </p>
             <div className="border-t border-border">
+              {category.slug === "ingresos-de-la-provincia" && (
+                <>
+                  <Link
+                    href="/ingresos"
+                    className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
+                  >
+                    <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                      Ingresos de la Provincia
+                    </span>
+                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </Link>
+                  <Link
+                    href="/coparticipacion"
+                    className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
+                  >
+                    <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                      Coparticipación
+                    </span>
+                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </Link>
+                </>
+              )}
               {children.map((sub) => (
                 <Link
                   key={sub.id}

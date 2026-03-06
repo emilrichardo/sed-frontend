@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AlertCircle, ChevronDown, ChevronUp, Landmark } from "lucide-react";
+import Link from "next/link";
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Landmark,
+  ArrowRight,
+} from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -233,6 +240,29 @@ function Legend() {
   );
 }
 
+// ── CTA Links ─────────────────────────────────────────────────────────────────
+
+function FiscalCTAs() {
+  return (
+    <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-border border-t border-border bg-muted/5">
+      <Link
+        href="/coparticipacion"
+        className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors group text-xs font-semibold text-muted-foreground hover:text-primary"
+      >
+        <span>Ver Coparticipación</span>
+        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+      </Link>
+      <Link
+        href="/ingresos"
+        className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors group text-xs font-semibold text-muted-foreground hover:text-primary"
+      >
+        <span>Ver Ingresos</span>
+        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+      </Link>
+    </div>
+  );
+}
+
 // ── Month row (shared table row) ──────────────────────────────────────────────
 
 function MonthRow({
@@ -348,6 +378,7 @@ function VariantMD({ data, titulo }: { data: FiscalData; titulo: string }) {
       <MonthRow data={data.month} yearFallback={data.year} />
       <MonthRow data={data.year} isYear />
       <Legend />
+      <FiscalCTAs />
     </div>
   );
 }
@@ -401,6 +432,7 @@ function VariantLG({ data, titulo }: { data: FiscalData; titulo: string }) {
       </button>
 
       <Legend />
+      <FiscalCTAs />
     </div>
   );
 }
@@ -507,6 +539,7 @@ function VariantXL({ data, titulo }: { data: FiscalData; titulo: string }) {
       </button>
 
       <Legend />
+      <FiscalCTAs />
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { SunRaysAnimated } from "@/components/SunRaysAnimated";
  * Hero section that compacts vertically as the user scrolls.
  * Initially full-size, smoothly transitions to a compact bar.
  */
-export function HomeHero() {
+export function HomeHero({ className }: { className?: string }) {
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +39,7 @@ export function HomeHero() {
   return (
     <section
       ref={heroRef}
-      className="relative overflow-hidden md:-mx-8 bg-primary text-primary-foreground px-4 md:px-8 rounded-2xl transition-[padding] duration-100 ease-out"
+      className={`relative overflow-hidden bg-primary text-primary-foreground px-4 md:px-8 rounded-2xl transition-[padding] duration-100 ease-out ${className || ""}`}
       style={{
         paddingTop: `${padY}px`,
         paddingBottom: `${padY}px`,

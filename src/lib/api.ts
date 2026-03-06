@@ -1344,3 +1344,33 @@ export async function getProcesamiento(
 
   return res.json();
 }
+
+// ── Site stat counts ──────────────────────────────────────────────────────────
+
+export interface SiteStatCounts {
+  informes: number;
+  estadisticas: number;
+  categorias: number;
+  boletines: number;
+}
+
+export async function getSiteStatCounts(): Promise<SiteStatCounts> {
+  const safeFetch = (url: string) =>
+    fetch(url, { next: { revalidate: 3600 } })
+      .then((r) => (r.ok ? r.json() : { totalDocs: 0 }))
+      .catch(() => ({ totalDocs: 0 }));
+
+  const [informes, estadisticas, categorias, boletines] = await Promise.all([
+    safeFetch(`${API_URL}/publicaciones?limit=1`),
+    safeFetch(`${API_URL}/tablas?limit=1`),
+    safeFetch(`${API_URL}/taxonomias?where[tipo][equals]=categoria&limit=1`),
+    safeFetch(`${API_URL}/boletines?limit=1`),
+  ]);
+
+  return {
+    informes: informes.totalDocs ?? 0,
+    estadisticas: estadisticas.totalDocs ?? 0,
+    categorias: categorias.totalDocs ?? 0,
+    boletines: boletines.totalDocs ?? 0,
+  };
+}
