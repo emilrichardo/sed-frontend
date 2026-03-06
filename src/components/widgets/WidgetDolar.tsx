@@ -11,7 +11,14 @@ interface DollarRate {
   fechaActualizacion: string;
 }
 
-const CASAS_ORDER = ["oficial", "blue", "bolsa", "contadoconliqui", "cripto", "mayorista"];
+const CASAS_ORDER = [
+  "oficial",
+  "blue",
+  "bolsa",
+  "contadoconliqui",
+  "cripto",
+  "mayorista",
+];
 
 const NOMBRES: Record<string, string> = {
   oficial: "Oficial",
@@ -46,7 +53,10 @@ function useDolar() {
         if (ordered[0]?.fechaActualizacion) {
           const d = new Date(ordered[0].fechaActualizacion);
           setUpdatedAt(
-            d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+            d.toLocaleTimeString("es-AR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
           );
         }
       })
@@ -98,7 +108,9 @@ function VariantSM() {
       </span>
       {top3.length === 0 ? (
         <>
-          {[1, 2, 3].map((i) => <Pulse key={i} w="w-16" />)}
+          {[1, 2, 3].map((i) => (
+            <Pulse key={i} w="w-16" />
+          ))}
         </>
       ) : (
         top3.map((rate, i) => (
@@ -133,13 +145,19 @@ function VariantMD() {
       <div className="divide-y divide-border/50">
         {top3.length === 0
           ? [1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3">
+              <div
+                key={i}
+                className="flex items-center justify-between px-4 py-3"
+              >
                 <Pulse w="w-16" />
                 <Pulse w="w-20" />
               </div>
             ))
           : top3.map((rate) => (
-              <div key={rate.casa} className="flex items-center justify-between px-4 py-3">
+              <div
+                key={rate.casa}
+                className="flex items-center justify-between px-4 py-3"
+              >
                 <span className="text-sm font-medium">
                   {NOMBRES[rate.casa] ?? rate.nombre}
                 </span>
@@ -185,13 +203,22 @@ function VariantLG() {
           {top4.length === 0
             ? [1, 2, 3, 4].map((i) => (
                 <tr key={i}>
-                  <td className="px-5 py-3"><Pulse w="w-16" /></td>
-                  <td className="px-4 py-3 text-right"><Pulse w="w-16" /></td>
-                  <td className="px-5 py-3 text-right"><Pulse w="w-16" /></td>
+                  <td className="px-5 py-3">
+                    <Pulse w="w-16" />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Pulse w="w-16" />
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <Pulse w="w-16" />
+                  </td>
                 </tr>
               ))
             : top4.map((rate) => (
-                <tr key={rate.casa} className="hover:bg-muted/30 transition-colors">
+                <tr
+                  key={rate.casa}
+                  className="hover:bg-muted/30 transition-colors"
+                >
                   <td className="px-5 py-3 font-medium">
                     {NOMBRES[rate.casa] ?? rate.nombre}
                   </td>
@@ -252,13 +279,22 @@ function VariantXL() {
           {rates.length === 0
             ? [1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
-                  <td className="px-5 py-3"><Pulse w="w-20" /></td>
-                  <td className="px-4 py-3 text-right"><Pulse w="w-16" /></td>
-                  <td className="px-5 py-3 text-right"><Pulse w="w-16" /></td>
+                  <td className="px-5 py-3">
+                    <Pulse w="w-20" />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Pulse w="w-16" />
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <Pulse w="w-16" />
+                  </td>
                 </tr>
               ))
             : rates.map((rate) => (
-                <tr key={rate.casa} className="hover:bg-muted/30 transition-colors">
+                <tr
+                  key={rate.casa}
+                  className="hover:bg-muted/30 transition-colors"
+                >
                   <td className="px-5 py-3 font-medium">
                     {NOMBRES[rate.casa] ?? rate.nombre}
                   </td>
@@ -278,12 +314,22 @@ function VariantXL() {
 
 // ── Export — variant via data._variant ("xs"|"sm"|"md"|"lg"|"xl") ─────────────
 
-export default function WidgetDolar({ data }: { data: Record<string, unknown> }) {
-  const variant = ((data._variant as string) ?? "md").toLowerCase();
+export default function WidgetDolar({
+  data,
+  variant,
+}: {
+  data: Record<string, unknown>;
+  variant?: "xs" | "sm" | "md" | "lg" | "xl";
+}) {
+  const finalVariant = (
+    variant ??
+    (data._variant as string) ??
+    "md"
+  ).toLowerCase();
 
-  if (variant === "xs") return <VariantXS />;
-  if (variant === "sm") return <VariantSM />;
-  if (variant === "lg") return <VariantLG />;
-  if (variant === "xl") return <VariantXL />;
+  if (finalVariant === "xs") return <VariantXS />;
+  if (finalVariant === "sm") return <VariantSM />;
+  if (finalVariant === "lg") return <VariantLG />;
+  if (finalVariant === "xl") return <VariantXL />;
   return <VariantMD />;
 }

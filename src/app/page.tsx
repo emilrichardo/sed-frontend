@@ -6,6 +6,7 @@ import { StatsCarousel } from "@/components/StatsCarousel";
 import { ResponsivePublicationCard } from "@/components/PublicationCard";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { DollarWidget } from "@/components/DollarWidget";
+import { HomeWidgetGroup } from "@/components/HomeWidgetGroup";
 import { MobileScrollTransition } from "@/components/MobileScrollTransition";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -35,16 +36,11 @@ export default async function Home() {
 
   return (
     <div className="w-full">
-      {/* ── Info Widgets: Clima + Dólar ── */}
-      <div className="py-2 overflow-x-auto scrollbar-hide">
-        <div className="flex items-center gap-2 min-w-max">
-          <WeatherWidget />
-          <DollarWidget />
-        </div>
-      </div>
-
       {/* ── Hero — compacts vertically on scroll ── */}
       <HomeHero />
+
+      {/* ── Finanzas Provinciales widgets ── */}
+      <HomeWidgetGroup />
 
       {/* ── Stats ticker ── */}
       <div className="-mx-4 md:-mx-8 border-b border-border">
@@ -117,7 +113,10 @@ export default async function Home() {
       </section>
 
       {/* ── Mobile scroll transition → Publicaciones ── */}
-      <MobileScrollTransition nextPage="/publicaciones" nextLabel="Publicaciones" />
+      <MobileScrollTransition
+        nextPage="/publicaciones"
+        nextLabel="Publicaciones"
+      />
     </div>
   );
 }

@@ -22,13 +22,28 @@ const LON = -64.2615;
 const API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weathercode,windspeed_10m&timezone=America%2FArgentina%2FBuenos_Aires`;
 
 function weatherInfo(code: number) {
-  if (code === 0) return { label: "Despejado", Icon: Sun, color: "text-yellow-500" };
-  if (code <= 3) return { label: "Parcialmente nublado", Icon: Cloud, color: "text-slate-400" };
-  if (code <= 48) return { label: "Nublado", Icon: Cloud, color: "text-slate-500" };
-  if (code <= 67) return { label: "Lluvia", Icon: CloudRain, color: "text-blue-500" };
-  if (code <= 77) return { label: "Nieve", Icon: CloudSnow, color: "text-blue-300" };
-  if (code <= 82) return { label: "Llovizna", Icon: CloudRain, color: "text-blue-400" };
-  if (code <= 99) return { label: "Tormenta", Icon: CloudLightning, color: "text-purple-500" };
+  if (code === 0)
+    return { label: "Despejado", Icon: Sun, color: "text-yellow-500" };
+  if (code <= 3)
+    return {
+      label: "Parcialmente nublado",
+      Icon: Cloud,
+      color: "text-slate-400",
+    };
+  if (code <= 48)
+    return { label: "Nublado", Icon: Cloud, color: "text-slate-500" };
+  if (code <= 67)
+    return { label: "Lluvia", Icon: CloudRain, color: "text-blue-500" };
+  if (code <= 77)
+    return { label: "Nieve", Icon: CloudSnow, color: "text-blue-300" };
+  if (code <= 82)
+    return { label: "Llovizna", Icon: CloudRain, color: "text-blue-400" };
+  if (code <= 99)
+    return {
+      label: "Tormenta",
+      Icon: CloudLightning,
+      color: "text-purple-500",
+    };
   return { label: "Variable", Icon: Cloud, color: "text-slate-400" };
 }
 
@@ -100,7 +115,9 @@ function VariantSM() {
         <>
           <span className="text-muted-foreground">·</span>
           <span className="font-bold tabular-nums">{data.temperature}°C</span>
-          <span className="text-muted-foreground hidden sm:inline">· {info?.label}</span>
+          <span className="text-muted-foreground hidden sm:inline">
+            · {info?.label}
+          </span>
         </>
       ) : (
         <Pulse w="w-12" />
@@ -174,9 +191,12 @@ function VariantLG() {
         {data ? (
           <>
             <p className="text-5xl font-bold tabular-nums tracking-tight">
-              {data.temperature}°<span className="text-2xl text-muted-foreground">C</span>
+              {data.temperature}°
+              <span className="text-2xl text-muted-foreground">C</span>
             </p>
-            <p className="text-sm text-muted-foreground font-medium">{info?.label}</p>
+            <p className="text-sm text-muted-foreground font-medium">
+              {info?.label}
+            </p>
           </>
         ) : (
           <div className="space-y-2 items-center flex flex-col">
@@ -212,7 +232,9 @@ function VariantXL() {
       : "from-muted/30 to-muted/10";
 
   return (
-    <div className={`bg-gradient-to-br ${gradientClass} border border-border rounded-xl overflow-hidden flex flex-col`}>
+    <div
+      className={`bg-gradient-to-br ${gradientClass} border border-border rounded-xl overflow-hidden flex flex-col`}
+    >
       <div className="px-6 pt-5 pb-2 flex items-start justify-between">
         <div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
@@ -223,9 +245,7 @@ function VariantXL() {
             Santiago del Estero, Argentina
           </p>
         </div>
-        {info && (
-          <info.Icon className={`h-8 w-8 ${info.color} opacity-60`} />
-        )}
+        {info && <info.Icon className={`h-8 w-8 ${info.color} opacity-60`} />}
       </div>
 
       <div className="px-6 py-6 flex items-end gap-4">
@@ -274,12 +294,22 @@ function VariantXL() {
 
 // ── Export — variant via data._variant ("xs"|"sm"|"md"|"lg"|"xl") ─────────────
 
-export default function WidgetClima({ data }: { data: Record<string, unknown> }) {
-  const variant = ((data._variant as string) ?? "md").toLowerCase();
+export default function WidgetClima({
+  data,
+  variant,
+}: {
+  data: Record<string, unknown>;
+  variant?: "xs" | "sm" | "md" | "lg" | "xl";
+}) {
+  const finalVariant = (
+    variant ??
+    (data._variant as string) ??
+    "md"
+  ).toLowerCase();
 
-  if (variant === "xs") return <VariantXS />;
-  if (variant === "sm") return <VariantSM />;
-  if (variant === "lg") return <VariantLG />;
-  if (variant === "xl") return <VariantXL />;
+  if (finalVariant === "xs") return <VariantXS />;
+  if (finalVariant === "sm") return <VariantSM />;
+  if (finalVariant === "lg") return <VariantLG />;
+  if (finalVariant === "xl") return <VariantXL />;
   return <VariantMD />;
 }

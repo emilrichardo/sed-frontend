@@ -20,7 +20,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
       <Navbar />
       <main
         className={`flex-1 w-full max-w-[1440px] mx-auto px-4 md:px-8 pb-20 md:pb-6 animate-in fade-in duration-500 ${
-          isDetailPage ? "pt-0 md:py-6" : "py-6"
+          isDetailPage ? "pt-0 md:py-2" : "py-2"
         }`}
       >
         {children}

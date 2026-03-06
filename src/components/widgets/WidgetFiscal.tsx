@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Loader2,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  Landmark,
-} from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, Landmark } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -287,9 +281,7 @@ function MonthRow({
         <p
           className={`text-muted-foreground font-mono tabular-nums ${compact ? "text-[9px]" : "text-[10px]"}`}
         >
-          {compact
-            ? fmtMShort(display.ingresos)
-            : fmtM(display.ingresos)}
+          {compact ? fmtMShort(display.ingresos) : fmtM(display.ingresos)}
         </p>
       </div>
     </div>
@@ -309,7 +301,9 @@ function VariantXS({ data, titulo }: { data: FiscalData; titulo: string }) {
       <Landmark className="h-3 w-3 text-primary shrink-0" />
       <span className="font-semibold shrink-0">{titulo}</span>
       <span className="text-muted-foreground shrink-0">
-        {pendingIngresos ? `Lo que va del ${data.yearLabel}` : data.month.nombre}
+        {pendingIngresos
+          ? `Lo que va del ${data.yearLabel}`
+          : data.month.nombre}
       </span>
       <div className="w-28 flex">
         <CompBar pct={pct} small />
@@ -549,10 +543,16 @@ function ErrorShell({ titulo }: { titulo: string }) {
 
 export default function WidgetFiscal({
   data,
+  variant,
 }: {
   data: Record<string, unknown>;
+  variant?: "xs" | "sm" | "md" | "lg" | "xl";
 }) {
-  const variant = ((data._variant as string) ?? "md").toLowerCase();
+  const finalVariant = (
+    variant ??
+    (data._variant as string) ??
+    "md"
+  ).toLowerCase();
   const titulo = (data.titulo as string) ?? "Finanzas Provinciales";
 
   const { data: fiscal, loading, error } = useFiscalData();
@@ -560,9 +560,9 @@ export default function WidgetFiscal({
   if (loading) return <LoadingShell titulo={titulo} />;
   if (error || !fiscal) return <ErrorShell titulo={titulo} />;
 
-  if (variant === "xs") return <VariantXS data={fiscal} titulo={titulo} />;
-  if (variant === "sm") return <VariantSM data={fiscal} titulo={titulo} />;
-  if (variant === "lg") return <VariantLG data={fiscal} titulo={titulo} />;
-  if (variant === "xl") return <VariantXL data={fiscal} titulo={titulo} />;
+  if (finalVariant === "xs") return <VariantXS data={fiscal} titulo={titulo} />;
+  if (finalVariant === "sm") return <VariantSM data={fiscal} titulo={titulo} />;
+  if (finalVariant === "lg") return <VariantLG data={fiscal} titulo={titulo} />;
+  if (finalVariant === "xl") return <VariantXL data={fiscal} titulo={titulo} />;
   return <VariantMD data={fiscal} titulo={titulo} />;
 }

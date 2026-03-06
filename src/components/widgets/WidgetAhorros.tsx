@@ -47,16 +47,24 @@ function VariantXS({ entry }: { entry: AhorroEntry }) {
 
   return (
     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card text-xs">
-      <span className="font-semibold">{entry.mes} {entry.anio}</span>
+      <span className="font-semibold">
+        {entry.mes} {entry.anio}
+      </span>
       <span className="text-muted-foreground">·</span>
-      <span className="font-mono font-bold tabular-nums">$ {fmtARS(entry.plazosFijos)}</span>
+      <span className="font-mono font-bold tabular-nums">
+        $ {fmtARS(entry.plazosFijos)}
+      </span>
       <span className="text-muted-foreground">·</span>
-      <span className={`flex items-center gap-1 font-bold tabular-nums ${text}`}>
+      <span
+        className={`flex items-center gap-1 font-bold tabular-nums ${text}`}
+      >
         <Arrow className="h-3 w-3 shrink-0" />
-        {sign}{fmtARS(entry.variacionMensual)}
+        {sign}
+        {fmtARS(entry.variacionMensual)}
       </span>
       <span className={`font-semibold tabular-nums ${text} opacity-80`}>
-        ({sign}{fmtPct(entry.porcentajeCaida)})
+        ({sign}
+        {fmtPct(entry.porcentajeCaida)})
       </span>
     </div>
   );
@@ -74,20 +82,29 @@ function VariantSM({ entry }: { entry: AhorroEntry }) {
       {/* Mes */}
       <div className="shrink-0">
         <p className="text-sm font-bold">{entry.mes}</p>
-        <p className="text-[10px] text-muted-foreground tabular-nums">{entry.anio}</p>
+        <p className="text-[10px] text-muted-foreground tabular-nums">
+          {entry.anio}
+        </p>
       </div>
 
       {/* Monto */}
       <div className="flex-1 text-right">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Monto</p>
-        <p className="text-sm font-mono font-bold tabular-nums">$ {fmtARS(entry.plazosFijos)}</p>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          Monto
+        </p>
+        <p className="text-sm font-mono font-bold tabular-nums">
+          $ {fmtARS(entry.plazosFijos)}
+        </p>
       </div>
 
       {/* Chip variación */}
-      <div className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${chip}`}>
+      <div
+        className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${chip}`}
+      >
         <Arrow className={`h-3.5 w-3.5 shrink-0 ${text}`} />
         <span className={`text-xs font-bold font-mono tabular-nums ${text}`}>
-          {sign}{fmtPct(entry.porcentajeCaida)}
+          {sign}
+          {fmtPct(entry.porcentajeCaida)}
         </span>
       </div>
     </div>
@@ -110,7 +127,10 @@ function VariantMD({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
             {titulo}
           </p>
           <p className="text-sm font-bold mt-0.5">
-            {entry.mes} <span className="text-muted-foreground font-normal">{entry.anio}</span>
+            {entry.mes}{" "}
+            <span className="text-muted-foreground font-normal">
+              {entry.anio}
+            </span>
           </p>
         </div>
         <PiggyBank className="h-4 w-4 text-muted-foreground/40 shrink-0" />
@@ -128,15 +148,20 @@ function VariantMD({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
 
       {/* Variación */}
       <div className="px-4 pb-4">
-        <div className={`flex items-center justify-between rounded-lg px-3 py-2.5 ${chip}`}>
+        <div
+          className={`flex items-center justify-between rounded-lg px-3 py-2.5 ${chip}`}
+        >
           <div className="flex items-center gap-2">
             <Arrow className={`h-4 w-4 shrink-0 ${text}`} />
-            <span className={`text-sm font-bold font-mono tabular-nums ${text}`}>
+            <span
+              className={`text-sm font-bold font-mono tabular-nums ${text}`}
+            >
               {sign} {fmtARS(entry.variacionMensual)}
             </span>
           </div>
           <span className={`text-base font-bold tabular-nums ${text}`}>
-            {sign}{fmtPct(entry.porcentajeCaida)}
+            {sign}
+            {fmtPct(entry.porcentajeCaida)}
           </span>
         </div>
         <p className="text-[10px] text-muted-foreground mt-1.5 uppercase tracking-wider">
@@ -163,7 +188,10 @@ function VariantLG({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
             {titulo}
           </p>
           <p className="text-base font-bold mt-0.5">
-            {entry.mes} <span className="text-muted-foreground font-normal">{entry.anio}</span>
+            {entry.mes}{" "}
+            <span className="text-muted-foreground font-normal">
+              {entry.anio}
+            </span>
           </p>
         </div>
         <PiggyBank className="h-5 w-5 text-muted-foreground/40 shrink-0 mt-0.5" />
@@ -181,15 +209,20 @@ function VariantLG({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
 
       {/* Variación */}
       <div className="px-5 py-4 space-y-1.5">
-        <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${chip}`}>
+        <div
+          className={`flex items-center justify-between rounded-xl px-4 py-3 ${chip}`}
+        >
           <div className="flex items-center gap-2.5">
             <Arrow className={`h-5 w-5 shrink-0 ${text}`} />
-            <span className={`text-base font-bold font-mono tabular-nums ${text}`}>
+            <span
+              className={`text-base font-bold font-mono tabular-nums ${text}`}
+            >
               {sign} {fmtARS(entry.variacionMensual)}
             </span>
           </div>
           <span className={`text-xl font-bold tabular-nums ${text}`}>
-            {sign}{fmtPct(entry.porcentajeCaida)}
+            {sign}
+            {fmtPct(entry.porcentajeCaida)}
           </span>
         </div>
         <p className="text-[10px] text-muted-foreground text-center uppercase tracking-wider">
@@ -217,7 +250,9 @@ function VariantXL({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
           </p>
           <p className="text-xl font-bold mt-1">
             {entry.mes}{" "}
-            <span className="text-muted-foreground text-base font-normal">{entry.anio}</span>
+            <span className="text-muted-foreground text-base font-normal">
+              {entry.anio}
+            </span>
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             Plazos fijos · Provincia de Santiago del Estero
@@ -240,20 +275,25 @@ function VariantXL({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
 
       {/* Variación */}
       <div className="mx-6 mb-5">
-        <div className={`flex items-center justify-between rounded-xl px-5 py-4 ${chip}`}>
+        <div
+          className={`flex items-center justify-between rounded-xl px-5 py-4 ${chip}`}
+        >
           <div className="flex items-center gap-3">
             <Arrow className={`h-6 w-6 shrink-0 ${text}`} />
             <div>
               <p className={`text-lg font-bold font-mono tabular-nums ${text}`}>
                 {sign} {fmtARS(entry.variacionMensual)}
               </p>
-              <p className={`text-[11px] uppercase tracking-wider ${text} opacity-70`}>
+              <p
+                className={`text-[11px] uppercase tracking-wider ${text} opacity-70`}
+              >
                 vs. mes anterior
               </p>
             </div>
           </div>
           <p className={`text-3xl font-bold tabular-nums ${text}`}>
-            {sign}{fmtPct(entry.porcentajeCaida)}
+            {sign}
+            {fmtPct(entry.porcentajeCaida)}
           </p>
         </div>
       </div>
@@ -263,10 +303,22 @@ function VariantXL({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
 
 // ── Export — variant via data._variant ───────────────────────────────────────
 
-export default function WidgetAhorros({ data }: { data: Record<string, unknown> }) {
-  const variant = ((data._variant as string) ?? "md").toLowerCase();
+export default function WidgetAhorros({
+  data,
+  variant,
+}: {
+  data: Record<string, unknown>;
+  variant?: "xs" | "sm" | "md" | "lg" | "xl";
+}) {
+  const finalVariant = (
+    variant ??
+    (data._variant as string) ??
+    "md"
+  ).toLowerCase();
   const titulo = (data.titulo as string) ?? "Ahorros Provinciales";
-  const entries = Array.isArray(data.entradas) ? (data.entradas as AhorroEntry[]) : [];
+  const entries = Array.isArray(data.entradas)
+    ? (data.entradas as AhorroEntry[])
+    : [];
   const entry = entries[0];
 
   if (!entry) {
@@ -277,9 +329,9 @@ export default function WidgetAhorros({ data }: { data: Record<string, unknown> 
     );
   }
 
-  if (variant === "xs") return <VariantXS entry={entry} />;
-  if (variant === "sm") return <VariantSM entry={entry} />;
-  if (variant === "lg") return <VariantLG entry={entry} titulo={titulo} />;
-  if (variant === "xl") return <VariantXL entry={entry} titulo={titulo} />;
+  if (finalVariant === "xs") return <VariantXS entry={entry} />;
+  if (finalVariant === "sm") return <VariantSM entry={entry} />;
+  if (finalVariant === "lg") return <VariantLG entry={entry} titulo={titulo} />;
+  if (finalVariant === "xl") return <VariantXL entry={entry} titulo={titulo} />;
   return <VariantMD entry={entry} titulo={titulo} />;
 }

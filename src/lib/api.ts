@@ -782,7 +782,7 @@ export async function getBulletins(
   } = {},
 ): Promise<PayloadResponse<Boletin>> {
   const { page = 1, limit = 10, sort = "-fecha_publicacion", where } = params;
-  let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}&depth=2`;
+  let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}&depth=2&draft=false`;
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
@@ -846,7 +846,7 @@ export async function getBulletin(
   // 1. Try direct ID fetch first
   try {
     const res = await apiFetch(
-      `/boletines/${idStr}`,
+      `/boletines/${idStr}?draft=false`,
       {
         next: { revalidate: 3600 },
       },
@@ -864,8 +864,8 @@ export async function getBulletin(
   // 2. Fallback: Search by slug or numero
   const isNumber = /^\d+$/.test(idStr);
   const query = isNumber
-    ? `?where[numero][equals]=${idStr}&sort=-createdAt`
-    : `?where[slug][equals]=${idStr}`;
+    ? `?where[numero][equals]=${idStr}&sort=-createdAt&draft=false`
+    : `?where[slug][equals]=${idStr}&draft=false`;
 
   const res = await apiFetch(
     `/boletines${query}`,
@@ -906,7 +906,7 @@ export async function getActosAdministrativos(
     depth = 1,
     authToken,
   } = params;
-  let queryString = `?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}`;
+  let queryString = `?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}&draft=false`;
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
