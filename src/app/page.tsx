@@ -48,8 +48,8 @@ export default async function Home() {
         <StatsCarousel counts={statCounts} />
       </div>
       {/* ── Hero — compacts vertically on scroll ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 -mx-4 md:-mx-8 ">
-        <HomeHero className="col-span-2" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3  md:-mx-8 ">
+        <HomeHero className="md:col-span-2" />
         {/* ── Finanzas Provinciales widgets ── */}
         <div className="col-span-1">
           <HomeWidgetGroup />

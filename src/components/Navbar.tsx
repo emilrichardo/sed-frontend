@@ -33,8 +33,8 @@ interface CategoryWithChildren extends Category {
 
 const navLinks = [
   { name: "Inicio", href: "/" },
-  { name: "Boletines", href: "/boletines" },
   { name: "Publicaciones", href: "/publicaciones" },
+  { name: "Boletines", href: "/boletines" },
 ];
 
 // ── Desktop category megamenu ───────────────────────────────────────────────
@@ -73,6 +73,16 @@ function DesktopCategoryDropdown({
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
+  const sortedCategories = [...categories].sort((a, b) => {
+    const aHasSubs =
+      a.children.length > 0 || a.slug === "finanzas-provinciales";
+    const bHasSubs =
+      b.children.length > 0 || b.slug === "finanzas-provinciales";
+    if (aHasSubs && !bHasSubs) return -1;
+    if (!aHasSubs && bHasSubs) return 1;
+    return 0;
+  });
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -90,37 +100,37 @@ function DesktopCategoryDropdown({
       </button>
 
       {open && (
-        <div className="fixed top-[60px] right-4 bg-background border border-border rounded-xl shadow-xl z-[60] overflow-hidden flex gap-0">
-          {categories.map((cat, idx) => (
-            <div key={cat.id} className="min-w-[200px]">
+        <div className="fixed top-[60px] right-4 bg-background border border-border rounded-xl shadow-xl z-[60] overflow-hidden grid grid-cols-2 gap-px w-[520px]">
+          {sortedCategories.map((cat, idx) => (
+            <div key={cat.id} className="bg-background">
               {/* Category heading */}
               <Link
                 href={`/categorias/${cat.slug}`}
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-muted/50 transition-colors group"
+                className="flex items-center justify-between gap-4 px-6 pt-5 pb-2 hover:bg-muted/50 transition-colors group"
               >
-                <span className="flex items-center gap-2.5">
-                  <span className="text-[10px] font-mono text-muted-foreground tabular-nums shrink-0">
+                <span className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-muted-foreground tabular-nums w-5 shrink-0">
                     {String(idx + 1).padStart(2, "0")}
                   </span>
-                  <span className="text-lg font-heading font-bold tracking-tight group-hover:text-primary transition-colors whitespace-nowrap">
+                  <span className="text-xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors whitespace-nowrap">
                     {cat.nombre}
                   </span>
                 </span>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>
 
-              {/* Subcategories */}
+              {/* Subcategories — aligned with category name (pl = px-6 + w-5 + gap-3) */}
               {(cat.children.length > 0 ||
                 cat.slug === "finanzas-provinciales") && (
-                <ul className="pb-3">
+                <ul className="pb-4">
                   {cat.slug === "finanzas-provinciales" && (
                     <>
                       <li>
                         <Link
                           href="/ingresos"
                           onClick={() => setOpen(false)}
-                          className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
+                          className="block pl-14 pr-6 py-1.5 text-base text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
                         >
                           Ingresos de la Provincia
                         </Link>
@@ -129,7 +139,7 @@ function DesktopCategoryDropdown({
                         <Link
                           href="/coparticipacion"
                           onClick={() => setOpen(false)}
-                          className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
+                          className="block pl-14 pr-6 py-1.5 text-base text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
                         >
                           Coparticipación
                         </Link>
@@ -143,7 +153,7 @@ function DesktopCategoryDropdown({
                         <Link
                           href={`/categorias/${sub.slug}`}
                           onClick={() => setOpen(false)}
-                          className="block px-5 py-1.5 text-sm text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
+                          className="block pl-14 pr-6 py-1.5 text-base text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
                         >
                           {sub.nombre}
                         </Link>
@@ -263,8 +273,8 @@ export function Navbar() {
   return (
     <>
       {/* ── Desktop Navbar ── */}
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 md:px-8">
+      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="w-full px-4 md:px-8">
           <div className="flex h-16 items-center gap-6">
             {/* Logo */}
             <Link href="/" className="shrink-0">

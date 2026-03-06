@@ -21,6 +21,7 @@ function buildStats(counts?: SiteStatCounts): StatItem[] {
       { label: "Datos Estadísticos", value: "48" },
       { label: "Informes", value: "85" },
       { label: "Departamentos", value: String(DEPTOS_SANTIAGO) },
+      { label: "Población", value: "1.000.000", suffix: "+" },
     ];
   }
 
@@ -82,8 +83,12 @@ export function StatsCarousel({ counts }: Props) {
   return (
     <div
       className="relative overflow-hidden py-4"
-      onMouseEnter={() => { isPausedRef.current = true; }}
-      onMouseLeave={() => { isPausedRef.current = false; }}
+      onMouseEnter={() => {
+        isPausedRef.current = true;
+      }}
+      onMouseLeave={() => {
+        isPausedRef.current = false;
+      }}
     >
       {/* Fade edges */}
       <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
@@ -97,7 +102,7 @@ export function StatsCarousel({ counts }: Props) {
         {allStats.map((stat, i) => (
           <div
             key={`${stat.label}-${i}`}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-border bg-card shrink-0 hover:bg-muted/50 transition-colors"
+            className="flex  flex-1 tems-center gap-3 px-4 py-2.5 rounded-xl border border-border bg-card shrink-0 hover:bg-muted/50 transition-colors"
           >
             <span className="text-xl md:text-2xl font-heading font-bold text-primary tabular-nums">
               {stat.value}
