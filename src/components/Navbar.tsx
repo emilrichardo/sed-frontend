@@ -34,8 +34,71 @@ interface CategoryWithChildren extends Category {
 const navLinks = [
   { name: "Inicio", href: "/" },
   { name: "Publicaciones", href: "/publicaciones" },
-  { name: "Boletines", href: "/boletines" },
 ];
+
+// ── Desktop boletín dropdown ────────────────────────────────────────────────
+function BoletinDropdown({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
+  const isActive = pathname.startsWith("/boletines");
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+          isActive ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        Boletín
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-2 right-0 bg-background border border-border rounded-xl shadow-xl z-[60] overflow-hidden min-w-[200px]">
+          <Link
+            href="/boletines/hoy"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group"
+          >
+            <Newspaper className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm font-semibold whitespace-nowrap">Boletín de hoy</span>
+          </Link>
+          <div className="border-t border-border" />
+          <Link
+            href="/boletines"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group"
+          >
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Archivo</span>
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Desktop category megamenu ───────────────────────────────────────────────
 function DesktopCategoryDropdown({
@@ -298,6 +361,8 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
+
+              <BoletinDropdown pathname={pathname} />
 
               {categoryTree.length > 0 && (
                 <DesktopCategoryDropdown
@@ -697,7 +762,7 @@ export function Navbar() {
           </span>
         </Link>
         <Link
-          href="/boletines"
+          href="/boletines/hoy"
           onClick={() => setMobileCatOpen(false)}
           className={`flex flex-col items-center gap-1 p-2 transition-colors ${
             pathname.startsWith("/boletines")
@@ -707,7 +772,7 @@ export function Navbar() {
         >
           <Newspaper className="h-5 w-5" />
           <span className="text-[10px] font-medium leading-none">
-            Boletines
+            Boletín
           </span>
         </Link>
         <button

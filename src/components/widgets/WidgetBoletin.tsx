@@ -54,7 +54,7 @@ function VariantSM({ b }: { b: Boletin }) {
       <div className="px-4 py-3 flex items-center justify-between border-b border-border/50">
         <div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-            Último Boletín Oficial
+            Boletín de hoy
           </p>
           <p className="text-sm font-bold mt-0.5">
             Nº {b.numero}
@@ -90,7 +90,7 @@ function VariantMD({ b }: { b: Boletin }) {
     >
       <div className="px-4 py-3 flex items-center justify-between border-b border-border/50">
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-          Último Boletín Oficial
+          Boletín de hoy
         </p>
         <Newspaper className="h-4 w-4 text-muted-foreground/40 shrink-0" />
       </div>
@@ -133,7 +133,7 @@ function VariantLG({ b }: { b: Boletin }) {
       <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-            Último Boletín Oficial
+            Boletín de hoy
           </p>
           <p className="text-base font-bold mt-0.5">
             {fmt(b.fecha_publicacion, { day: "numeric", month: "long", year: "numeric" })}
@@ -180,7 +180,7 @@ function VariantXL({ b }: { b: Boletin }) {
       <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-            Último Boletín Oficial
+            Boletín de hoy
           </p>
           <p className="text-xl font-bold mt-1">
             {fmt(b.fecha_publicacion, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}

@@ -1,7 +1,7 @@
 import React from "react";
 import { getBulletin, Boletin } from "@/lib/api";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { Archive } from "lucide-react";
 import BulletinActions from "@/components/BulletinActions";
 import BulletinEntriesLoader from "@/components/BulletinEntriesLoader";
 
@@ -47,22 +47,23 @@ export default async function BulletinDetailPage({
 
   return (
     <main className="container mx-auto px-4 py-8 space-y-8">
-      <Link
-        href="/boletines"
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Volver al archivo
-      </Link>
-
       <div className="pb-6 space-y-2">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-heading font-bold">
             Boletín Oficial Nº {bulletin.numero}
           </h1>
-          <span className="text-sm font-mono bg-muted px-3 py-1 rounded-full">
-            {bulletin.año_edicion}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-mono bg-muted px-3 py-1 rounded-full">
+              {bulletin.año_edicion}
+            </span>
+            <Link
+              href="/boletines"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary border border-border rounded-full px-3 py-1 transition-colors"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Archivo
+            </Link>
+          </div>
         </div>
         <p className="text-muted-foreground">
           Publicado el {formatDate(bulletin.fecha_publicacion)} •{" "}
