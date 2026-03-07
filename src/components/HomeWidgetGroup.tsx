@@ -3,8 +3,6 @@
 import React, { useEffect, useState } from "react";
 import WidgetFiscal from "@/components/widgets/WidgetFiscal";
 import WidgetAhorros from "@/components/widgets/WidgetAhorros";
-import WidgetClima from "@/components/widgets/WidgetClima";
-import WidgetDolar from "@/components/widgets/WidgetDolar";
 import WidgetBoletin from "@/components/widgets/WidgetBoletin";
 
 export function HomeWidgetGroup() {
@@ -33,11 +31,6 @@ export function HomeWidgetGroup() {
   return (
     <section className="">
       <div className="grid grid-cols-1 gap-3">
-        {/* Clima + Dólar stacked */}
-        <div className="grid grid-cols-2 gap-3">
-          <WidgetClima data={{}} variant="sm" />
-          <WidgetDolar data={{}} variant="sm" />
-        </div>
         {/* El Ahorro Provincial */}
         <WidgetAhorros data={ahorrosData} variant="sm" />
 

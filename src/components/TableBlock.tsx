@@ -962,7 +962,7 @@ export const TableBlock = ({
         <>
           <div className="overflow-x-auto w-full h-full flex-1">
             {showChart && (
-              <div className={isWidget ? "p-4 h-full" : "p-4 bg-card border-b"}>
+              <div className={isWidget ? "p-4 h-full" : "px-2 py-3 md:px-4 md:py-4 bg-card border-b"}>
                 <ChartRenderer
                   type={selectedChartType}
                   config={chartConfig}

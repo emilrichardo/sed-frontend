@@ -19,9 +19,11 @@ import {
   Share2,
   LayoutGrid,
   ChevronDown,
+  ChevronLeft,
   ArrowUpRight,
   Banknote,
   TrendingUp,
+  Settings,
 } from "lucide-react";
 import type { Category } from "@/lib/api";
 import { API_URL } from "@/lib/api";
@@ -553,35 +555,63 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* ── Mobile Top Bar (home + list pages only) ── */}
-      <div
-        className={`${isDetailPage ? "hidden" : ""} md:hidden sticky top-0 z-50 w-full h-14 bg-background/95 backdrop-blur flex items-center px-4 justify-between`}
-      >
-        {pathname.startsWith("/publicaciones") ? (
-          <span className="font-extrabold font-heading text-lg tracking-tight">
-            Publicaciones
-          </span>
-        ) : pathname.startsWith("/boletines") ? (
-          <span className="font-extrabold font-heading text-lg tracking-tight">
-            Boletines
-          </span>
-        ) : (
-          <Link href="/" className="shrink-0">
-            <Isotipo size={28} />
-          </Link>
-        )}
-
-        <div className="relative" ref={mobileMenuRef}>
-          <button
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title="Menú de usuario"
+      {/* ── Mobile Top Bar ── */}
+      {(() => {
+        const boletinDetail = pathname.match(/^\/boletines\/(?!hoy$)([^/]+)(?:\/.*)?$/);
+        const actoDetail = pathname.match(/^\/boletines\/([^/]+)\/(.+)$/);
+        return (
+          <div
+            className={`${isDetailPage ? "hidden" : ""} md:hidden sticky top-0 z-50 w-full h-14 bg-background/95 backdrop-blur flex items-center justify-between px-4`}
           >
-            <User className="h-5 w-5" />
-          </button>
+            {/* Left: logo / title / back */}
+            <div>
+              {actoDetail ? (
+                <Link
+                  href={`/boletines/${actoDetail[1]}`}
+                  className="flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5 shrink-0" />
+                  Boletín
+                </Link>
+              ) : boletinDetail ? (
+                <Link
+                  href="/boletines"
+                  className="flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5 shrink-0" />
+                  Boletines
+                </Link>
+              ) : pathname.startsWith("/publicaciones") ? (
+                <span className="font-extrabold font-heading text-lg tracking-tight">
+                  Publicaciones
+                </span>
+              ) : pathname.startsWith("/boletines") ? (
+                <span className="font-extrabold font-heading text-lg tracking-tight">
+                  Boletines
+                </span>
+              ) : (
+                <Link href="/" className="shrink-0">
+                  <Isologotipo height={30} animated={false} />
+                </Link>
+              )}
+            </div>
+            {/* Right: user menu button */}
+            <div ref={mobileMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen((v) => !v)}
+                className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <User className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
+      {/* ── Mobile User Menu dropdown ── */}
+      <div className="md:hidden">
           {userMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-md border border-border bg-background shadow-lg z-[70]">
+            <div className="fixed top-14 right-2 w-56 rounded-md border border-border bg-background shadow-lg z-[70]">
               {user ? (
                 <>
                   <div className="px-4 py-3 border-b border-border">
@@ -736,61 +766,69 @@ export function Navbar() {
             </div>
           )}
         </div>
-      </div>
 
       {/* ── Mobile Bottom Navigation ── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background flex items-center justify-around z-50 px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-        <Link
-          href="/"
-          onClick={() => setMobileCatOpen(false)}
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-            pathname === "/"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"
-          }`}
-        >
-          <Home className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">Inicio</span>
-        </Link>
-        <Link
-          href="/publicaciones"
-          onClick={() => setMobileCatOpen(false)}
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-            pathname.startsWith("/publicaciones")
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"
-          }`}
-        >
-          <FileText className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">
-            Publicaciones
-          </span>
-        </Link>
-        <Link
-          href="/boletines/hoy"
-          onClick={() => setMobileCatOpen(false)}
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-            pathname.startsWith("/boletines")
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"
-          }`}
-        >
-          <Newspaper className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">Boletín</span>
-        </Link>
-        <button
-          onClick={() => setMobileCatOpen((v) => !v)}
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-            mobileCatOpen
-              ? "text-primary"
-              : "text-muted-foreground hover:text-primary"
-          }`}
-        >
-          <LayoutList className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">
-            Categorías
-          </span>
-        </button>
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="flex items-center justify-around h-16 px-1">
+          {/* 1. Inicio */}
+          <Link
+            href="/"
+            onClick={() => { setMobileCatOpen(false); setUserMenuOpen(false); }}
+            className={`flex flex-col items-center gap-1 p-2 transition-colors ${
+              pathname === "/"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-[10px] font-medium leading-none">Inicio</span>
+          </Link>
+          {/* 2. Categorías */}
+          <button
+            onClick={() => { setMobileCatOpen((v) => !v); setUserMenuOpen(false); }}
+            className={`flex flex-col items-center gap-1 p-2 transition-colors ${
+              mobileCatOpen
+                ? "text-primary"
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <LayoutList className="h-5 w-5" />
+            <span className="text-[10px] font-medium leading-none">
+              Categorías
+            </span>
+          </button>
+          {/* 3. Publicaciones */}
+          <Link
+            href="/publicaciones"
+            onClick={() => { setMobileCatOpen(false); setUserMenuOpen(false); }}
+            className={`flex flex-col items-center gap-1 p-2 transition-colors ${
+              pathname.startsWith("/publicaciones")
+                ? "text-primary"
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <FileText className="h-5 w-5" />
+            <span className="text-[10px] font-medium leading-none">
+              Publicaciones
+            </span>
+          </Link>
+          {/* 4. Boletín hoy */}
+          <Link
+            href="/boletines/hoy"
+            onClick={() => { setMobileCatOpen(false); setUserMenuOpen(false); }}
+            className={`flex flex-col items-center gap-1 p-2 transition-colors ${
+              pathname.startsWith("/boletines")
+                ? "text-primary"
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <Newspaper className="h-5 w-5" />
+            <span className="text-[10px] font-medium leading-none">Boletín</span>
+          </Link>
+        </div>
       </div>
 
       {/* ── Mobile CategoryMenu Overlay ── */}

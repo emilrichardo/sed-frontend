@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 import { Wordmark } from "@/components/brand/Wordmark";
+import WidgetClima from "@/components/widgets/WidgetClima";
+import WidgetDolar from "@/components/widgets/WidgetDolar";
 
 /**
  * Hero section that compacts vertically as the user scrolls.
@@ -71,7 +73,10 @@ export function HomeHero({ className }: { className?: string }) {
             opacity: titleOpacity,
           }}
         >
-          <div style={{ width: "clamp(200px, 60vw, 580px)" }} className="mx-auto">
+          <div
+            style={{ width: "clamp(200px, 60vw, 580px)" }}
+            className="mx-auto"
+          >
             <Wordmark className="text-primary-foreground w-full" />
           </div>
         </div>
@@ -87,6 +92,13 @@ export function HomeHero({ className }: { className?: string }) {
           <p className="text-base md:text-lg text-primary-foreground/70 max-w-lg leading-relaxed mx-auto">
             Transparencia, análisis y acceso a datos públicos de la provincia.
           </p>
+        </div>
+      </div>
+
+      <div className="absolute flex gap-2 justify-between w-full bottom-4 inset-x-0 px-4 z-10 pointer-events-none transition-opacity duration-100">
+        <WidgetClima data={{}} variant="sm" />
+        <div className="flex justify-end hidden md:block">
+          <WidgetDolar data={{}} variant="sm" />
         </div>
       </div>
     </section>

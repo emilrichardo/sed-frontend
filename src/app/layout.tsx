@@ -1,7 +1,14 @@
 import { Source_Code_Pro, Inter } from "next/font/google";
 import localFont from "next/font/local";
+import type { Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 

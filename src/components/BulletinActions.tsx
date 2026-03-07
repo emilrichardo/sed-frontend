@@ -13,7 +13,7 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
   const router = useRouter();
   const [showFlipbook, setShowFlipbook] = React.useState(false);
 
-  if (!user || !bulletin.archivo_binario) return null;
+  if (!bulletin.archivo_binario) return null;
 
   const getPdfUrl = () => {
     let url = "";
@@ -93,17 +93,7 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
   return (
     <>
       <div className="flex flex-wrap gap-2 mt-4">
-        <ProcessingButton
-          relationTo="boletines"
-          relatedId={bulletin.id}
-          existingProcessingId={getExistingProcessingId()}
-          requiredAgentId="5"
-          hasExistingResults={
-            bulletin.status_procesamiento === "basic" ||
-            bulletin.status_procesamiento === "ai_enhanced"
-          }
-          className="bg-zinc-800 text-white hover:bg-zinc-700"
-        />
+        {/* Public buttons — visible to all users */}
         <button
           onClick={handleOpenOriginal}
           className="flex items-center gap-2 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors"
@@ -118,13 +108,29 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
           <BookOpen className="w-4 h-4" />
           Modo Lectura
         </button>
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 px-4 py-2 border border-destructive/50 text-destructive bg-background hover:bg-destructive/10 rounded-md text-sm font-medium transition-colors"
-        >
-          <Trash2 className="w-4 h-4" />
-          Eliminar
-        </button>
+        {/* Admin buttons — authenticated only */}
+        {user && (
+          <>
+            <ProcessingButton
+              relationTo="boletines"
+              relatedId={bulletin.id}
+              existingProcessingId={getExistingProcessingId()}
+              requiredAgentId="5"
+              hasExistingResults={
+                bulletin.status_procesamiento === "basic" ||
+                bulletin.status_procesamiento === "ai_enhanced"
+              }
+              className="bg-zinc-800 text-white hover:bg-zinc-700"
+            />
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-2 px-4 py-2 border border-destructive/50 text-destructive bg-background hover:bg-destructive/10 rounded-md text-sm font-medium transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar
+            </button>
+          </>
+        )}
       </div>
 
       <BulletinFlipbook

@@ -94,35 +94,50 @@ function VariantXS() {
   );
 }
 
-// ── SM — tres tipos inline ────────────────────────────────────────────────────
+// ── SM — marquesina con todas las cotizaciones ────────────────────────────────
 
 function VariantSM() {
   const { rates, error } = useDolar();
   if (error) return null;
-  const top3 = rates.slice(0, 3);
 
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card text-xs">
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs">
       <span className="font-bold uppercase tracking-wider text-muted-foreground text-[10px] shrink-0">
         USD
       </span>
-      {top3.length === 0 ? (
-        <>
-          {[1, 2, 3].map((i) => (
-            <Pulse key={i} w="w-16" />
-          ))}
-        </>
-      ) : (
-        top3.map((rate, i) => (
-          <span key={rate.casa} className="flex items-center gap-1.5 shrink-0">
-            {i > 0 && <span className="text-muted-foreground/50">·</span>}
-            <span className="text-muted-foreground capitalize">
-              {NOMBRES[rate.casa] ?? rate.nombre}
-            </span>
-            <span className="font-bold tabular-nums">{fmtARS(rate.venta)}</span>
-          </span>
-        ))
-      )}
+      <div className="overflow-hidden w-48">
+        {rates.length === 0 ? (
+          <div className="flex gap-2">
+            <Pulse w="w-14" />
+            <Pulse w="w-14" />
+          </div>
+        ) : (
+          <>
+            <style>{`
+              @keyframes dolar-ticker {
+                from { transform: translateX(0); }
+                to   { transform: translateX(-50%); }
+              }
+            `}</style>
+            <div
+              className="flex items-center whitespace-nowrap"
+              style={{ animation: "dolar-ticker 18s linear infinite" }}
+            >
+              {[...rates, ...rates].map((rate, i) => (
+                <span key={i} className="inline-flex items-center shrink-0">
+                  <span className="text-muted-foreground/40 mx-2">·</span>
+                  <span className="text-muted-foreground">
+                    {NOMBRES[rate.casa] ?? rate.nombre}
+                  </span>
+                  <span className="font-bold tabular-nums ml-1">
+                    {fmtARS(rate.venta)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
