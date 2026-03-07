@@ -13,7 +13,8 @@ interface Publication {
   id: number;
   titulo: string;
   slug: string;
-  contenido?: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contenido?: any;
 }
 
 type Phase = "idle" | "loading" | "titulares" | "content";
