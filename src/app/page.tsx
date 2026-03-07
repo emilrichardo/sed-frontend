@@ -57,7 +57,7 @@ export default async function Home() {
       </div>
 
       {/* ── Desktop horizontal category bar ── */}
-      <div className="-mx-4 md:-mx-8 border-b border-t border-border mt-4">
+      <div className="-mx-4 md:-mx-8. mt-4">
         <DesktopCategoryBar categories={categoryTree} />
       </div>
 

@@ -21,7 +21,7 @@ export function DesktopCategoryBar({ categories }: Props) {
   return (
     <nav
       aria-label="Categorías"
-      className="hidden md:grid gap-px overflow-x-auto scrollbar-none"
+      className="hidden md:grid gap-4 overflow-x-auto scrollbar-none"
       style={{ gridTemplateColumns: `repeat(${categories.length}, 1fr)` }}
     >
       {categories.map((cat, idx) => {
@@ -30,7 +30,7 @@ export function DesktopCategoryBar({ categories }: Props) {
           <Link
             key={cat.id}
             href={`/categorias/${cat.slug}`}
-            className={`group relative flex flex-col justify-between p-4 h-32 border-r border-border last:border-r-0 transition-colors ${
+            className={`group relative flex flex-col justify-between p-4 h-32 border-r border-border last:border-r-0 rounded-lg transition-colors ${
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "bg-card hover:bg-muted/50"
@@ -59,7 +59,9 @@ export function DesktopCategoryBar({ categories }: Props) {
             {/* Bottom: category name */}
             <span
               className={`text-base font-heading font-bold leading-tight tracking-tight transition-colors group-hover:text-primary ${
-                isActive ? "text-primary-foreground group-hover:text-primary-foreground" : ""
+                isActive
+                  ? "text-primary-foreground group-hover:text-primary-foreground"
+                  : ""
               }`}
             >
               {cat.nombre}

@@ -84,7 +84,7 @@ function NewsSlider({
     return (
       <div className="px-4 py-4">
         <p
-          className={`text-sm md:text-lg lg:text-xl font-semibold leading-snug line-clamp-3 transition-opacity duration-200 ${
+          className={`text-sm md:text-lg font-semibold leading-snug line-clamp-3 transition-opacity duration-200 ${
             visible ? "opacity-100" : "opacity-0"
           }`}
         >
