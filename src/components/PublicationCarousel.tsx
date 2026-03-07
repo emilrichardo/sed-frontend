@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ReportItem } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 
 interface PublicationCarouselProps {
   items: ReportItem[];
@@ -153,11 +154,15 @@ export function PublicationCarousel({
                       sizes="(max-width: 768px) 85vw, (max-width: 1024px) 45vw, 30vw"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/5 to-muted/20 flex items-center justify-center">
-                      <FileText
-                        className="h-10 w-10 text-muted-foreground/20"
-                        strokeWidth={1}
-                      />
+                    <div className="relative w-full h-full bg-primary flex items-center justify-center overflow-hidden">
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+                        <div className="aspect-square h-[200%]">
+                          <SunRaysAnimated fill cycleDuration={6} strokeColor="black" />
+                        </div>
+                      </div>
+                      <div className="relative z-10 flex items-center justify-center w-14 h-14 rounded-full bg-white">
+                        <FileText className="h-6 w-6 text-primary" strokeWidth={1.5} />
+                      </div>
                     </div>
                   )}
                   {rootCat && (

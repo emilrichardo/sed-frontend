@@ -12,6 +12,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import type { ReportItem } from "@/lib/api";
+import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 import { PublicationTableSlider } from "@/components/PublicationTableSlider";
 import { extractAllTablaBlocks, shouldShowChart } from "@/utils/publicacion";
 
@@ -194,16 +195,17 @@ function CompactVariant({
           />
         ) : (
           (() => {
-            const { Icon, label } = getTipoIcon(item.tipo_publicacion);
+            const { Icon } = getTipoIcon(item.tipo_publicacion);
             return (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-muted/60">
-                <Icon
-                  className="h-8 w-8 text-muted-foreground/25"
-                  strokeWidth={1}
-                />
-                <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted-foreground/40">
-                  {label}
-                </span>
+              <div className="absolute inset-0 bg-primary flex items-center justify-center overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+                  <div className="aspect-square h-[300%]">
+                    <SunRaysAnimated fill cycleDuration={6} strokeColor="black" />
+                  </div>
+                </div>
+                <div className="relative z-10 flex items-center justify-center w-10 h-10 rounded-full bg-white">
+                  <Icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
+                </div>
               </div>
             );
           })()
@@ -317,16 +319,17 @@ function WideVariant({
             </div>
           ) : (
             (() => {
-              const { Icon, label } = getTipoIcon(item.tipo_publicacion);
+              const { Icon } = getTipoIcon(item.tipo_publicacion);
               return (
-                <div className="flex flex-col items-center justify-center gap-4 p-12 bg-muted/20">
-                  <Icon
-                    className="h-20 w-20 text-muted-foreground/20"
-                    strokeWidth={1}
-                  />
-                  <span className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground/30">
-                    {label}
-                  </span>
+                <div className="relative w-full h-full bg-primary flex items-center justify-center overflow-hidden">
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+                    <div className="aspect-square h-[200%]">
+                      <SunRaysAnimated fill cycleDuration={6} strokeColor="black" />
+                    </div>
+                  </div>
+                  <div className="relative z-10 flex items-center justify-center w-20 h-20 rounded-full bg-white">
+                    <Icon className="h-9 w-9 text-primary" strokeWidth={1.5} />
+                  </div>
                 </div>
               );
             })()

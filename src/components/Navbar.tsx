@@ -374,14 +374,23 @@ export function Navbar() {
                 </Link>
               ))}
 
-              <BoletinDropdown pathname={pathname} />
-
               {categoryTree.length > 0 && (
                 <DesktopCategoryDropdown
                   categories={categoryTree}
                   pathname={pathname}
                 />
               )}
+
+              <BoletinDropdown pathname={pathname} />
+
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                title={isDark ? "Modo Claro" : "Modo Oscuro"}
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
 
               {/* User menu */}
               <div className="relative" ref={desktopMenuRef}>
@@ -597,14 +606,23 @@ export function Navbar() {
                 </Link>
               )}
             </div>
-            {/* Right: user menu button */}
-            <div ref={mobileMenuRef}>
+            {/* Right: theme toggle + user menu button */}
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => setUserMenuOpen((v) => !v)}
+                onClick={toggleTheme}
                 className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                title={isDark ? "Modo Claro" : "Modo Oscuro"}
               >
-                <User className="h-5 w-5" />
+                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
+              <div ref={mobileMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <User className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
