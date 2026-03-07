@@ -117,7 +117,14 @@ export default async function PublicationPage({ params }: PageProps) {
         publicationId={reportItem.id}
       >
         {/* Main Content */}
-        <NewsDetail initialData={reportItem} hideSources={true} />
+        <NewsDetail
+          initialData={reportItem}
+          hideSources={true}
+          childrenItems={children.map((c) => ({
+            titulo: c.titulo,
+            contenido: c.contenido,
+          }))}
+        />
 
         {(() => {
           const hasParentContent = hasRealContent(

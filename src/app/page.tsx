@@ -9,6 +9,7 @@ import { HomeHero } from "@/components/HomeHero";
 import { HomeCategorySection } from "@/components/HomeCategorySection";
 import { StatsCarousel } from "@/components/StatsCarousel";
 import { PublicationCarousel } from "@/components/PublicationCarousel";
+import { ResponsivePublicationCard } from "@/components/PublicationCard";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { DollarWidget } from "@/components/DollarWidget";
 import { HomeWidgetGroup } from "@/components/HomeWidgetGroup";
@@ -67,29 +68,39 @@ export default async function Home() {
       </div>
 
       {/* ── Informes Recientes ── */}
-      {reports.docs.length > 0 && (
-        <section className="py-8 md:py-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl md:text-2xl font-bold font-heading">
-              Informes Recientes
-            </h2>
-            <Link
-              href="/publicaciones"
-              className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
-            >
-              Ver más <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <PublicationCarousel
-            items={reports.docs.filter((pub) => {
-              const tp = pub.tipo_publicacion;
-              return typeof tp === "object" && tp !== null && "slug" in tp
-                ? tp.slug === "informes"
-                : String(tp) === "informes";
-            })}
-          />
-        </section>
-      )}
+      {(() => {
+        const informes = reports.docs.filter((pub) => {
+          const tp = pub.tipo_publicacion;
+          return typeof tp === "object" && tp !== null && "slug" in tp
+            ? tp.slug === "informes"
+            : String(tp) === "informes";
+        });
+        if (informes.length === 0) return null;
+        const [featured, ...rest] = informes;
+        return (
+          <section className="py-8 md:py-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl md:text-2xl font-bold font-heading">
+                Informes Recientes
+              </h2>
+              <Link
+                href="/publicaciones"
+                className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+              >
+                Ver más <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {/* Pinned latest publication */}
+            <div className="mb-6">
+              <ResponsivePublicationCard item={featured} showParent={false} />
+            </div>
+
+            {/* Rest in carousel */}
+            {rest.length > 0 && <PublicationCarousel items={rest} />}
+          </section>
+        );
+      })()}
 
       {/* ── Mobile scroll transition → Publicaciones ── */}
       <MobileScrollTransition

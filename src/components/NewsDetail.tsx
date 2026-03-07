@@ -6,17 +6,20 @@ import { EditContentButton } from "@/components/EditContentButton";
 import { SourcesSection } from "@/components/SourcesSection";
 import { hasRealContent } from "@/utils/publicacion";
 import { PublicationActions } from "@/components/PublicationActions";
+import { PublicationTextToSpeech } from "@/components/PublicationTextToSpeech";
 
 interface NewsDetailProps {
   initialData: NewsItem;
   hideSources?: boolean;
   isEmbedded?: boolean;
+  childrenItems?: Array<{ titulo: string; contenido: any }>;
 }
 
 export const NewsDetail: React.FC<NewsDetailProps> = ({
   initialData,
   hideSources = false,
   isEmbedded = false,
+  childrenItems = [],
 }) => {
   console.log(initialData);
   const hasContent = hasRealContent(initialData.contenido, initialData.layout);
@@ -111,9 +114,6 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
             })()}
 
             <EditContentButton collection="publicaciones" id={initialData.id} />
-            <div className="hidden md:block">
-              <PublicationActions title={initialData.titulo} publicationId={initialData.id} />
-            </div>
           </div>
         )}
 
@@ -124,6 +124,21 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
               src={initialData.imagen_destacada.url}
               alt={initialData.imagen_destacada.alt || initialData.titulo}
               className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* TTS (left) + Actions (right) — below image */}
+        {!isEmbedded && (
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4 border-t border-border">
+            <PublicationTextToSpeech
+              content={initialData.contenido}
+              title={initialData.titulo}
+              childrenItems={childrenItems}
+            />
+            <PublicationActions
+              title={initialData.titulo}
+              publicationId={initialData.id}
             />
           </div>
         )}
