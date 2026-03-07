@@ -26,6 +26,8 @@ import {
 import type { Category } from "@/lib/api";
 import { API_URL } from "@/lib/api";
 import { CategoryMenu } from "@/components/CategoryMenu";
+import { Isologotipo } from "@/components/brand/Isologotipo";
+import { Isotipo } from "@/components/brand/Isotipo";
 
 interface CategoryWithChildren extends Category {
   children: Category[];
@@ -41,7 +43,9 @@ function BoletinDropdown({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +58,9 @@ function BoletinDropdown({ pathname }: { pathname: string }) {
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
@@ -83,7 +89,9 @@ function BoletinDropdown({ pathname }: { pathname: string }) {
             className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group"
           >
             <Newspaper className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-sm font-semibold whitespace-nowrap">Boletín de hoy</span>
+            <span className="text-sm font-semibold whitespace-nowrap">
+              Boletín de hoy
+            </span>
           </Link>
           <div className="border-t border-border" />
           <Link
@@ -92,7 +100,9 @@ function BoletinDropdown({ pathname }: { pathname: string }) {
             className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group"
           >
             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Archivo</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              Archivo
+            </span>
           </Link>
         </div>
       )}
@@ -341,9 +351,7 @@ export function Navbar() {
           <div className="flex h-16 items-center gap-6">
             {/* Logo */}
             <Link href="/" className="shrink-0">
-              <span className="text-xl font-extrabold tracking-tight font-heading">
-                Santiago en Datos
-              </span>
+              <Isologotipo height={32} />
             </Link>
 
             {/* Nav links */}
@@ -558,11 +566,8 @@ export function Navbar() {
             Boletines
           </span>
         ) : (
-          <Link
-            href="/"
-            className="font-extrabold font-heading text-lg tracking-tight"
-          >
-            Santiago en Datos
+          <Link href="/" className="shrink-0">
+            <Isotipo size={28} />
           </Link>
         )}
 
@@ -771,9 +776,7 @@ export function Navbar() {
           }`}
         >
           <Newspaper className="h-5 w-5" />
-          <span className="text-[10px] font-medium leading-none">
-            Boletín
-          </span>
+          <span className="text-[10px] font-medium leading-none">Boletín</span>
         </Link>
         <button
           onClick={() => setMobileCatOpen((v) => !v)}

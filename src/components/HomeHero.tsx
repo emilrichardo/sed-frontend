@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { SunRaysAnimated } from "@/components/SunRaysAnimated";
+import { Wordmark } from "@/components/brand/Wordmark";
 
 /**
  * Hero section that compacts vertically as the user scrolls.
@@ -70,11 +71,9 @@ export function HomeHero({ className }: { className?: string }) {
             opacity: titleOpacity,
           }}
         >
-          <h1 className="text-[clamp(3rem,10vw,8rem)] font-heading font-bold leading-[0.9] tracking-tight">
-            Santiago
-            <br />
-            en Datos
-          </h1>
+          <div style={{ width: "clamp(200px, 60vw, 580px)" }} className="mx-auto">
+            <Wordmark className="text-primary-foreground w-full" />
+          </div>
         </div>
 
         <div
