@@ -13,7 +13,7 @@ interface Publication {
   id: number;
   titulo: string;
   slug: string;
-  contenido?: any;
+  contenido?: Record<string, unknown>;
 }
 
 type Phase = "idle" | "loading" | "titulares" | "content";
@@ -52,12 +52,9 @@ function SoundBars({ active }: { active: boolean }) {
 export function HomeRadioPlayer() {
   const [supported, setSupported] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
-  const [pubs, setPubs] = useState<Publication[]>([]);
-  const [pubIndex, setPubIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTitle, setCurrentTitle] = useState("");
   const [currentSlug, setCurrentSlug] = useState("");
-  const [voiceIndex, setVoiceIndex] = useState(0);
 
   // Refs to avoid stale closures in callbacks
   const pubsRef = useRef<Publication[]>([]);
@@ -69,8 +66,14 @@ export function HomeRadioPlayer() {
   const chunkIdxRef = useRef(0);
 
   useEffect(() => {
-    setSupported(typeof window !== "undefined" && "speechSynthesis" in window);
+    // Delay slightly to avoid synchronous setState during render cycle
+    const timer = setTimeout(() => {
+      setSupported(
+        typeof window !== "undefined" && "speechSynthesis" in window,
+      );
+    }, 0);
     return () => {
+      clearTimeout(timer);
       if (typeof window !== "undefined") speechSynthesis.cancel();
     };
   }, []);
@@ -84,6 +87,7 @@ export function HomeRadioPlayer() {
         "/api-proxy/publicaciones?limit=10&sort=-createdAt&depth=1&where[parent][exists]=false",
       );
       const data = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const docs: Publication[] = (data.docs || []).map((d: any) => ({
         id: d.id,
         titulo: d.titulo,
@@ -91,7 +95,6 @@ export function HomeRadioPlayer() {
         contenido: d.contenido,
       }));
       pubsRef.current = docs;
-      setPubs(docs);
       return docs;
     } catch {
       setPhase("idle");
@@ -139,8 +142,14 @@ export function HomeRadioPlayer() {
 
   // ── Phase runners ─────────────────────────────────────────────────────────────
 
-  const runTitulares = useCallback(
-    (docs: Publication[]) => {
+  const runPhase = (
+    phaseName: "titulares" | "content",
+    docs: Publication[],
+    idx: number = 0,
+  ) => {
+    if (!playingRef.current) return;
+
+    if (phaseName === "titulares") {
       phaseRef.current = "titulares";
       setPhase("titulares");
       setCurrentTitle("Titulares");
@@ -155,33 +164,24 @@ export function HomeRadioPlayer() {
       speakChunks(chunks, 0, () => {
         if (!playingRef.current) return;
         pubIdxRef.current = 0;
-        setPubIndex(0);
-        runContent(docs, 0);
+        runPhase("content", docs, 0);
       });
-    },
-    [speakChunks],
-  );
-
-  const runContent = useCallback(
-    (docs: Publication[], idx: number) => {
-      if (!playingRef.current) return;
+    } else {
+      // Content phase
       if (idx >= docs.length) {
         // Finished all — loop back to titulares
         pubIdxRef.current = 0;
-        setPubIndex(0);
-        runTitulares(docs);
+        runPhase("titulares", docs);
         return;
       }
 
       const pub = docs[idx];
       phaseRef.current = "content";
       setPhase("content");
-      setPubIndex(idx);
       setCurrentTitle(pub.titulo);
       setCurrentSlug(pub.slug);
 
       const vIdx = idx % Math.max(getSpanishVoices().length, 1);
-      setVoiceIndex(vIdx);
       voiceIdxRef.current = vIdx;
 
       const bodyText = extractLexicalText(pub.contenido?.root?.children || []);
@@ -192,57 +192,55 @@ export function HomeRadioPlayer() {
         if (!playingRef.current) return;
         // Small pause between publications
         setTimeout(() => {
-          if (playingRef.current) runContent(docs, idx + 1);
+          if (playingRef.current) runPhase("content", docs, idx + 1);
         }, 600);
       });
-    },
-    [speakChunks, runTitulares],
-  );
+    }
+  };
 
   // ── Controls ──────────────────────────────────────────────────────────────────
 
-  const play = useCallback(async () => {
+  const play = async () => {
     const docs = await loadPublications();
     if (docs.length === 0) return;
 
     speechSynthesis.cancel();
     playingRef.current = true;
     setIsPlaying(true);
-    runTitulares(docs);
-  }, [loadPublications, runTitulares]);
+    runPhase("titulares", docs);
+  };
 
-  const pause = useCallback(() => {
+  const pause = () => {
     speechSynthesis.pause();
     setIsPlaying(false);
     playingRef.current = false;
-  }, []);
+  };
 
-  const resume = useCallback(() => {
+  const resume = () => {
     speechSynthesis.resume();
     setIsPlaying(true);
     playingRef.current = true;
-  }, []);
+  };
 
-  const skip = useCallback(() => {
+  const skip = () => {
     if (!playingRef.current) return;
     speechSynthesis.cancel();
     const docs = pubsRef.current;
     const nextIdx = (pubIdxRef.current + 1) % docs.length;
     pubIdxRef.current = nextIdx;
-    setPubIndex(nextIdx);
     setTimeout(() => {
-      if (playingRef.current) runContent(docs, nextIdx);
+      if (playingRef.current) runPhase("content", docs, nextIdx);
     }, 50);
-  }, [runContent]);
+  };
 
-  const stop = useCallback(() => {
+  const stop = () => {
     speechSynthesis.cancel();
     playingRef.current = false;
     setIsPlaying(false);
     setPhase("idle");
     setCurrentTitle("");
     setCurrentSlug("");
-  }, []);
+  };
 
   const toggle = () => {
     if (phase === "idle") {

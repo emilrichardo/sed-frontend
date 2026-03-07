@@ -33,9 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [layoutMode, setLayoutModeState] = useState<"dashboard" | "web">(
-    "dashboard",
-  );
+  const [layoutMode, setLayoutModeState] = useState<"dashboard" | "web">("web");
   const router = useRouter();
 
   const openLoginModal = () => setIsLoginModalOpen(true);
