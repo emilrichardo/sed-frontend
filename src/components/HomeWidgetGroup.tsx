@@ -31,14 +31,14 @@ export function HomeWidgetGroup() {
   return (
     <section className="">
       <div className="grid grid-cols-1 gap-3">
+        {/* Último Boletín */}
+        <WidgetBoletin variant="md" />
+
         {/* El Ahorro Provincial */}
-        <WidgetAhorros data={ahorrosData} variant="sm" />
+        <WidgetAhorros data={ahorrosData} variant="md" />
 
         {/* Finanzas Provinciales */}
         <WidgetFiscal data={{ titulo: "Finanzas Provinciales" }} variant="md" />
-
-        {/* Último Boletín */}
-        <WidgetBoletin variant="md" />
       </div>
     </section>
   );

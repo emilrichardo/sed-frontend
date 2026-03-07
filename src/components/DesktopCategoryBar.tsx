@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import type { CategoryWithChildren } from "@/components/CategoryMenu";
+import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 
 interface Props {
   categories: CategoryWithChildren[];
@@ -30,19 +31,30 @@ export function DesktopCategoryBar({ categories }: Props) {
           <Link
             key={cat.id}
             href={`/categorias/${cat.slug}`}
-            className={`group relative flex flex-col justify-between p-4 h-32 border-r border-border last:border-r-0 rounded-lg transition-colors ${
+            className={`group relative flex flex-col justify-between p-4 h-32 border-r border-border last:border-r-0 rounded-lg overflow-hidden transition-colors ${
               isActive
                 ? "bg-primary text-primary-foreground"
-                : "bg-card hover:bg-muted/50"
+                : "bg-card hover:bg-primary hover:text-primary-foreground"
             }`}
           >
+            {/* Sun rays background — visible on hover (and always on active) */}
+            <div
+              className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+                isActive ? "opacity-20" : "opacity-0 group-hover:opacity-20"
+              }`}
+            >
+              <div className="aspect-square h-[200%]">
+                <SunRaysAnimated fill cycleDuration={6} strokeColor="black" />
+              </div>
+            </div>
+
             {/* Top row: number left, arrow right */}
-            <div className="flex items-start justify-between">
+            <div className="relative z-10 flex items-start justify-between">
               <span
                 className={`text-[11px] font-mono tabular-nums font-bold ${
                   isActive
                     ? "text-primary-foreground/60"
-                    : "text-muted-foreground"
+                    : "text-muted-foreground group-hover:text-primary-foreground/60"
                 }`}
               >
                 {String(idx + 1).padStart(2, "0")}
@@ -51,17 +63,17 @@ export function DesktopCategoryBar({ categories }: Props) {
                 className={`h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${
                   isActive
                     ? "text-primary-foreground/60"
-                    : "text-muted-foreground"
+                    : "text-muted-foreground group-hover:text-primary-foreground/60"
                 }`}
               />
             </div>
 
             {/* Bottom: category name */}
             <span
-              className={`text-base font-heading font-bold leading-tight tracking-tight transition-colors group-hover:text-primary ${
+              className={`relative z-10 text-base group-hover:text-lg font-heading font-bold leading-tight tracking-tight transition-all duration-200 ${
                 isActive
-                  ? "text-primary-foreground group-hover:text-primary-foreground"
-                  : ""
+                  ? "text-primary-foreground"
+                  : "group-hover:text-primary-foreground"
               }`}
             >
               {cat.nombre}

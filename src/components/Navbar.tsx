@@ -281,6 +281,7 @@ export function Navbar() {
 
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
 
   // Theme
   useEffect(() => {
@@ -325,7 +326,8 @@ export function Navbar() {
       const target = e.target as Node;
       const inDesktop = desktopMenuRef.current?.contains(target);
       const inMobile = mobileMenuRef.current?.contains(target);
-      if (!inDesktop && !inMobile) {
+      const inMobileDropdown = mobileDropdownRef.current?.contains(target);
+      if (!inDesktop && !inMobile && !inMobileDropdown) {
         setUserMenuOpen(false);
       }
     };
@@ -611,7 +613,7 @@ export function Navbar() {
       {/* ── Mobile User Menu dropdown ── */}
       <div className="md:hidden">
           {userMenuOpen && (
-            <div className="fixed top-14 right-2 w-56 rounded-md border border-border bg-background shadow-lg z-[70]">
+            <div ref={mobileDropdownRef} className="fixed top-14 right-2 w-56 rounded-md border border-border bg-background shadow-lg z-[70]">
               {user ? (
                 <>
                   <div className="px-4 py-3 border-b border-border">

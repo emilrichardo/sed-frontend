@@ -137,36 +137,40 @@ function VariantMD({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
       </div>
 
       {/* Monto */}
-      <div className="px-4 py-4">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
-          Monto acumulado
-        </p>
-        <p className="text-2xl font-bold font-mono tabular-nums">
-          $ {fmtARS(entry.plazosFijos)}
-        </p>
-      </div>
+      <div className="flex justify-between items-center">
+        <div className="px-4 py-4">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+            Monto acumulado
+          </p>
+          <p className="text-xl md:text-2xl font-bold font-mono tabular-nums">
+            $ {fmtARS(entry.plazosFijos)}
+          </p>
+        </div>
 
-      {/* Variación */}
-      <div className="px-4 pb-4">
-        <div
-          className={`flex items-center justify-between rounded-lg px-3 py-2.5 ${chip}`}
-        >
-          <div className="flex items-center gap-2">
-            <Arrow className={`h-4 w-4 shrink-0 ${text}`} />
+        {/* Variación */}
+        <div className="px-4 pb-4">
+          <div
+            className={`flex items-center justify-between rounded-lg px-2 md:px-3 py-2.5 ${chip}`}
+          >
+            <div className="flex items-center gap-2">
+              <Arrow className={`h-4 w-4 shrink-0 ${text}`} />
+              <span
+                className={`hidden  text-xs md:text-sm font-bold font-mono tabular-nums ${text}`}
+              >
+                {sign} {fmtARS(entry.variacionMensual)}
+              </span>
+            </div>
             <span
-              className={`text-sm font-bold font-mono tabular-nums ${text}`}
+              className={`text-xs md:text-base font-bold tabular-nums ${text}`}
             >
-              {sign} {fmtARS(entry.variacionMensual)}
+              {sign}
+              {fmtPct(entry.porcentajeCaida)}
             </span>
           </div>
-          <span className={`text-base font-bold tabular-nums ${text}`}>
-            {sign}
-            {fmtPct(entry.porcentajeCaida)}
-          </span>
+          <p className="text-[10px] text-muted-foreground mt-1.5 uppercase tracking-wider">
+            Variación mensual
+          </p>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5 uppercase tracking-wider">
-          Variación mensual
-        </p>
       </div>
     </div>
   );
