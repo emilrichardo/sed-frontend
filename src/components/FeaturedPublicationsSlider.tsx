@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Calendar, ArrowRight } from "lucide-react";
 import type { FlatPublication } from "./PublicationsList";
+import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 
 export interface FeaturedPublicationNode extends FlatPublication {
   children?: FlatPublication[];
@@ -15,9 +16,7 @@ interface Props {
 }
 
 export function FeaturedPublicationsSlider({ items }: Props) {
-  // To make it infinite, we clone items
-  // We'll add some clones at the end and start
-  const clonesCount = 2; // Number of clones on each side
+  const clonesCount = 2;
   const extendedItems = [
     ...items.slice(-clonesCount),
     ...items,
@@ -31,20 +30,15 @@ export function FeaturedPublicationsSlider({ items }: Props) {
 
   useEffect(() => {
     if (items.length <= 1) return;
-
     if (!isHovered) {
-      timerRef.current = setInterval(() => {
-        next();
-      }, 5000);
+      timerRef.current = setInterval(() => next(), 5000);
     }
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [items.length, isHovered]);
 
   const handleTransitionEnd = () => {
-    // Check if we reached the clones at the ends
     if (currentIndex >= items.length + clonesCount) {
       setIsTransitioning(false);
       setCurrentIndex(clonesCount);
@@ -56,10 +50,7 @@ export function FeaturedPublicationsSlider({ items }: Props) {
 
   useEffect(() => {
     if (!isTransitioning) {
-      // Small delay to allow React to update the position without transition, then re-enable transition
-      const frame = requestAnimationFrame(() => {
-        setIsTransitioning(true);
-      });
+      const frame = requestAnimationFrame(() => setIsTransitioning(true));
       return () => cancelAnimationFrame(frame);
     }
   }, [isTransitioning]);
@@ -67,40 +58,37 @@ export function FeaturedPublicationsSlider({ items }: Props) {
   if (items.length === 0) return null;
 
   const next = () => {
-    if (!isTransitioning) return;
-    setCurrentIndex((prev) => prev + 1);
+    if (isTransitioning) setCurrentIndex((p) => p + 1);
   };
-
   const prev = () => {
-    if (!isTransitioning) return;
-    setCurrentIndex((prev) => prev - 1);
+    if (isTransitioning) setCurrentIndex((p) => p - 1);
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        {items.length > 1 && (
-          <div className="flex gap-2">
-            <button
-              onClick={prev}
-              className="p-2 rounded-full border border-border bg-background hover:bg-muted transition-colors"
-              aria-label="Anterior"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={next}
-              className="p-2 rounded-full border border-border bg-background hover:bg-muted transition-colors"
-              aria-label="Siguiente"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </div>
+      {/* ── Nav controls ── */}
+      {items.length > 1 && (
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={prev}
+            className="p-2 rounded-full border border-border bg-background hover:bg-muted transition-colors"
+            aria-label="Anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={next}
+            className="p-2 rounded-full border border-border bg-background hover:bg-muted transition-colors"
+            aria-label="Siguiente"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
+      {/* ── Slider track ── */}
       <div
-        className="relative overflow-hidden"
+        className="relative"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -119,16 +107,17 @@ export function FeaturedPublicationsSlider({ items }: Props) {
               | { url?: string; alt?: string }
               | undefined;
             const imageUrl = img?.url;
+            const date = item.publishedDate || item.createdAt;
 
             return (
               <div
                 key={`${item.id}-${index}`}
-                className="shrink-0 w-full md:w-[calc((100%-32px)/1.3)]"
+                className="shrink-0 w-full md:w-[calc((100%-32px)/1.05)]"
               >
-                {/* Mobile: compact card (image top, text bottom) */}
+                {/* Mobile: image top, text bottom */}
                 <div className="md:hidden rounded-xl border border-border bg-card overflow-hidden">
                   <Link href={`/publicaciones/${item.slug}`} className="block">
-                    <div className="relative aspect-[16/9] bg-muted overflow-hidden">
+                    <div className="relative aspect-[16/9] overflow-hidden">
                       {imageUrl ? (
                         <Image
                           src={imageUrl}
@@ -139,7 +128,17 @@ export function FeaturedPublicationsSlider({ items }: Props) {
                           priority
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-muted" />
+                        <div className="relative w-full h-full bg-primary flex items-center justify-center overflow-hidden">
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+                            <div className="aspect-square h-[200%]">
+                              <SunRaysAnimated
+                                fill
+                                cycleDuration={6}
+                                strokeColor="black"
+                              />
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                     <div className="p-4 space-y-2">
@@ -151,11 +150,9 @@ export function FeaturedPublicationsSlider({ items }: Props) {
                       <h3 className="font-bold text-base leading-snug line-clamp-2 font-heading">
                         {item.titulo}
                       </h3>
-                      {(item.publishedDate || item.createdAt) && (
+                      {date && (
                         <p className="text-xs text-muted-foreground">
-                          {new Date(
-                            item.publishedDate || item.createdAt!,
-                          ).toLocaleDateString("es-AR", {
+                          {new Date(date).toLocaleDateString("es-AR", {
                             year: "numeric",
                             month: "short",
                           })}
@@ -165,51 +162,37 @@ export function FeaturedPublicationsSlider({ items }: Props) {
                   </Link>
                 </div>
 
-                {/* Desktop: hero overlay */}
-                <div className="hidden md:block relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm aspect-[21/9]">
-                  <div className="absolute inset-0 bg-muted">
-                    {imageUrl ? (
-                      <Image
-                        src={imageUrl}
-                        alt={img?.alt || item.titulo}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                        priority
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/10 to-muted" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-                  </div>
-
-                  <div className="absolute inset-0 flex flex-col justify-end p-10 space-y-4">
-                    <div className="max-w-3xl space-y-2">
+                {/* Desktop: horizontal split — text left (primary bg), image right */}
+                <div className="hidden md:flex rounded-2xl overflow-hidden border border-border shadow-sm min-h-[360px]">
+                  {/* Left: solid primary background + text */}
+                  <div className="flex-1 flex flex-col justify-between p-10 bg-primary text-primary-foreground">
+                    <div>
                       {item.parentTitle && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase tracking-widest backdrop-blur-sm">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white uppercase tracking-widest">
                           {item.parentTitle}
                         </span>
                       )}
-                      <h3 className="text-3xl font-extrabold font-heading leading-tight text-foreground tracking-tight line-clamp-2">
+                    </div>
+
+                    <div className="space-y-5 flex-1 flex flex-col justify-center py-6">
+                      <h3 className="text-3xl font-extrabold font-heading leading-tight tracking-tight text-white line-clamp-3">
                         <Link
                           href={`/publicaciones/${item.slug}`}
-                          className="hover:text-primary transition-colors"
+                          className="hover:opacity-80 transition-opacity"
                         >
                           {item.titulo}
                         </Link>
                       </h3>
-                    </div>
 
-                    {item.children && item.children.length > 0 && (
-                      <div className="py-2">
-                        <ul className="flex flex-wrap gap-x-6 gap-y-3">
+                      {item.children && item.children.length > 0 && (
+                        <ul className="flex flex-wrap gap-x-5 gap-y-2">
                           {item.children.slice(0, 3).map((child) => (
                             <li key={child.id}>
                               <Link
                                 href={`/publicaciones/${child.slug}`}
-                                className="group/item flex items-center gap-2 text-sm text-foreground/90 hover:text-primary transition-colors font-medium bg-background/40 backdrop-blur-md p-2.5 rounded-xl border border-white/10 shadow-sm"
+                                className="flex items-center gap-1.5 text-sm text-white/75 hover:text-white transition-colors"
                               >
-                                <ChevronRight className="h-4 w-4 text-primary shrink-0 group-hover/item:translate-x-0.5 transition-transform" />
+                                <ChevronRight className="h-3.5 w-3.5 text-white/50 shrink-0" />
                                 <span className="max-w-[200px] truncate">
                                   {child.titulo}
                                 </span>
@@ -217,36 +200,59 @@ export function FeaturedPublicationsSlider({ items }: Props) {
                             </li>
                           ))}
                           {item.children.length > 3 && (
-                            <li className="text-xs text-muted-foreground font-semibold self-center flex items-center">
-                              + {item.children.length - 3} secciones adicionales
+                            <li className="text-xs text-white/50 self-center">
+                              +{item.children.length - 3} más
                             </li>
                           )}
                         </ul>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                        {(item.publishedDate || item.createdAt) && (
-                          <>
-                            <Calendar className="h-4 w-4" />
-                            {new Date(
-                              item.publishedDate || item.createdAt!,
-                            ).toLocaleDateString("es-AR", {
-                              year: "numeric",
-                              month: "short",
-                            })}
-                          </>
-                        )}
-                      </div>
+                    <div className="flex items-center justify-between">
+                      {date && (
+                        <div className="flex items-center gap-1.5 text-xs text-white/50">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {new Date(date).toLocaleDateString("es-AR", {
+                            year: "numeric",
+                            month: "short",
+                          })}
+                        </div>
+                      )}
                       <Link
                         href={`/publicaciones/${item.slug}`}
-                        className="inline-flex items-center gap-3 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:scale-105"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-primary font-bold rounded-xl hover:bg-white/90 transition-all text-sm shadow-sm"
                       >
-                        Ver Informe Completo
-                        <ArrowRight className="h-5 w-5" />
+                        Ver Informe
+                        <ArrowRight className="h-4 w-4" />
                       </Link>
                     </div>
+                  </div>
+
+                  {/* Right: image */}
+                  <div className="w-[42%] shrink-0 relative overflow-hidden bg-primary/80">
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={img?.alt || item.titulo}
+                        fill
+                        unoptimized
+                        className="object-cover transition-transform duration-700 hover:scale-105"
+                        priority
+                        sizes="42vw"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-primary/60 flex items-center justify-center overflow-hidden">
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-30">
+                          <div className="aspect-square h-[200%]">
+                            <SunRaysAnimated
+                              fill
+                              cycleDuration={8}
+                              strokeColor="black"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -254,7 +260,7 @@ export function FeaturedPublicationsSlider({ items }: Props) {
           })}
         </div>
 
-        {/* Indicators */}
+        {/* Dot indicators */}
         {items.length > 1 && (
           <div className="flex justify-center gap-2 mt-4">
             {items.map((_, i) => (
@@ -283,7 +289,7 @@ export function FeaturedPublicationsSlider({ items }: Props) {
         }
         @media (min-width: 768px) {
           .slider-track {
-            --slides-visible: 1.3;
+            --slides-visible: 1;
           }
         }
       `}</style>

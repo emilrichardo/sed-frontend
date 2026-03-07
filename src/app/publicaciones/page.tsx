@@ -2,9 +2,8 @@ import { getReports } from "@/lib/api";
 import type { ReportItem } from "@/lib/api";
 import { PageHeader } from "@/components/PageHeader";
 import { BarChart } from "lucide-react";
-import { PublicationsList } from "@/components/PublicationsList";
 import type { FlatPublication } from "@/components/PublicationsList";
-import { FeaturedPublicationsSlider } from "@/components/FeaturedPublicationsSlider";
+import { PublicationsPageContent } from "@/components/PublicationsPageContent";
 import { MobileScrollTransition } from "@/components/MobileScrollTransition";
 
 export const revalidate = 60;
@@ -81,13 +80,11 @@ export default async function PublicationsArchivePage() {
         icon={BarChart}
       />
 
-      {featuredItems.length > 0 && (
-        <section className="animate-in fade-in slide-in-from-top-4 duration-700">
-          <FeaturedPublicationsSlider items={featuredItems} />
-        </section>
-      )}
-
-      <PublicationsList items={flatItems} allCategories={allCategories} />
+      <PublicationsPageContent
+        featuredItems={featuredItems}
+        flatItems={flatItems}
+        allCategories={allCategories}
+      />
 
       {/* ── Mobile scroll transition → Boletines ── */}
       <MobileScrollTransition nextPage="/boletines" nextLabel="Boletines" />
