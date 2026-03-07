@@ -5,6 +5,7 @@ import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 import { Wordmark } from "@/components/brand/Wordmark";
 import WidgetClima from "@/components/widgets/WidgetClima";
 import WidgetDolar from "@/components/widgets/WidgetDolar";
+import { HomeRadioPlayer } from "@/components/HomeRadioPlayer";
 
 /**
  * Hero section that compacts vertically as the user scrolls.
@@ -48,6 +49,10 @@ export function HomeHero({ className }: { className?: string }) {
         paddingBottom: `${padY}px`,
       }}
     >
+      <div className="absolute top-4 left-4 z-10">
+        <HomeRadioPlayer />
+      </div>
+
       {/* Sun animation — fades out on scroll */}
       <div
         className="pointer-events-none absolute inset-0 flex items-center justify-center transition-opacity duration-100"
@@ -95,8 +100,10 @@ export function HomeHero({ className }: { className?: string }) {
         </div>
       </div>
 
-      <div className="absolute flex gap-2 justify-between w-full bottom-4 inset-x-0 px-4 z-10 pointer-events-none transition-opacity duration-100">
-        <WidgetClima data={{}} variant="sm" />
+      <div className="absolute flex gap-2 items-end justify-between w-full bottom-4 inset-x-0 px-4 z-10 pointer-events-none transition-opacity duration-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <WidgetClima data={{}} variant="sm" />
+        </div>
         <div className="flex justify-end hidden md:block">
           <WidgetDolar data={{}} variant="sm" />
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Play, Pause, Square, Volume2 } from "lucide-react";
+import { extractLexicalText, splitIntoChunks, getSpanishVoices } from "@/utils/tts";
 
 interface Props {
   content: any; // Lexical root object
@@ -10,65 +11,8 @@ interface Props {
   childrenItems?: Array<{ titulo: string; contenido: any }>;
 }
 
-// ── Text extraction ───────────────────────────────────────────────────────────
-
-function extractText(nodes: any[]): string {
-  if (!Array.isArray(nodes)) return "";
-  const parts: string[] = [];
-
-  for (const node of nodes) {
-    if (!node) continue;
-
-    // Raw text leaf
-    if (typeof node.text === "string") {
-      if (node.text.trim()) parts.push(node.text);
-      continue;
-    }
-
-    // Skip blocks (charts, tables, uploads, horizontal rules)
-    if (["block", "upload", "horizontalrule"].includes(node.type)) continue;
-
-    if (node.children) {
-      const childText = extractText(node.children).trim();
-      if (!childText) continue;
-
-      switch (node.type) {
-        case "heading":
-        case "paragraph":
-          parts.push(childText + ".");
-          break;
-        case "listitem":
-          parts.push(childText + ",");
-          break;
-        case "quote":
-          parts.push(childText + ".");
-          break;
-        default:
-          parts.push(childText);
-      }
-    }
-  }
-
-  return parts.join(" ");
-}
-
-// Split long text into ~200-char sentence chunks so Chrome doesn't cut out
-function splitIntoChunks(text: string, maxLen = 200): string[] {
-  const sentences = text.match(/[^.!?,;]+[.!?,;]*/g) || [text];
-  const chunks: string[] = [];
-  let current = "";
-
-  for (const s of sentences) {
-    if ((current + s).length > maxLen && current) {
-      chunks.push(current.trim());
-      current = s;
-    } else {
-      current += s;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks;
-}
+// Re-export local alias for readability
+const extractText = (nodes: any[]) => extractLexicalText(nodes);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -98,16 +42,7 @@ export function PublicationTextToSpeech({ content, title, childrenItems = [] }: 
   useEffect(() => { speedRef.current = speed; }, [speed]);
 
   const getBestVoice = (): SpeechSynthesisVoice | null => {
-    const voices = speechSynthesis.getVoices();
-    return (
-      voices.find((v) => v.lang === "es-AR") ||
-      voices.find((v) => v.lang === "es-419") ||
-      voices.find((v) => v.lang === "es-MX") ||
-      voices.find((v) => v.lang === "es-CL") ||
-      voices.find((v) => v.lang.startsWith("es-")) ||
-      voices.find((v) => v.lang.startsWith("es")) ||
-      null
-    );
+    return getSpanishVoices()[0] ?? null;
   };
 
   const speakChunk = (index: number) => {
