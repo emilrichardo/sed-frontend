@@ -34,7 +34,7 @@ export function HomeWidgetGroup() {
     <section className="">
       <div className="grid grid-cols-1 gap-3">
         {/* Clima + Dólar stacked */}
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <WidgetClima data={{}} variant="sm" />
           <WidgetDolar data={{}} variant="sm" />
         </div>
