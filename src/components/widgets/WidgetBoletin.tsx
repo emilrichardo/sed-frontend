@@ -387,7 +387,7 @@ export default function WidgetBoletin({ variant = "sm" }: Props) {
         setBoletin(b);
         if (b && variant !== "xs" && variant !== "sm") {
           fetch(
-            `/api-proxy/actos-administrativos?where[boletin][equals]=${b.id}&limit=30&depth=0`,
+            `/api-proxy/actos-administrativos?where[boletin][equals]=${b.id}&where[titulo_periodistico][exists]=true&limit=30&depth=0`,
           )
             .then((r) => r.json())
             .then((actosData) => {
