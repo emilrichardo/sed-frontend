@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { SunRaysAnimated } from "@/components/SunRaysAnimated";
 import { Wordmark } from "@/components/brand/Wordmark";
 
-// March 25, 2026 at midnight Argentina time (UTC-3)
-const TARGET_DATE = new Date("2026-03-25T03:00:00Z");
+// March 26, 2026 at midnight Argentina time (UTC-3)
+const TARGET_DATE = new Date("2026-03-27T03:00:00Z");
 
 function getTimeLeft() {
   const diff = TARGET_DATE.getTime() - Date.now();
@@ -63,7 +63,7 @@ export default function ProximamentePage() {
 
         <div className="flex flex-col items-center gap-4 mt-2">
           <p className="text-xs font-mono uppercase tracking-[0.3em] text-primary-foreground/40">
-            Próximamente · 25 de marzo
+            Próximamente · 26 de marzo
           </p>
 
           <div className="flex items-start gap-4 md:gap-8">
