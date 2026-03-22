@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     const itemData = JSON.parse(jsonMetadata as string);
     const API_BASE_URL =
-      process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
+      process.env.PAYLOAD_API_URL || "http://localhost:3000";
 
     const authHeader = req.headers.get("Authorization");
 

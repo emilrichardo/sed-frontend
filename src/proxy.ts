@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-/**
- * Colecciones de Payload CMS que son públicas y de solo lectura.
- * Cualquier otro endpoint queda bloqueado — el servidor de origen
- * no es trazable desde el navegador del usuario.
- */
-// Lista blanca explícita — todo lo que no esté aquí devuelve 403.
+// Endpoints de autenticación — permitidos con métodos específicos
+const AUTH_RULES: { path: string; methods: string[] }[] = [
+  { path: "/api-proxy/users/login", methods: ["POST"] },
+  { path: "/api-proxy/users/logout", methods: ["POST"] },
+  { path: "/api-proxy/users/me", methods: ["GET"] },
+];
+
+// Colecciones públicas de solo lectura (GET únicamente).
 // users, media, payload-preferences, payload-jobs → BLOQUEADOS.
 const ALLOWED_COLLECTIONS = new Set([
   "taxonomias",
@@ -27,15 +29,18 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Solo GET permitido — ningún write puede pasar por el proxy
-  if (request.method !== "GET") {
-    return NextResponse.json(
-      { error: "Method not allowed" },
-      { status: 405 },
-    );
+  // Auth: rutas específicas con métodos específicos
+  for (const rule of AUTH_RULES) {
+    if (pathname === rule.path && rule.methods.includes(request.method)) {
+      return NextResponse.next();
+    }
   }
 
-  // Extraer nombre de colección del path
+  // Todo lo demás: solo GET + colección en whitelist
+  if (request.method !== "GET") {
+    return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
+  }
+
   const collection = pathname
     .replace("/api-proxy/", "")
     .split("/")[0]

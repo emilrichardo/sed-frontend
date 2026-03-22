@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     );
 
     const API_BASE_URL =
-      process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000";
+      process.env.PAYLOAD_API_URL || "http://localhost:3000";
     console.log(`Using API Base URL: ${API_BASE_URL}`);
 
     for (const file of files) {
