@@ -176,7 +176,7 @@ export async function getWidgets(
 ): Promise<PayloadResponse<WidgetItem>> {
   try {
     const res = await apiFetch(`/widgets?limit=${limit}&sort=-createdAt`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
     if (!res.ok) {
@@ -807,7 +807,7 @@ export async function getBulletins(
   }
 
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) {
       console.warn(
         `[getBulletins] Failed to fetch: ${res.status} ${res.statusText} - ${url}`,
