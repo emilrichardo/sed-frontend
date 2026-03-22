@@ -57,15 +57,23 @@ export default async function BulletinDetailPage({
 
   return (
     <main className="container mx-auto px-4 py-8 space-y-8">
-      <div className="pb-6 space-y-2">
+      <div className="pb-6 space-y-3">
+        {/* Top bar: metadata + actions */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h1 className="text-3xl font-heading font-bold">
-            Boletín Oficial Nº {bulletin.numero}
-          </h1>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-mono bg-muted px-3 py-1 rounded-full">
-              {bulletin.año_edicion}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+            <span className="font-mono font-medium text-foreground/70 text-xs bg-muted px-2.5 py-1 rounded-full">
+              Boletín Oficial Nº {bulletin.numero}
             </span>
+            <span>·</span>
+            <span>{formatDate(bulletin.fecha_publicacion)}</span>
+            {bulletin.cantidad_paginas && (
+              <>
+                <span>·</span>
+                <span>{bulletin.cantidad_paginas} páginas</span>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             {pdfUrl && <BulletinPdfActions pdfUrl={pdfUrl} />}
             <Link
               href="/boletines"
@@ -76,21 +84,6 @@ export default async function BulletinDetailPage({
             </Link>
           </div>
         </div>
-        <p className="text-muted-foreground">
-          Publicado el {formatDate(bulletin.fecha_publicacion)} •{" "}
-          {bulletin.cantidad_paginas} páginas
-        </p>
-
-        {bulletin.titulo_periodistico && (
-          <p className="text-xl md:text-2xl font-heading font-semibold leading-snug pt-2">
-            {bulletin.titulo_periodistico}
-          </p>
-        )}
-        {bulletin.resumen && (
-          <p className="text-muted-foreground leading-relaxed max-w-3xl">
-            {bulletin.resumen}
-          </p>
-        )}
 
         <BulletinActions bulletin={bulletin} />
 

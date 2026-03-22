@@ -5,8 +5,8 @@ import HTMLFlipBook from "react-pageflip";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Use locally served worker from public/ (no CDN dependency, no CORS issues)
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface BulletinFlipbookProps {
   pdfUrl: string;
@@ -14,11 +14,18 @@ interface BulletinFlipbookProps {
   isOpen: boolean;
 }
 
+// Route external PDF URLs through a same-origin proxy to avoid CORS issues
+function getProxiedUrl(url: string): string {
+  if (url.startsWith("/") || url.startsWith("blob:")) return url;
+  return `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
+}
+
 export default function BulletinFlipbook({
   pdfUrl,
   onClose,
   isOpen,
 }: BulletinFlipbookProps) {
+  const proxiedUrl = getProxiedUrl(pdfUrl);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const flipBookRef = useRef<any>(null);
@@ -112,7 +119,7 @@ export default function BulletinFlipbook({
           {pageWidth > 0 && (
             <div className="relative flex justify-center items-center">
               <Document
-                file={pdfUrl}
+                file={proxiedUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
                 loading={
                   <div className="text-white text-sm animate-pulse">

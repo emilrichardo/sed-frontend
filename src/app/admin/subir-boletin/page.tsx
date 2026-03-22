@@ -322,10 +322,7 @@ export default function UploadBulletinPage() {
       if (fecha_publicacion && number) {
         try {
           const slug = `${fecha_publicacion}-${number}`;
-          const authHeader = getAuthHeader();
-          const checkRes = await fetch(`/api/check-bulletin?slug=${slug}`, {
-            headers: authHeader ? { Authorization: authHeader } : undefined,
-          });
+          const checkRes = await fetch(`/api/check-bulletin?slug=${slug}`);
           if (checkRes.ok) {
             const checkJson = await checkRes.json();
             if (checkJson.docs && checkJson.docs.length > 0) {
@@ -472,14 +469,8 @@ export default function UploadBulletinPage() {
       formData.append("file", fileToUpload);
       formData.append("metadata", JSON.stringify(metadata));
 
-      const authHeader = getAuthHeader();
-      if (!authHeader) throw new Error("No hay sesión activa.");
-
       const response = await fetch("/api/manual-upload", {
         method: "POST",
-        headers: {
-          Authorization: authHeader,
-        },
         body: formData,
       });
 

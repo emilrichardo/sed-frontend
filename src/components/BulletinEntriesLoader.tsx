@@ -222,7 +222,19 @@ export default function BulletinEntriesLoader({
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Left: Journalistic acts */}
       <div className="w-full lg:flex-1 space-y-6">
-        <div className="flex items-center gap-2">
+        {/* Título y resumen del boletín */}
+        {bulletin.titulo_periodistico && (
+          <h1 className="text-3xl md:text-4xl font-heading font-bold leading-tight">
+            {bulletin.titulo_periodistico}
+          </h1>
+        )}
+        {bulletin.resumen && (
+          <p className="text-base text-muted-foreground leading-relaxed">
+            {bulletin.resumen}
+          </p>
+        )}
+
+        <div className="flex items-center gap-2 pt-2">
           <Newspaper className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-2xl font-heading font-bold tracking-tight">
             Versión Periodística
@@ -258,7 +270,7 @@ export default function BulletinEntriesLoader({
 
       {/* Right: PDF iframe */}
       {pdfUrl && (
-        <aside className="w-full lg:w-[42%] lg:sticky lg:top-24">
+        <aside className="w-full lg:w-[42%] lg:sticky lg:top-4">
           <div className="rounded-lg border overflow-hidden shadow-sm">
             <iframe
               src={`${pdfUrl}#toolbar=0&navpanes=0`}
