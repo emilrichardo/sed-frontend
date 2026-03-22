@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api-proxy/:path*",
-        destination: `${process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000"}/api/:path*`,
+        destination: `${(process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000").replace(/\/+$/, "")}/api/:path*`,
       },
     ];
   },
