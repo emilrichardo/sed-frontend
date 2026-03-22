@@ -108,7 +108,7 @@ function MonthBlock({
             >
               <span className="text-sm text-muted-foreground">
                 {CATEGORIA_LABELS[r.categoria] ??
-                  r.label.replace(/^.*? - /, "")}
+                  r.label?.replace(/^.*? - /, "") ?? r.categoria ?? ""}
               </span>
               <span className="text-sm font-mono tabular-nums">
                 {fmt(r.monto)}

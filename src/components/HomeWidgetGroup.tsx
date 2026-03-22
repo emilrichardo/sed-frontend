@@ -13,16 +13,16 @@ export function HomeWidgetGroup() {
   });
 
   useEffect(() => {
-    fetch(
-      "/api-proxy/widgets?where[nombre_widget][equals]=WidgetAhorros&limit=1&depth=3&sort=-updatedAt",
-    )
+    fetch("/api-proxy/ahorros?limit=1&sort=-createdAt&depth=1")
       .then((r) => r.json())
       .then((data) => {
         const doc = data.docs?.[0];
         if (doc) {
-          // Pass the full widget doc — WidgetAhorros reads data.entradas
-          // which Payload populates with resolved AhorroEntry records
-          setAhorrosData({ ...doc, _variant: "md" });
+          setAhorrosData({
+            titulo: "El Ahorro Provincial",
+            entradas: [doc],
+            _variant: "md",
+          });
         }
       })
       .catch(() => {});
@@ -35,7 +35,7 @@ export function HomeWidgetGroup() {
         <WidgetBoletin variant="md" />
 
         {/* El Ahorro Provincial */}
-        <WidgetAhorros data={ahorrosData} variant="md" />
+        <WidgetAhorros data={ahorrosData} variant="sm" />
 
         {/* Finanzas Provinciales */}
         <WidgetFiscal data={{ titulo: "Finanzas Provinciales" }} variant="md" />

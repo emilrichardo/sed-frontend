@@ -60,7 +60,12 @@ export function Footer() {
                   <span className="block font-medium text-foreground">
                     Email
                   </span>
-                  contacto@santiagoendatos.gob.ar
+                  <a
+                    href="mailto:contacto@santiagoendatos.com"
+                    className="hover:text-primary transition-colors"
+                  >
+                    contacto@santiagoendatos.com
+                  </a>
                 </div>
               </li>
               <li className="flex items-start gap-3">

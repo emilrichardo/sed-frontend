@@ -146,7 +146,16 @@ function MonthBlock({
                     className="hover:bg-muted/20 transition-colors"
                   >
                     <td className="px-5 py-3 font-medium whitespace-nowrap">
-                      {r.label}
+                      {r.label ||
+                        new Date(
+                          parseInt(r.anio),
+                          parseInt(r.mes) - 1,
+                          parseInt(r.dia),
+                        ).toLocaleDateString("es-AR", {
+                          weekday: "short",
+                          day: "2-digit",
+                          month: "short",
+                        })}
                     </td>
                     <td className="px-5 py-3 text-right font-mono text-muted-foreground">
                       {fmt(r.recursos_nacional || 0)}

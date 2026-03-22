@@ -463,6 +463,8 @@ export interface Boletin {
       )
     | null;
   cant_actos?: number;
+  titulo_periodistico?: string;
+  resumen?: string;
   procesamiento_asociado?: (string | Procesamiento)[] | null;
   imagen_destacada?: {
     id: number | string;
@@ -498,6 +500,12 @@ export interface ActoAdministrativo {
   nota_periodistica?: string;
   status_procesamiento?: string;
   destacado?: boolean;
+  es_relevante?: boolean;
+  opacidad_categoria?: "baja" | "media" | "alta";
+  organismo?: string;
+  beneficiario?: string;
+  monto?: number | null;
+  objeto_del_gasto?: string | null;
   entidades_relacionadas?: {
     id: number | string;
     nombre: string;
@@ -846,7 +854,7 @@ export async function getBulletin(
   // 1. Try direct ID fetch first
   try {
     const res = await apiFetch(
-      `/boletines/${idStr}?draft=false`,
+      `/boletines/${idStr}?draft=false&depth=2`,
       {
         next: { revalidate: 3600 },
       },
@@ -864,8 +872,8 @@ export async function getBulletin(
   // 2. Fallback: Search by slug or numero
   const isNumber = /^\d+$/.test(idStr);
   const query = isNumber
-    ? `?where[numero][equals]=${idStr}&sort=-createdAt&draft=false`
-    : `?where[slug][equals]=${idStr}&draft=false`;
+    ? `?where[numero][equals]=${idStr}&sort=-createdAt&draft=false&depth=2`
+    : `?where[slug][equals]=${idStr}&draft=false&depth=2`;
 
   const res = await apiFetch(
     `/boletines${query}`,

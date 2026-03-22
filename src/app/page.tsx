@@ -67,7 +67,7 @@ export default async function Home() {
         <HomeCategorySection categories={categoryTree} />
       </div>
 
-      {/* ── Informes Recientes ── */}
+      {/* ── Informes Recientes ── (mobile only) */}
       {(() => {
         const informes = reports.docs.filter((pub) => {
           const tp = pub.tipo_publicacion;
@@ -78,7 +78,7 @@ export default async function Home() {
         if (informes.length === 0) return null;
         const [featured, ...rest] = informes;
         return (
-          <section className="py-8 md:py-12">
+          <section className="py-8 md:hidden">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl md:text-2xl font-bold font-heading">
                 Informes Recientes

@@ -4,6 +4,14 @@ import Link from "next/link";
 import { Archive } from "lucide-react";
 import BulletinActions from "@/components/BulletinActions";
 import BulletinEntriesLoader from "@/components/BulletinEntriesLoader";
+import BulletinPdfActions from "@/components/BulletinPdfActions";
+
+function getBulletinPdfUrl(bulletin: Boletin): string | null {
+  if (!bulletin.archivo_binario) return null;
+  if (typeof bulletin.archivo_binario === "string") return null;
+  const media = bulletin.archivo_binario as { url?: string };
+  return media.url ?? null;
+}
 
 export default async function BulletinDetailPage({
   params,
@@ -36,6 +44,8 @@ export default async function BulletinDetailPage({
     );
   }
 
+  const pdfUrl = getBulletinPdfUrl(bulletin);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-AR", {
       timeZone: "UTC",
@@ -48,14 +58,15 @@ export default async function BulletinDetailPage({
   return (
     <main className="container mx-auto px-4 py-8 space-y-8">
       <div className="pb-6 space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <h1 className="text-3xl font-heading font-bold">
             Boletín Oficial Nº {bulletin.numero}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-mono bg-muted px-3 py-1 rounded-full">
               {bulletin.año_edicion}
             </span>
+            {pdfUrl && <BulletinPdfActions pdfUrl={pdfUrl} />}
             <Link
               href="/boletines"
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary border border-border rounded-full px-3 py-1 transition-colors"
@@ -69,6 +80,18 @@ export default async function BulletinDetailPage({
           Publicado el {formatDate(bulletin.fecha_publicacion)} •{" "}
           {bulletin.cantidad_paginas} páginas
         </p>
+
+        {bulletin.titulo_periodistico && (
+          <p className="text-xl md:text-2xl font-heading font-semibold leading-snug pt-2">
+            {bulletin.titulo_periodistico}
+          </p>
+        )}
+        {bulletin.resumen && (
+          <p className="text-muted-foreground leading-relaxed max-w-3xl">
+            {bulletin.resumen}
+          </p>
+        )}
+
         <BulletinActions bulletin={bulletin} />
 
         {bulletin.imagen_destacada?.url && (
@@ -86,7 +109,6 @@ export default async function BulletinDetailPage({
       </div>
 
       <div className="space-y-6">
-        {/* Fetch entries on the client because they may require auth token from localStorage */}
         <BulletinEntriesLoader bulletin={bulletin} />
       </div>
     </main>
