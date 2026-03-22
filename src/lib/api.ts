@@ -6,7 +6,9 @@ const BASE_URL = (
 export const API_URL = IS_SERVER ? `${BASE_URL}/api` : "/api-proxy";
 
 /**
- * Shared fetch wrapper to handle auth tokens and 401 redirects
+ * Shared fetch wrapper. Auth is handled via HttpOnly cookie (set by /api/auth/login).
+ * The cookie is sent automatically on same-origin requests; server-side callers
+ * that need to forward auth to Payload CMS should pass authToken explicitly.
  */
 async function apiFetch(
   endpoint: string,
@@ -14,13 +16,11 @@ async function apiFetch(
   authToken?: string,
 ) {
   const isClient = typeof window !== "undefined";
-  const token =
-    authToken || (isClient ? localStorage.getItem("payload-token") : null);
 
   const headers = {
     ...options.headers,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  } as any;
+    ...(authToken ? { Authorization: `JWT ${authToken}` } : {}),
+  } as Record<string, string>;
 
   if (
     options.body &&
@@ -31,37 +31,11 @@ async function apiFetch(
   }
 
   const url = endpoint.startsWith("http") ? endpoint : `${API_URL}${endpoint}`;
-  let res = await fetch(url, {
-    ...options,
-    headers,
-  });
+  const res = await fetch(url, { ...options, headers });
 
-  // Handle Auth Errors (401/403)
-  if ((res.status === 401 || res.status === 403) && isClient && token) {
-    console.warn(
-      `Unauthorized/Forbidden (${res.status}) - potentially stale token. clearing and retrying as guest.`,
-    );
-    // 1. Clear bad token
-    localStorage.removeItem("payload-token");
-    localStorage.removeItem("payload-user");
-
-    // 2. Retry without token
-    const { Authorization, ...retryHeaders } = headers;
-    const retryRes = await fetch(url, {
-      ...options,
-      headers: retryHeaders,
-    });
-
-    if (retryRes.ok) {
-      // 3a. Retry succeeded (resource was public) -> Return success
-      return retryRes;
-    } else {
-      // 3b. Retry failed (resource is private) -> Redirect to login
-      if (!window.location.pathname.includes("/login")) {
-        window.location.href = `/login?expired=true`;
-      }
-      return retryRes;
-    }
+  // Handle Auth Errors (401/403) on the client — dispatch event so AuthContext can react
+  if ((res.status === 401 || res.status === 403) && isClient) {
+    window.dispatchEvent(new Event("auth:unauthorized"));
   }
 
   return res;
@@ -1042,19 +1016,9 @@ export async function getTaxonomy<T>(collection: string): Promise<T[]> {
 export async function createBulletin(
   data: Partial<Boletin>,
 ): Promise<{ doc: Boletin; message: string }> {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("payload-token")
-      : null;
-
-  console.log("API: createBulletin - Token exists:", !!token);
-
   const res = await fetch(`${API_URL}/boletines`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
 

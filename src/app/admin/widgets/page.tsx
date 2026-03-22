@@ -395,13 +395,9 @@ export default function AdminWidgetsPage() {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem("payload-token");
       const res = await fetch(
         `${API_URL}/widgets?limit=100&sort=-createdAt&depth=2`,
-        {
-          cache: "no-store",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        },
+        { cache: "no-store" },
       );
 
       if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);

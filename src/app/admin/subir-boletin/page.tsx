@@ -74,15 +74,6 @@ export default function UploadBulletinPage() {
   const [activeTab, setActiveTab] = useState<"manual" | "drive">("manual");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Helpers ---
-  const getAuthHeader = () => {
-    const token = localStorage.getItem("payload-token");
-    if (token) {
-      return `Bearer ${token}`;
-    }
-    return null;
-  };
-
   // Redirect if not authorized
   if (!user) {
     return (
@@ -105,11 +96,6 @@ export default function UploadBulletinPage() {
       alert("Ingresa ID de Carpeta");
       return;
     }
-    const authHeader = getAuthHeader();
-    if (!authHeader) {
-      alert("Falta Auth (inicia sesión)");
-      return;
-    }
 
     setIsScanning(true);
     setScannedFiles([]);
@@ -117,10 +103,7 @@ export default function UploadBulletinPage() {
       const payload = { folderId };
       const res = await fetch("/api/drive-scan", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const json: { error?: string; files?: ScannedFile[] } = await res.json();
@@ -144,8 +127,6 @@ export default function UploadBulletinPage() {
 
   const handleSyncItem = async (index: number) => {
     const file = scannedFiles[index];
-    const authHeader = getAuthHeader();
-    if (!authHeader) return;
 
     // Update status to processing
     setScannedFiles((prev) =>
@@ -159,10 +140,7 @@ export default function UploadBulletinPage() {
 
       const res = await fetch("/api/drive-process-item", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -209,9 +187,6 @@ export default function UploadBulletinPage() {
 
   const handleSyncAll = async () => {
     if (scannedFiles.length === 0) return;
-    const authHeader = getAuthHeader();
-    if (!authHeader) return;
-
     setIsSyncing(true);
 
     for (let i = 0; i < scannedFiles.length; i++) {

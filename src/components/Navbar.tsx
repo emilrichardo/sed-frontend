@@ -26,7 +26,6 @@ import {
   Settings,
 } from "lucide-react";
 import type { Category } from "@/lib/api";
-import { API_URL } from "@/lib/api";
 import { CategoryMenu } from "@/components/CategoryMenu";
 import { Isologotipo } from "@/components/brand/Isologotipo";
 import { Isotipo } from "@/components/brand/Isotipo";
@@ -254,23 +253,9 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, logout, isEditing, toggleEditMode, openLoginModal } = useAuth();
 
-  // Enhanced logout that also calls the server endpoint
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem("payload-token");
-      if (token) {
-        await fetch(`${API_URL}/users/logout`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }).catch(() => {});
-      }
-    } finally {
-      logout();
-      setUserMenuOpen(false);
-    }
+  const handleLogout = () => {
+    logout(); // AuthContext calls /api/auth/logout (HttpOnly cookie) and redirects
+    setUserMenuOpen(false);
   };
 
   // On detail pages the inner nav takes over; hide the main mobile top bar

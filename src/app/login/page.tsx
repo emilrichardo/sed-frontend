@@ -3,7 +3,6 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { API_URL } from "@/lib/api";
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -21,34 +20,23 @@ function LoginContent() {
     setLoading(true);
 
     try {
-      // Assuming standard Payload CMS login endpoint for 'users' collection
-      const res = await fetch(`${API_URL}/users/login`, {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data.errors?.[0]?.message || "Error al iniciar sesión");
+        throw new Error(data.error || "Error al iniciar sesión");
       }
 
-      if (data.token && data.user) {
-        login(data.token, data.user);
+      if (data.user) {
+        login(data.user);
 
-        // Handle redirect
         const returnUrl = searchParams.get("returnUrl");
-        if (returnUrl) {
-          window.location.href = decodeURIComponent(returnUrl);
-        } else {
-          // If already on login page without returnUrl, go home
-          // But login function in AuthContext might only refresh.
-          // Let's force navigation to be sure.
-          window.location.href = "/";
-        }
+        window.location.href = returnUrl ? decodeURIComponent(returnUrl) : "/";
       } else {
         throw new Error("Respuesta inválida del servidor");
       }

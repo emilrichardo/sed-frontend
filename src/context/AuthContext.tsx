@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LoginModal } from "@/components/LoginModal";
-import { API_URL } from "@/lib/api";
 
 interface User {
   id: string;
@@ -13,7 +12,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (token: string, user: User) => void;
+  login: (user: User) => void;
   logout: () => void;
   isLoading: boolean;
   isEditing: boolean;
@@ -43,11 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleUnauthorized = () => {
       console.warn("Unauthorized event received. Clearing session.");
-      localStorage.removeItem("payload-token");
-      localStorage.removeItem("payload-user");
       setUser(null);
       setIsEditing(false);
       setIsLoginModalOpen(true);
+      // Clear the HttpOnly cookie via BFF
+      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     };
     window.addEventListener("auth:unauthorized", handleUnauthorized);
     return () => {
@@ -56,54 +55,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Check for existing session
-    const token = localStorage.getItem("payload-token");
-    const storedUser = localStorage.getItem("payload-user");
-
+    // Validate session via BFF (reads HttpOnly cookie server-side)
     const validateSession = async () => {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        const res = await fetch(`${API_URL}/users/me`, {
-          headers: {
-            Authorization: `JWT ${token}`,
-          },
-        });
-
+        const res = await fetch("/api/auth/me");
         if (res.ok) {
-          // Token is valid
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
+          const data = await res.json();
+          if (data.user) {
+            setUser(data.user);
             setIsEditing(true);
-          } else {
-            // Fallback: fetch user data if missing but token valid
-            const data = await res.json();
-            if (data.user) {
-              setUser(data.user);
-              localStorage.setItem("payload-user", JSON.stringify(data.user));
-              setIsEditing(true);
-            }
           }
-        } else {
-          // Token invalid/expired
-          console.warn(
-            "Session expired (validation check), logging out locally.",
-          );
-          localStorage.removeItem("payload-token");
-          localStorage.removeItem("payload-user");
-          setUser(null);
-          setIsEditing(false);
-          // Optional: router.push("/login") if you want to force them there
         }
       } catch (e) {
         console.error("Auth validation error", e);
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-          setIsEditing(true);
-        }
       } finally {
         setIsLoading(false);
       }
@@ -111,14 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     validateSession();
 
-    // Check for layout mode
-    const storedLayout = localStorage.getItem("layout-mode") as
-      | "dashboard"
-      | "web";
-    if (
-      storedLayout &&
-      (storedLayout === "dashboard" || storedLayout === "web")
-    ) {
+    // Layout mode stored in localStorage (not sensitive)
+    const storedLayout = localStorage.getItem("layout-mode") as "dashboard" | "web";
+    if (storedLayout === "dashboard" || storedLayout === "web") {
       setLayoutModeState(storedLayout);
     }
   }, []);
@@ -128,19 +87,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLayoutModeState(mode);
   };
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem("payload-token", token);
-    localStorage.setItem("payload-user", JSON.stringify(userData));
+  const login = (userData: User) => {
     setUser(userData);
     setIsEditing(true);
-    // Remove redirect so modal login stays on page
-    // router.push("/");
     router.refresh();
   };
 
-  const logout = () => {
-    localStorage.removeItem("payload-token");
-    localStorage.removeItem("payload-user");
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
     setUser(null);
     setIsEditing(false);
     router.push("/");

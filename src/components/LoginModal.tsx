@@ -12,8 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
-import { API_URL } from "@/lib/api";
-
 export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, login } = useAuth();
   const [email, setEmail] = useState("");
@@ -27,48 +25,21 @@ export function LoginModal() {
     setError("");
 
     try {
-      // Assuming Next.js route or direct Payload API
-      const res = await fetch(`${API_URL}/users/login`, {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Paylaod CMS login expects 'email' and 'password' normally
         body: JSON.stringify({ email, password }),
       });
 
-      let data;
-      try {
-        const text = await res.text();
-        try {
-          data = JSON.parse(text);
-        } catch {
-          // If response is not JSON (e.g. 500 error page), throw
-          throw new Error(
-            res.status === 500
-              ? "Error interno del servidor (500). Es posible que necesites reiniciar el backend."
-              : `Error del servidor (${res.status}): ${text.substring(0, 50)}...`,
-          );
-        }
-      } catch (parseErr: unknown) {
-        const message =
-          parseErr instanceof Error
-            ? parseErr.message
-            : "Respuesta inválida del servidor";
-        throw new Error(message);
-      }
+      const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.token && data.user) {
-        // Successful login
-        login(data.token, data.user);
+      if (res.ok && data.user) {
+        login(data.user);
         closeLoginModal();
-        // Clear fields
         setPassword("");
         setEmail("");
       } else {
-        // Handle error
-        // Payload errors are often in 'errors' array or just 'message'
-        const msg =
-          data.errors?.[0]?.message || data.message || "Credenciales inválidas";
-        setError(msg);
+        setError(data.error || "Credenciales inválidas");
       }
     } catch (err: unknown) {
       console.error(err);
