@@ -1,40 +1,52 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+/**
+ * Colecciones de Payload CMS que son públicas y de solo lectura.
+ * Cualquier otro endpoint queda bloqueado — el servidor de origen
+ * no es trazable desde el navegador del usuario.
+ */
+const ALLOWED_COLLECTIONS = new Set([
+  "taxonomias",
+  "publicaciones",
+  "boletines",
+  "actos-administrativos",
+  "coparticipacion",
+  "ingresos",
+  "ahorros",
+  "widgets",
+  "agentes",
+  "globals",
+]);
+
 export function proxy(request: NextRequest) {
-  const isComingSoon = process.env.COMINGSOON === "true";
+  const { pathname } = request.nextUrl;
 
-  if (!isComingSoon) return NextResponse.next();
-
-  const { pathname, searchParams } = request.nextUrl;
-
-  // Allow access if ?public=true is in the URL — set a cookie and strip the param
-  if (searchParams.get("public") === "true") {
-    const url = request.nextUrl.clone();
-    url.searchParams.delete("public");
-    const response = NextResponse.redirect(url);
-    response.cookies.set("sed_preview", "1", { path: "/", maxAge: 60 * 60 * 24 });
-    return response;
-  }
-
-  // Allow access if the preview cookie is set
-  if (request.cookies.get("sed_preview")?.value === "1") {
+  if (!pathname.startsWith("/api-proxy/")) {
     return NextResponse.next();
   }
 
-  // Don't redirect the coming soon page itself or system paths
-  if (
-    pathname.startsWith("/proximamente") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.match(/\.(ico|png|jpg|jpeg|svg|webp|css|js|woff|woff2|ttf|otf)$/)
-  ) {
-    return NextResponse.next();
+  // Solo GET permitido — ningún write puede pasar por el proxy
+  if (request.method !== "GET") {
+    return NextResponse.json(
+      { error: "Method not allowed" },
+      { status: 405 },
+    );
   }
 
-  return NextResponse.redirect(new URL("/proximamente", request.url));
+  // Extraer nombre de colección del path
+  const collection = pathname
+    .replace("/api-proxy/", "")
+    .split("/")[0]
+    .split("?")[0];
+
+  if (!ALLOWED_COLLECTIONS.has(collection)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: "/api-proxy/:path*",
 };
