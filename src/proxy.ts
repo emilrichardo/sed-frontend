@@ -6,6 +6,8 @@ import type { NextRequest } from "next/server";
  * Cualquier otro endpoint queda bloqueado — el servidor de origen
  * no es trazable desde el navegador del usuario.
  */
+// Lista blanca explícita — todo lo que no esté aquí devuelve 403.
+// users, media, payload-preferences, payload-jobs → BLOQUEADOS.
 const ALLOWED_COLLECTIONS = new Set([
   "taxonomias",
   "publicaciones",
@@ -15,7 +17,6 @@ const ALLOWED_COLLECTIONS = new Set([
   "ingresos",
   "ahorros",
   "widgets",
-  "agentes",
   "globals",
 ]);
 

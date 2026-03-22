@@ -1,7 +1,8 @@
 const IS_SERVER = typeof window === "undefined";
+// PAYLOAD_API_URL sin prefijo NEXT_PUBLIC_ → nunca se incrusta en el bundle JS
 const BASE_URL = (
-  process.env.NEXT_PUBLIC_PAYLOAD_API_URL || "http://localhost:3000"
-).replace(/\/+$/, ""); // strip trailing slashes
+  process.env.PAYLOAD_API_URL || "http://localhost:3000"
+).replace(/\/+$/, "");
 export const API_URL = IS_SERVER ? `${BASE_URL}/api` : "/api-proxy";
 
 /**
