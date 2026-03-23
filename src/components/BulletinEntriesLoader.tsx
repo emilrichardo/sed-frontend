@@ -19,10 +19,8 @@ function getPdfUrl(bulletin: Boletin): string | null {
   if (!bulletin.archivo_binario) return null;
   if (typeof bulletin.archivo_binario === "string") return null;
   const media = bulletin.archivo_binario as { url?: string; filename?: string };
-  const raw = media.url ?? null;
-  if (!raw) return null;
-  // Route through same-origin proxy to avoid CORS / X-Frame-Options issues with Supabase
-  return `/api/pdf-proxy?url=${encodeURIComponent(raw)}`;
+  // Return raw URL — iframes don't have CORS restrictions so can load cross-origin PDFs directly.
+  return media.url ?? null;
 }
 
 export default function BulletinEntriesLoader({
