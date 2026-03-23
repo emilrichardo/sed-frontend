@@ -6,6 +6,25 @@ const BASE_URL = (
 export const API_URL = IS_SERVER ? `${BASE_URL}/api` : "/api-proxy";
 
 /**
+ * Rewrite PDF/media URLs from the internal Supabase host to a public host.
+ * Set PDF_HOST_OVERRIDE=cms-sed.server.neuraz.io in Vercel env vars if the
+ * internal Supabase host (api-sed.server.neuraz.io) is not publicly accessible.
+ * Example nginx: proxy_pass Supabase storage through the CMS domain.
+ */
+export function resolvePdfUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const override = process.env.PDF_HOST_OVERRIDE;
+  if (!override) return url;
+  try {
+    const u = new URL(url);
+    u.hostname = override;
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+/**
  * Shared fetch wrapper. Auth is handled via HttpOnly cookie (set by /api/auth/login).
  * The cookie is sent automatically on same-origin requests; server-side callers
  * that need to forward auth to Payload CMS should pass authToken explicitly.

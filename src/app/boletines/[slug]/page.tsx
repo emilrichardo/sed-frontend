@@ -1,5 +1,5 @@
 import React from "react";
-import { getBulletin, Boletin } from "@/lib/api";
+import { getBulletin, Boletin, resolvePdfUrl } from "@/lib/api";
 import Link from "next/link";
 import { Archive } from "lucide-react";
 import BulletinActions from "@/components/BulletinActions";
@@ -10,7 +10,7 @@ function getBulletinPdfUrl(bulletin: Boletin): string | null {
   if (!bulletin.archivo_binario) return null;
   if (typeof bulletin.archivo_binario === "string") return null;
   const media = bulletin.archivo_binario as { url?: string };
-  return media.url ?? null;
+  return resolvePdfUrl(media.url);
 }
 
 export default async function BulletinDetailPage({
@@ -102,7 +102,7 @@ export default async function BulletinDetailPage({
       </div>
 
       <div className="space-y-6">
-        <BulletinEntriesLoader bulletin={bulletin} />
+        <BulletinEntriesLoader bulletin={bulletin} resolvedPdfUrl={pdfUrl} />
       </div>
     </main>
   );

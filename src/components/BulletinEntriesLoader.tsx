@@ -13,23 +13,26 @@ import { cn } from "@/lib/utils";
 
 interface BulletinEntriesLoaderProps {
   bulletin: Boletin;
+  /** Pre-resolved PDF URL from the server component (hostname rewritten if PDF_HOST_OVERRIDE is set) */
+  resolvedPdfUrl?: string | null;
 }
 
 function getPdfUrl(bulletin: Boletin): string | null {
   if (!bulletin.archivo_binario) return null;
   if (typeof bulletin.archivo_binario === "string") return null;
   const media = bulletin.archivo_binario as { url?: string; filename?: string };
-  // Return raw URL — iframes don't have CORS restrictions so can load cross-origin PDFs directly.
   return media.url ?? null;
 }
 
 export default function BulletinEntriesLoader({
   bulletin,
+  resolvedPdfUrl,
 }: BulletinEntriesLoaderProps) {
   const [entries, setEntries] = useState<ActoAdministrativo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pdfUrl = getPdfUrl(bulletin);
+  // Prefer server-resolved URL (has PDF_HOST_OVERRIDE applied); fall back to client-computed
+  const pdfUrl = resolvedPdfUrl ?? getPdfUrl(bulletin);
 
   useEffect(() => {
     async function loadEntries() {
