@@ -19,9 +19,10 @@ function getPdfUrl(bulletin: Boletin): string | null {
   if (!bulletin.archivo_binario) return null;
   if (typeof bulletin.archivo_binario === "string") return null;
   const media = bulletin.archivo_binario as { url?: string; filename?: string };
-  // Prefer the URL stored in the media object — it points to the correct
-  // Supabase instance for the current environment.
-  return media.url ?? null;
+  const raw = media.url ?? null;
+  if (!raw) return null;
+  // Route through same-origin proxy to avoid CORS / X-Frame-Options issues with Supabase
+  return `/api/pdf-proxy?url=${encodeURIComponent(raw)}`;
 }
 
 export default function BulletinEntriesLoader({
@@ -125,7 +126,7 @@ export default function BulletinEntriesLoader({
     return (
       <div className="rounded-lg border overflow-hidden shadow-sm">
         <iframe
-          src={`${pdfUrl}#toolbar=0&navpanes=0`}
+          src={pdfUrl}
           title={`Boletín Oficial Nº ${bulletin.numero}`}
           className="w-full"
           style={{ height: "85vh" }}
@@ -273,7 +274,7 @@ export default function BulletinEntriesLoader({
         <aside className="w-full lg:w-[42%] lg:sticky lg:top-4">
           <div className="rounded-lg border overflow-hidden shadow-sm">
             <iframe
-              src={`${pdfUrl}#toolbar=0&navpanes=0`}
+              src={pdfUrl}
               title={`Boletín Oficial Nº ${bulletin.numero}`}
               className="w-full"
               style={{ height: "75vh" }}

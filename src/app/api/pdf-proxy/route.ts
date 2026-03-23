@@ -42,7 +42,9 @@ export async function GET(req: NextRequest) {
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": "application/pdf",
+      "Content-Disposition": "inline",
       "Cache-Control": "public, max-age=86400",
+      "X-Frame-Options": "SAMEORIGIN",
     },
   });
 }
