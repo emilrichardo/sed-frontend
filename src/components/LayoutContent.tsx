@@ -15,6 +15,11 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
       pathname !== "/publicaciones/") ||
     pathname.startsWith("/categorias/");
 
+  // Proximamente page renders without layout wrapper (full screen)
+  if (pathname === "/proximamente") {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background md:pt-16">
       <Navbar />

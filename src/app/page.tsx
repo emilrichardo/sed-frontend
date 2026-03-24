@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import {
   getBulletins,
   getReports,
@@ -21,6 +22,10 @@ import { ArrowRight } from "lucide-react";
 export const revalidate = 60;
 
 export default async function Home() {
+  if (process.env.COMINGSOON === "true") {
+    redirect("/proximamente");
+  }
+
   const [bulletins, reports, allCategories, statCounts] = await Promise.all([
     getBulletins({ limit: 1 }),
     getReports({ limit: 12 }),
