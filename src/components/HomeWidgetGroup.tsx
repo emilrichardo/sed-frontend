@@ -7,7 +7,7 @@ import WidgetBoletin from "@/components/widgets/WidgetBoletin";
 
 export function HomeWidgetGroup() {
   const [ahorrosData, setAhorrosData] = useState<Record<string, unknown>>({
-    titulo: "El Ahorro Provincial",
+    titulo: 'El "Ahorro" Provincial',
     entradas: [],
     _variant: "md",
   });
@@ -19,7 +19,7 @@ export function HomeWidgetGroup() {
         const doc = data.docs?.[0];
         if (doc) {
           setAhorrosData({
-            titulo: "El Ahorro Provincial",
+            titulo: 'El "Ahorro" Provincial',
             entradas: [doc],
             _variant: "md",
           });

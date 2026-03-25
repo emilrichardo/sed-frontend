@@ -113,7 +113,15 @@ function VariantSM({ entry }: { entry: AhorroEntry }) {
 
 // ── MD — tarjeta con tres secciones ──────────────────────────────────────────
 
-function VariantMD({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
+function VariantMD({
+  entry,
+  titulo,
+  subtitulo,
+}: {
+  entry: AhorroEntry;
+  titulo: string;
+  subtitulo?: string;
+}) {
   const isPositive = entry.variacionMensual >= 0;
   const { Arrow, text, chip } = palette(isPositive);
   const sign = isPositive ? "+" : "−";
@@ -126,6 +134,11 @@ function VariantMD({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
             {titulo}
           </p>
+          {subtitulo && (
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-tight ">
+              {subtitulo}
+            </p>
+          )}
           <p className="text-sm font-bold mt-0.5">
             {entry.mes}{" "}
             <span className="text-muted-foreground font-normal">
@@ -178,7 +191,15 @@ function VariantMD({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
 
 // ── LG — tarjeta con monto destacado ─────────────────────────────────────────
 
-function VariantLG({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
+function VariantLG({
+  entry,
+  titulo,
+  subtitulo,
+}: {
+  entry: AhorroEntry;
+  titulo: string;
+  subtitulo?: string;
+}) {
   const isPositive = entry.variacionMensual >= 0;
   const { Arrow, text, chip } = palette(isPositive);
   const sign = isPositive ? "+" : "−";
@@ -191,7 +212,12 @@ function VariantLG({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
             {titulo}
           </p>
-          <p className="text-base font-bold mt-0.5">
+          {subtitulo && (
+            <p className="text-[11px] text-muted-foreground/70 mt-1 leading-tight max-w-[250px]">
+              {subtitulo}
+            </p>
+          )}
+          <p className="text-base font-bold mt-1">
             {entry.mes}{" "}
             <span className="text-muted-foreground font-normal">
               {entry.anio}
@@ -239,7 +265,15 @@ function VariantLG({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
 
 // ── XL — tarjeta completa con contexto ────────────────────────────────────────
 
-function VariantXL({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
+function VariantXL({
+  entry,
+  titulo,
+  subtitulo,
+}: {
+  entry: AhorroEntry;
+  titulo: string;
+  subtitulo?: string;
+}) {
   const isPositive = entry.variacionMensual >= 0;
   const { Arrow, text, chip } = palette(isPositive);
   const sign = isPositive ? "+" : "−";
@@ -252,6 +286,11 @@ function VariantXL({ entry, titulo }: { entry: AhorroEntry; titulo: string }) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
             {titulo}
           </p>
+          {subtitulo && (
+            <p className="text-[11px] text-muted-foreground/70 mt-1 leading-tight max-w-[280px]">
+              {subtitulo}
+            </p>
+          )}
           <p className="text-xl font-bold mt-1">
             {entry.mes}{" "}
             <span className="text-muted-foreground text-base font-normal">
@@ -319,7 +358,10 @@ export default function WidgetAhorros({
     (data._variant as string) ??
     "md"
   ).toLowerCase();
-  const titulo = (data.titulo as string) ?? "Ahorros Provinciales";
+  const titulo = (data.titulo as string) ?? '"Ahorro" Provincial';
+  const subtitulo =
+    (data.subtitulo as string) ??
+    "Cuánto dinero mantiene el gobierno depositado en plazos fijos";
   const entries = Array.isArray(data.entradas)
     ? (data.entradas as AhorroEntry[])
     : [];
@@ -335,7 +377,9 @@ export default function WidgetAhorros({
 
   if (finalVariant === "xs") return <VariantXS entry={entry} />;
   if (finalVariant === "sm") return <VariantSM entry={entry} />;
-  if (finalVariant === "lg") return <VariantLG entry={entry} titulo={titulo} />;
-  if (finalVariant === "xl") return <VariantXL entry={entry} titulo={titulo} />;
-  return <VariantMD entry={entry} titulo={titulo} />;
+  if (finalVariant === "lg")
+    return <VariantLG entry={entry} titulo={titulo} subtitulo={subtitulo} />;
+  if (finalVariant === "xl")
+    return <VariantXL entry={entry} titulo={titulo} subtitulo={subtitulo} />;
+  return <VariantMD entry={entry} titulo={titulo} subtitulo={subtitulo} />;
 }
