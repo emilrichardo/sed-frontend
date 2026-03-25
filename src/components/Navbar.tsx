@@ -254,7 +254,7 @@ export function Navbar() {
 
   const pathname = usePathname();
   const { user, logout, isEditing, toggleEditMode, openLoginModal } = useAuth();
-  const { openChat } = useChat();
+  const { openChat, isEnabled: chatEnabled } = useChat();
 
   const handleLogout = () => {
     logout(); // AuthContext calls /api/auth/logout (HttpOnly cookie) and redirects
@@ -836,18 +836,20 @@ export function Navbar() {
             <Newspaper className="h-5 w-5" />
             <span className="text-[10px] font-medium leading-none">Boletín</span>
           </Link>
-          {/* 5. Chat */}
-          <button
-            onClick={() => { 
-              openChat(); 
-              setMobileCatOpen(false); 
-              setUserMenuOpen(false); 
-            }}
-            className="flex flex-col items-center gap-1 p-2 transition-colors text-muted-foreground hover:text-primary"
-          >
-            <Bot className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-none">Chat</span>
-          </button>
+          {/* 5. Chat - solo si está habilitado */}
+          {chatEnabled && (
+            <button
+              onClick={() => { 
+                openChat(); 
+                setMobileCatOpen(false); 
+                setUserMenuOpen(false); 
+              }}
+              className="flex flex-col items-center gap-1 p-2 transition-colors text-muted-foreground hover:text-primary"
+            >
+              <Bot className="h-5 w-5" />
+              <span className="text-[10px] font-medium leading-none">Chat</span>
+            </button>
+          )}
 
         </div>
       </div>

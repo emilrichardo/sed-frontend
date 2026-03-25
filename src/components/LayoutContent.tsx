@@ -4,10 +4,12 @@ import React from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ChatBubble } from "@/components/ChatBubble";
+import { useChat } from "@/context/ChatContext";
 import { usePathname } from "next/navigation";
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { isEnabled: chatEnabled } = useChat();
 
   // On publication/category detail pages the inner nav sits at top-0 on mobile,
   // so we remove the top padding to avoid a gap above it.
@@ -41,7 +43,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         aria-hidden="true"
       />
       <Footer />
-      {!isLoginPage && <ChatBubble hideFloatingButton />}
+      {!isLoginPage && chatEnabled && <ChatBubble hideFloatingButton />}
     </div>
   );
 }
