@@ -3,6 +3,7 @@
 import React from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { ChatBubble } from "@/components/ChatBubble";
 import { usePathname } from "next/navigation";
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,9 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
   if (pathname === "/proximamente") {
     return <>{children}</>;
   }
+
+  // Don't show chat bubble on login page
+  const isLoginPage = pathname === "/login";
 
   return (
     <div className="min-h-screen flex flex-col bg-background md:pt-16">
@@ -37,6 +41,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         aria-hidden="true"
       />
       <Footer />
+      {!isLoginPage && <ChatBubble />}
     </div>
   );
 }

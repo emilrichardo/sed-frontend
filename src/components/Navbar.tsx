@@ -833,6 +833,7 @@ export function Navbar() {
             <Newspaper className="h-5 w-5" />
             <span className="text-[10px] font-medium leading-none">Boletín</span>
           </Link>
+
         </div>
       </div>
 
