@@ -211,15 +211,6 @@ function DesktopCategoryDropdown({
                           Ingresos de la Provincia
                         </Link>
                       </li>
-                      <li>
-                        <Link
-                          href="/coparticipacion"
-                          onClick={() => setOpen(false)}
-                          className="block pl-14 pr-6 py-1.5 text-base text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
-                        >
-                          Coparticipación
-                        </Link>
-                      </li>
                     </>
                   )}
                   {cat.children
