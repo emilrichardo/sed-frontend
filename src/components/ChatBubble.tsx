@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { Isotipo } from "@/components/brand/Isotipo";
+import { useChat } from "@/context/ChatContext";
 
 interface Message {
   id: string;
@@ -132,8 +133,8 @@ function WelcomeScreen({
   );
 }
 
-export function ChatBubble() {
-  const [isOpen, setIsOpen] = useState(false);
+export function ChatBubble({ hideFloatingButton = false }: { hideFloatingButton?: boolean }) {
+  const { isOpen, closeChat, toggleChat } = useChat();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -164,7 +165,7 @@ export function ChatBubble() {
         chatContainerRef.current &&
         !chatContainerRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        closeChat();
       }
     }
 
@@ -175,7 +176,7 @@ export function ChatBubble() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, closeChat]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -354,8 +355,12 @@ export function ChatBubble() {
                 </button>
               )}
               <button
-                onClick={() => setIsOpen(false)}
-                className="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeChat();
+                }}
+                className="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors z-10"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -424,13 +429,13 @@ export function ChatBubble() {
         </div>
       )}
 
-      {/* Floating Button */}
+      {/* Floating Button - Hidden on mobile when hideFloatingButton is true */}
       <button
         onClick={() => {
-          setIsOpen(!isOpen);
+          toggleChat();
           if (!isOpen) setHasNewMessages(false);
         }}
-        className="group relative w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
+        className={`group relative w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 items-center justify-center ${hideFloatingButton ? 'hidden md:flex' : 'flex'}`}
         aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
       >
         {isOpen ? (

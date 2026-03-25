@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import type { Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ChatProvider } from "@/context/ChatContext";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -105,9 +106,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          <ProtectedRoute>
-            <LayoutContent>{children}</LayoutContent>
-          </ProtectedRoute>
+          <ChatProvider>
+            <ProtectedRoute>
+              <LayoutContent>{children}</LayoutContent>
+            </ProtectedRoute>
+          </ChatProvider>
         </AuthProvider>
       </body>
     </html>

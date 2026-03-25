@@ -41,7 +41,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         aria-hidden="true"
       />
       <Footer />
-      {!isLoginPage && <ChatBubble />}
+      {!isLoginPage && <ChatBubble hideFloatingButton />}
     </div>
   );
 }

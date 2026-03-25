@@ -223,7 +223,7 @@ const getDataKey = (columns: any[], headerNameOrId?: string) => {
   return col ? col.id : null;
 };
 
-const prepareData = (rows: any[], columns: any[]) => {
+const prepareData = (rows: any[], columns: any[], xKey?: string) => {
   return rows.map((row) => {
     const newRow: any = {};
     columns.forEach((col) => {
@@ -232,6 +232,16 @@ const prepareData = (rows: any[], columns: any[]) => {
         val = row.cells.find((c: any) => c.columnId === col.id)?.value;
       } else {
         val = row[col.id];
+      }
+
+      // No convertir a número la columna del eje X (categorías)
+      const isXColumn = col.id === xKey || col.header === xKey;
+      if (isXColumn) {
+        newRow[col.id] = val;
+        if (col.header) {
+          newRow[col.header] = val;
+        }
+        return;
       }
 
       let numVal = NaN;
@@ -1029,7 +1039,8 @@ export const ChartRenderer = ({
   data: any[];
   columns: any[];
 }) => {
-  const chartData = prepareData(rawData, columns);
+  const xKey = getDataKey(columns, config?.eje_principal) || columns[0]?.id;
+  const chartData = prepareData(rawData, columns, xKey);
 
   let colors = getColors(config?.colores);
   if (
@@ -1049,7 +1060,6 @@ export const ChartRenderer = ({
     : [];
   const hasMultipleYKeys = yKeys.length > 1;
 
-  const xKey = getDataKey(columns, config?.eje_principal) || columns[0]?.id;
   const yKey = hasMultipleYKeys
     ? yKeys[0]
     : getDataKey(columns, config?.eje_valores) || columns[1]?.id;
