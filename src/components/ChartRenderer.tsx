@@ -1582,8 +1582,6 @@ export const ChartRenderer = ({
       case "choropleth_map": {
         // Auto-detect: if x-column header contains "departamento" or values match
         // known SDE department names → show SDE map; otherwise show Argentina map
-        const xCol = columns.find((c: any) => c.id === xKey);
-        const xHeaderNorm = normalizeName(xCol?.header || "");
         const SDE_DEPT_ONLY = [
           "figueroa",
           "salavina",
@@ -1601,17 +1599,34 @@ export const ChartRenderer = ({
           "mitre",
           "copo",
         ];
+        const isGeoCol = (colId: string) => {
+          const col = columns.find((c: any) => c.id === colId);
+          const hNorm = normalizeName(col?.header || "");
+          if (hNorm.includes("departamento") || hNorm.includes("provincia"))
+            return true;
+          return chartData.some((d) => {
+            const val = normalizeName(String(d[colId] || ""));
+            return SDE_DEPT_ONLY.some((k) => val === k || val.includes(k));
+          });
+        };
+        // Use xKey if it's geographic; otherwise scan all columns for a geo column
+        const geoKey =
+          isGeoCol(xKey)
+            ? xKey
+            : (columns.find((c: any) => isGeoCol(c.id))?.id ?? xKey);
+        const geoCol = columns.find((c: any) => c.id === geoKey);
+        const geoHeaderNorm = normalizeName(geoCol?.header || "");
         const isDeptos =
-          xHeaderNorm.includes("departamento") ||
+          geoHeaderNorm.includes("departamento") ||
           chartData.some((d) => {
-            const val = normalizeName(String(d[xKey] || ""));
+            const val = normalizeName(String(d[geoKey] || ""));
             return SDE_DEPT_ONLY.some((k) => val === k || val.includes(k));
           });
         if (isDeptos) {
           return (
             <MapSantiago
               chartData={chartData}
-              xKey={xKey}
+              xKey={geoKey}
               yKey={yKey}
               yLabel={getColumnHeader(yKey)}
               colors={colors}
@@ -1621,7 +1636,7 @@ export const ChartRenderer = ({
         return (
           <MapArgentina
             chartData={chartData}
-            xKey={xKey}
+            xKey={geoKey}
             yKey={yKey}
             yLabel={getColumnHeader(yKey)}
             colors={colors}
