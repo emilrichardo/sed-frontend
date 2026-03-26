@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, SkipForward, Radio } from "lucide-react";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 import {
   extractLexicalText,
   splitIntoChunks,
@@ -85,7 +86,7 @@ export function HomeRadioPlayer() {
     setPhase("loading");
     try {
       const res = await fetch(
-        "/api-proxy/publicaciones?limit=10&sort=-createdAt&depth=1&where[parent][exists]=false",
+        `${API_URL}/publicaciones?limit=10&sort=-createdAt&depth=1&where[parent][exists]=false`,
       );
       const data = await res.json();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

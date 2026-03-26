@@ -1,3 +1,4 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -11,6 +12,8 @@ import { NextRequest, NextResponse } from "next/server";
  * Usage: /api/pdf-proxy?url=<encoded-pdf-url>
  */
 export async function GET(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return NextResponse.json({ error: "Not available" }, { status: 501 });
   const url = req.nextUrl.searchParams.get("url");
 
   if (!url) {

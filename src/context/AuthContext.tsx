@@ -66,8 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsEditing(true);
           }
         }
-      } catch (e) {
-        console.error("Auth validation error", e);
+        // 404 = static export (no server), silently skip
+      } catch {
+        // network error, silently skip
       } finally {
         setIsLoading(false);
       }

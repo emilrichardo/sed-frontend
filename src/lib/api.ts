@@ -3,7 +3,16 @@ const IS_SERVER = typeof window === "undefined";
 const BASE_URL = (
   process.env.PAYLOAD_API_URL || "http://localhost:3000"
 ).replace(/\/+$/, "");
-export const API_URL = IS_SERVER ? `${BASE_URL}/api` : "/api-proxy";
+// En static export el cliente llama directo al CMS (NEXT_PUBLIC_PAYLOAD_API_URL).
+// En SSR el cliente usa /api-proxy (rewrite de Next.js).
+const CLIENT_BASE = process.env.NEXT_PUBLIC_PAYLOAD_API_URL
+  ? process.env.NEXT_PUBLIC_PAYLOAD_API_URL.replace(/\/+$/, "")
+  : null;
+export const API_URL = IS_SERVER
+  ? `${BASE_URL}/api`
+  : CLIENT_BASE
+    ? `${CLIENT_BASE}/api`
+    : "/api-proxy";
 
 /**
  * Rewrite PDF/media URLs from the internal Supabase host to a public host.
@@ -740,32 +749,22 @@ export async function getReportItem(slug: string): Promise<ReportItem | null> {
     if (report.autor && typeof report.autor !== "object") {
       try {
         const authorId = report.autor;
-        console.log(
-          `[getReportItem] Author is ID (${authorId}), fetching user details...`,
-        );
-        const userRes = await fetch(`${API_URL}/users/${authorId}`, {
+        const authHeaders: Record<string, string> = { "cache-control": "no-store" };
+        if (process.env.PAYLOAD_USER_TOKEN) {
+          authHeaders["Authorization"] = `JWT ${process.env.PAYLOAD_USER_TOKEN}`;
+        }
+        const userRes = await fetch(`${BASE_URL}/api/users/${authorId}`, {
           cache: "no-store",
+          headers: authHeaders,
         });
         if (userRes.ok) {
           const user = await userRes.json();
-          console.log(
-            `[getReportItem] Author fetched: ${user.nombre} ${user.apellido}`,
-          );
           report.autor = user;
-        } else {
-          console.error(
-            `[getReportItem] Failed to fetch author ${authorId}: ${userRes.status}`,
-          );
         }
-      } catch (err) {
-        console.error(`[getReportItem] Error fetching author manually:`, err);
+      } catch {
+        // silently skip
       }
     }
-
-    console.log(
-      `[getReportItem] Fetched ${slug}. Autor final:`,
-      JSON.stringify(report.autor, null, 2),
-    );
 
     return report;
   } catch (error) {

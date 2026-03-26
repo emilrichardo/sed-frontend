@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Loader2, AlertCircle, ChevronDown, TrendingUp } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -172,7 +173,7 @@ export default function RecaudacionPage() {
   const [records, setRecords] = useState<IngresoRecord[]>([]);
 
   useEffect(() => {
-    fetch("/api-proxy/ingresos?limit=2000&sort=-anio,-mes")
+    fetch(`${API_URL}/ingresos?limit=2000&sort=-anio,-mes`)
       .then((r) => {
         if (!r.ok) throw new Error("Error al obtener datos de ingresos");
         return r.json();

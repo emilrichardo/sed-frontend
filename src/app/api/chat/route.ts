@@ -1,3 +1,4 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 
 const BASE_URL = (
@@ -195,6 +196,8 @@ Recuerda: solo puedes hablar de lo que está en este contexto. Si el usuario pre
 }
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   try {
     const body = await req.json();
     const messages: Message[] = body.messages || [];

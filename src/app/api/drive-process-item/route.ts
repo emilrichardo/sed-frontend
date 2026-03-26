@@ -1,3 +1,4 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -10,6 +11,8 @@ const require = createRequire(import.meta.url);
 const PDFParser = require("pdf2json");
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   let fileId = "";
   try {
     const body = await req.json();

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { ReportItem } from "@/lib/api";
+import { API_URL } from "@/lib/api";
 import { LayoutGrid } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PublicationCard } from "@/components/PublicationCard";
@@ -28,7 +29,7 @@ export function RelatedPublications({
       try {
         setLoading(true);
         const res = await fetch(
-          `/api-proxy/publicaciones?where[tipo_publicacion][equals]=${tipoId}&where[id][not_equals]=${currentId}&limit=3&sort=-createdAt&depth=1`,
+          `${API_URL}/publicaciones?where[tipo_publicacion][equals]=${tipoId}&where[id][not_equals]=${currentId}&limit=3&sort=-createdAt&depth=1`,
         );
         const data = await res.json();
         setRelated(data.docs || []);

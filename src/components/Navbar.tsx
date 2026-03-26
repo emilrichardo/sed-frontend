@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { API_URL } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import {
   LogOut,
@@ -276,7 +277,7 @@ export function Navbar() {
   // Fetch category tree
   useEffect(() => {
     fetch(
-      "/api-proxy/taxonomias?limit=100&depth=1&where[tipo][equals]=categoria&sort=nombre",
+      `${API_URL}/taxonomias?limit=100&depth=1&where[tipo][equals]=categoria&sort=nombre`,
     )
       .then((r) => r.json())
       .then((data) => {

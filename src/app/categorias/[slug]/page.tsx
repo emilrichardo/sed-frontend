@@ -10,8 +10,13 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { getAllCategorySlugs } from "@/lib/static-params";
 
 export const revalidate = 300;
+export async function generateStaticParams() {
+  const slugs = await getAllCategorySlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -88,15 +93,6 @@ export default async function CategoryPage({ params }: PageProps) {
                   >
                     <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
                       Ingresos de la Provincia
-                    </span>
-                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </Link>
-                  <Link
-                    href="/coparticipacion"
-                    className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
-                  >
-                    <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
-                      Coparticipación
                     </span>
                     <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                   </Link>

@@ -1,8 +1,11 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 
 const BASE_URL = (process.env.PAYLOAD_API_URL || "http://localhost:3000").replace(/\/+$/, "");
 
 export async function GET(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return NextResponse.json({ user: null }, { status: 401 });
   const token = req.cookies.get("payload-token")?.value;
 
   if (!token) {

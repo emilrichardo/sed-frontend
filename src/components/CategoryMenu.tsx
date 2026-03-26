@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { Search, ChevronLeft, ArrowUpRight, X } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ export function CategoryDetailPanel({
     setPublications([]);
     setSelectedTipo(null);
     fetch(
-      `/api-proxy/publicaciones?where[categorias][in][0]=${category.id}&limit=30&sort=-createdAt&depth=1`,
+      `${API_URL}/publicaciones?where[categorias][in][0]=${category.id}&limit=30&sort=-createdAt&depth=1`,
     )
       .then((r) => r.json())
       .then((data) => {
@@ -105,16 +106,6 @@ export function CategoryDetailPanel({
               >
                 <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
                   Ingresos de la Provincia
-                </span>
-                <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
-              </Link>
-              <Link
-                href="/coparticipacion"
-                onClick={onNavigate}
-                className="flex items-center justify-between w-full px-4 py-5 border-b border-border hover:bg-muted/50 transition-colors group"
-              >
-                <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
-                  Coparticipación
                 </span>
                 <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>
@@ -288,7 +279,7 @@ export function CategoryMenu({
     setSearchLoading(true);
     debounceRef.current = setTimeout(() => {
       fetch(
-        `/api-proxy/publicaciones?where[titulo][like]=${encodeURIComponent(searchValue.trim())}&limit=10&depth=0`,
+        `${API_URL}/publicaciones?where[titulo][like]=${encodeURIComponent(searchValue.trim())}&limit=10&depth=0`,
       )
         .then((r) => r.json())
         .then((data) => {

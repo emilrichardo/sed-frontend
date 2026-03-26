@@ -18,7 +18,14 @@ import {
   hasRealContent,
 } from "@/utils/publicacion";
 
-export const revalidate = 0;
+import { getAllPublicationSlugs } from "@/lib/static-params";
+
+export const dynamic = "force-static";
+
+export async function generateStaticParams() {
+  const slugs = await getAllPublicationSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 interface PageProps {
   params: Promise<{

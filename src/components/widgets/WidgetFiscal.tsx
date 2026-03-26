@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { API_URL } from "@/lib/api";
 import {
   AlertCircle,
   ChevronDown,
@@ -123,10 +124,10 @@ function useFiscalData() {
 
     Promise.all([
       fetch(
-        `/api-proxy/coparticipacion?limit=2000&where[anio][equals]=${year}`,
+        `${API_URL}/coparticipacion?limit=2000&where[anio][equals]=${year}`,
       ).then((r) => r.json()),
       fetch(
-        `/api-proxy/ingresos?limit=200&where[anio][equals]=${year}&where[categoria][equals]=total`,
+        `${API_URL}/ingresos?limit=200&where[anio][equals]=${year}&where[categoria][equals]=total`,
       ).then((r) => r.json()),
     ])
       .then(([copaData, ingData]) => {

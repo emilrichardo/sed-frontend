@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Loader2, AlertCircle, ChevronDown, Landmark } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -229,7 +230,7 @@ export default function CoparticipacionPage() {
   const [records, setRecords] = useState<CRecord[]>([]);
 
   useEffect(() => {
-    fetch("/api-proxy/coparticipacion?limit=2000&sort=-createdAt")
+    fetch(`${API_URL}/coparticipacion?limit=2000&sort=-createdAt`)
       .then((r) => {
         if (!r.ok) throw new Error("Error al obtener datos de coparticipación");
         return r.json();

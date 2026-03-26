@@ -1,4 +1,9 @@
 import { getActoByIdentifier, ActoAdministrativo } from "@/lib/api";
+import { getAllActoParams } from "@/lib/static-params";
+
+export async function generateStaticParams() {
+  return getAllActoParams();
+}
 import { ActDetailView } from "@/components/ActDetailView";
 import ClientActoDetailFetcher from "@/components/ClientActoDetailFetcher";
 

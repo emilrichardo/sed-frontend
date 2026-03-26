@@ -21,7 +21,6 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
   isEmbedded = false,
   childrenItems = [],
 }) => {
-  console.log(initialData);
   const hasContent = hasRealContent(initialData.contenido, initialData.layout);
 
   return (

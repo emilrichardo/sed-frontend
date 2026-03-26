@@ -1,7 +1,10 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 import { API_URL } from "@/lib/api";
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   try {
     const body = await req.json();
     const token = req.headers.get("Authorization");

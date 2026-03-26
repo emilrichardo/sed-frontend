@@ -1,7 +1,10 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   try {
     const { folderId, pageToken } = await req.json();
 
