@@ -495,6 +495,7 @@ export interface ActoAdministrativo {
   status_procesamiento?: string;
   destacado?: boolean;
   es_relevante?: boolean;
+  status?: "publicado" | "borrador";
   opacidad_categoria?: "baja" | "media" | "alta";
   organismo?: string;
   beneficiario?: string;

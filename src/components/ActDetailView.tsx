@@ -10,6 +10,11 @@ import {
   Info,
   User,
   Briefcase,
+  Eye,
+  EyeOff,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { ActoAdministrativo, updateActoAdministrativo } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -26,6 +31,17 @@ interface ActDetailViewProps {
 export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
   const { isEditing } = useAuth();
   const [isDestacado, setIsDestacado] = useState(entry.destacado || false);
+  const [status, setStatus] = useState<"publicado" | "borrador">(
+    entry.status === "publicado" ? "publicado" : "borrador",
+  );
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState(
+    entry.titulo_periodistico || entry.titulo || "",
+  );
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [isEditingResumen, setIsEditingResumen] = useState(false);
+  const [resumenValue, setResumenValue] = useState(entry.resumen || "");
+  const [isSavingResumen, setIsSavingResumen] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-AR", {
@@ -44,6 +60,54 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
       console.error("Failed to update destacado:", error);
       setIsDestacado(!newState); // Revert
     }
+  };
+
+  const toggleStatus = async () => {
+    const newStatus = status === "publicado" ? "borrador" : "publicado";
+    setStatus(newStatus); // Optimistic
+    try {
+      await updateActoAdministrativo(entry.id, { status: newStatus });
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      setStatus(status); // Revert
+    }
+  };
+
+  const saveTitle = async () => {
+    if (!titleValue.trim()) return;
+    setIsSavingTitle(true);
+    try {
+      await updateActoAdministrativo(entry.id, {
+        titulo_periodistico: titleValue.trim(),
+      });
+      setIsEditingTitle(false);
+    } catch (error) {
+      console.error("Failed to update title:", error);
+    } finally {
+      setIsSavingTitle(false);
+    }
+  };
+
+  const cancelEditTitle = () => {
+    setTitleValue(entry.titulo_periodistico || entry.titulo || "");
+    setIsEditingTitle(false);
+  };
+
+  const saveResumen = async () => {
+    setIsSavingResumen(true);
+    try {
+      await updateActoAdministrativo(entry.id, { resumen: resumenValue.trim() });
+      setIsEditingResumen(false);
+    } catch (error) {
+      console.error("Failed to update resumen:", error);
+    } finally {
+      setIsSavingResumen(false);
+    }
+  };
+
+  const cancelEditResumen = () => {
+    setResumenValue(entry.resumen || "");
+    setIsEditingResumen(false);
   };
 
   return (
@@ -66,11 +130,49 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
             <div className="flex justify-between items-start gap-4">
               <div className="space-y-4 w-full">
                 {/* Journalistic Title or Fallback */}
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
-                  {entry.titulo_periodistico ||
-                    entry.titulo ||
-                    "Acto Administrativo"}
-                </h1>
+                {isEditing && isEditingTitle ? (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      className="w-full text-2xl font-extrabold tracking-tight bg-muted border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                      rows={3}
+                      value={titleValue}
+                      onChange={(e) => setTitleValue(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveTitle}
+                        disabled={isSavingTitle}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded hover:opacity-90 disabled:opacity-50"
+                      >
+                        <Check className="h-3 w-3" />
+                        {isSavingTitle ? "Guardando..." : "Guardar"}
+                      </button>
+                      <button
+                        onClick={cancelEditTitle}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-foreground text-xs font-bold rounded hover:bg-muted/80"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
+                      {titleValue || "Acto Administrativo"}
+                    </h1>
+                    {isEditing && (
+                      <button
+                        onClick={() => setIsEditingTitle(true)}
+                        className="mt-2 p-1.5 rounded hover:bg-muted border border-dashed border-muted-foreground/40"
+                        title="Editar título"
+                      >
+                        <Pencil className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Tags row */}
                 <div className="flex flex-wrap gap-2">
@@ -100,6 +202,36 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                       {isDestacado ? "Destacado" : "Destacar"}
                     </button>
                   )}
+                  {isEditing ? (
+                    <button
+                      onClick={toggleStatus}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-0.5 border text-xs font-bold transition-all uppercase tracking-normal rounded-full",
+                        status === "publicado"
+                          ? "bg-green-600 text-white border-green-600 hover:bg-green-700"
+                          : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-600",
+                      )}
+                      title={
+                        status === "publicado"
+                          ? "Clic para despublicar"
+                          : "Clic para publicar"
+                      }
+                    >
+                      {status === "publicado" ? (
+                        <Eye className="h-3 w-3" />
+                      ) : (
+                        <EyeOff className="h-3 w-3" />
+                      )}
+                      {status === "publicado" ? "Publicado" : "Borrador"}
+                    </button>
+                  ) : (
+                    status !== "publicado" && (
+                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-300 text-xs font-bold uppercase tracking-normal rounded-full">
+                        <EyeOff className="h-3 w-3" />
+                        Borrador
+                      </span>
+                    )
+                  )}
                   {isEditing && (
                     <div className="ml-2">
                       <ProcessingButton
@@ -127,10 +259,61 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
             </div>
 
             {/* Resume / Summary */}
-            {entry.resumen && (
-              <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-sans border-l-4 border-primary/20 pl-4 py-1">
-                {entry.resumen}
-              </p>
+            {isEditing ? (
+              isEditingResumen ? (
+                <div className="flex flex-col gap-2 border-l-4 border-primary/20 pl-4">
+                  <textarea
+                    className="w-full text-base bg-muted border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
+                    rows={4}
+                    value={resumenValue}
+                    onChange={(e) => setResumenValue(e.target.value)}
+                    placeholder="Ingresá el resumen del acto..."
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveResumen}
+                      disabled={isSavingResumen}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded hover:opacity-90 disabled:opacity-50"
+                    >
+                      <Check className="h-3 w-3" />
+                      {isSavingResumen ? "Guardando..." : "Guardar"}
+                    </button>
+                    <button
+                      onClick={cancelEditResumen}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-foreground text-xs font-bold rounded hover:bg-muted/80"
+                    >
+                      <X className="h-3 w-3" />
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 border-l-4 border-primary/20 pl-4 py-1">
+                  {resumenValue ? (
+                    <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-sans flex-1">
+                      {resumenValue}
+                    </p>
+                  ) : (
+                    <p className="text-base text-muted-foreground/50 italic flex-1">
+                      Sin resumen — clic para agregar
+                    </p>
+                  )}
+                  <button
+                    onClick={() => setIsEditingResumen(true)}
+                    className="mt-1 p-1.5 rounded hover:bg-muted border border-dashed border-muted-foreground/40 shrink-0"
+                    title="Editar resumen"
+                  >
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+              )
+            ) : (
+              entry.resumen && (
+                <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-sans border-l-4 border-primary/20 pl-4 py-1">
+                  {entry.resumen}
+                </p>
+              )
             )}
           </section>
 
@@ -227,6 +410,30 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                       ? entry.jurisdiccion.nombre
                       : entry.jurisdiccion}
                   </span>
+                </div>
+              )}
+
+              {isEditing && (
+                <div>
+                  <label className="text-[10px] uppercase tracking-normal text-muted-foreground font-bold block mb-1">
+                    Estado
+                  </label>
+                  <button
+                    onClick={toggleStatus}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 border text-xs font-bold transition-all uppercase tracking-normal rounded",
+                      status === "publicado"
+                        ? "bg-green-600 text-white border-green-600 hover:bg-green-700"
+                        : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-600",
+                    )}
+                  >
+                    {status === "publicado" ? (
+                      <Eye className="h-3 w-3" />
+                    ) : (
+                      <EyeOff className="h-3 w-3" />
+                    )}
+                    {status === "publicado" ? "Publicado" : "Borrador"}
+                  </button>
                 </div>
               )}
 
