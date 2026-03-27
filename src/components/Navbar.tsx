@@ -461,6 +461,14 @@ export function Navbar() {
                             Widgets
                           </Link>
                           <Link
+                            href="/admin/agentes"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Bot className="h-4 w-4" />
+                            Agentes
+                          </Link>
+                          <Link
                             href="/coparticipacion"
                             onClick={() => setUserMenuOpen(false)}
                             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
@@ -636,6 +644,14 @@ export function Navbar() {
                     >
                       <LayoutGrid className="h-4 w-4" />
                       Widgets
+                    </Link>
+                    <Link
+                      href="/admin/agentes"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Bot className="h-4 w-4" />
+                      Agentes
                     </Link>
                     <Link
                       href="/coparticipacion"
