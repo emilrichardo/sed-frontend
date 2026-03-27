@@ -12,7 +12,6 @@ import {
   Search,
   RefreshCw,
   X,
-  ExternalLink,
   Settings,
   Brain,
   ChevronRight,
@@ -20,11 +19,12 @@ import {
   Pause,
   Clock,
 } from "lucide-react";
-import { API_URL, getAgents, Agent } from "@/lib/api";
+import { getAgents, Agent } from "@/lib/api";
+
 
 // ── Agent card component ────────────────────────────────────────────────────
 
-function AgentCard({ agent, cmsUrl }: { agent: Agent; cmsUrl: string }) {
+function AgentCard({ agent }: { agent: Agent }) {
   const isActive = agent.status === "active";
   const agentType = agent.type || "extraction";
   const modelName = agent.modelSettings?.modelName || "No especificado";
@@ -124,15 +124,13 @@ function AgentCard({ agent, cmsUrl }: { agent: Agent; cmsUrl: string }) {
               year: "numeric",
             })}
           </span>
-          <a
-            href={`${cmsUrl}/admin/collections/agents/${agent.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={`/admin/agentes/${agent.id}`}
             className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
           >
             Editar
-            <ExternalLink className="h-3 w-3" />
-          </a>
+            <ChevronRight className="h-3 w-3" />
+          </Link>
         </div>
       </div>
     </div>
@@ -149,13 +147,6 @@ export default function AdminAgentesPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [filterType, setFilterType] = useState<"all" | "learning" | "extraction">("all");
-
-  // CMS URL for editing
-  const cmsUrl = useMemo(() => {
-    // Extract base URL from API_URL (remove /api)
-    const baseUrl = API_URL.replace(/\/api$/, "");
-    return baseUrl;
-  }, []);
 
   const fetchAgents = async () => {
     setLoading(true);
@@ -410,26 +401,11 @@ export default function AdminAgentesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredAgents.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} cmsUrl={cmsUrl} />
+            <AgentCard key={agent.id} agent={agent} />
           ))}
         </div>
       )}
 
-      {/* Footer note */}
-      <div className="mt-8 pt-6 border-t border-border text-center">
-        <p className="text-xs text-muted-foreground">
-          Los agentes se editan directamente en el CMS de Payload.{" "}
-          <a
-            href={`${cmsUrl}/admin/collections/agents`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline inline-flex items-center gap-1"
-          >
-            Abrir CMS
-            <ExternalLink className="h-3 w-3" />
-          </a>
-        </p>
-      </div>
     </div>
   );
 }

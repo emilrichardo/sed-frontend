@@ -14,6 +14,10 @@ export const API_URL = IS_SERVER
     ? `${CLIENT_BASE}/api`
     : "/api-proxy";
 
+// Base URL of the CMS (no /api suffix) — used for building CMS admin links.
+// On the client: the NEXT_PUBLIC_PAYLOAD_API_URL value, or null in proxy mode.
+export const CMS_BASE_URL: string | null = IS_SERVER ? BASE_URL : CLIENT_BASE;
+
 /**
  * Rewrite PDF/media URLs from the internal Supabase host to a public host.
  * Set PDF_HOST_OVERRIDE=cms-sed.server.neuraz.io in Vercel env vars if the
@@ -1200,6 +1204,41 @@ export async function getAgent(
   }
 
   return res.json();
+}
+
+export async function updateAgent(
+  id: string,
+  data: Partial<Omit<Agent, "id" | "createdAt" | "updatedAt">>,
+): Promise<Agent> {
+  const res = await apiFetch(`/agents/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+  }
+
+  const body = await res.json();
+  return body.doc ?? body;
+}
+
+export async function createAgent(
+  data: Partial<Omit<Agent, "id" | "createdAt" | "updatedAt">>,
+): Promise<Agent> {
+  const res = await apiFetch("/agents", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+  }
+
+  const body = await res.json();
+  return body.doc ?? body;
 }
 
 export async function createLearningRecord(
