@@ -22,8 +22,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ArrowUpRight,
-  Banknote,
-  TrendingUp,
   Settings,
   Bot,
 } from "lucide-react";
@@ -468,22 +466,6 @@ export function Navbar() {
                             <Bot className="h-4 w-4" />
                             Agentes
                           </Link>
-                          <Link
-                            href="/coparticipacion"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                          >
-                            <Banknote className="h-4 w-4" />
-                            Coparticipación
-                          </Link>
-                          <Link
-                            href="/ingresos"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                          >
-                            <TrendingUp className="h-4 w-4" />
-                            Ingresos
-                          </Link>
                           <button
                             onClick={() => {
                               toggleEditMode();
@@ -652,22 +634,6 @@ export function Navbar() {
                     >
                       <Bot className="h-4 w-4" />
                       Agentes
-                    </Link>
-                    <Link
-                      href="/coparticipacion"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                    >
-                      <Banknote className="h-4 w-4" />
-                      Coparticipación
-                    </Link>
-                    <Link
-                      href="/ingresos"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                    >
-                      <TrendingUp className="h-4 w-4" />
-                      Ingresos
                     </Link>
                     <button
                       onClick={() => {
