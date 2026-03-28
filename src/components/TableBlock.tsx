@@ -857,22 +857,124 @@ export const TableBlock = ({
     );
     const colNames = columns.map((c: any) => c.header).join(", ");
     const currentMarkup = markupDraft || fields.custom_markup || "<!-- sin markup aún -->";
-    return `Tengo los siguientes datos y necesito una visualización personalizada en HTML + CSS + JS.
+    return `Necesito una visualización personalizada en HTML + CSS + JS para el sitio "Santiago en Datos".
 
-## Columnas disponibles
-${colNames}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Columnas: ${colNames}
 
-## Datos (window.__tableData)
+window.__tableData (ya disponible en el iframe):
 ${JSON.stringify(tableData, null, 2)}
 
-## Instrucciones
-- Los datos ya están cargados en window.__tableData como array de objetos (una clave por columna)
-- Usá las CSS variables del tema para colores: var(--background), var(--foreground), var(--primary), var(--primary-foreground), var(--muted), var(--muted-foreground), var(--border), var(--card), var(--card-foreground)
-- NO incluyas <!DOCTYPE html>, <html>, <head> ni <body> — solo el contenido interno (<style>, <div>, <script>)
-- Podés cargar librerías externas desde CDN con <script src="..."> si lo necesitás (Chart.js, D3, Plotly, etc.)
-- El bloque se inyecta en un iframe que ya tiene las CSS vars del tema disponibles
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN SYSTEM — Santiago en Datos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## Markup actual (punto de partida)
+## CSS Variables disponibles en el iframe (light / dark automático)
+
+### Fondos y texto
+  --background          /* light: #ffffff   | dark: #161614  */
+  --foreground          /* light: #262624   | dark: #f2f2f0  */
+  --card                /* light: #ffffff   | dark: #1e1e1c  */
+  --card-foreground     /* light: #262624   | dark: #f2f2f0  */
+  --muted               /* light: #f5f5f4   | dark: #2a2a28  */
+  --muted-foreground    /* light: #666666   | dark: #a3a3a0  */
+
+### Acento / primario
+  --primary             /* #c95b4a  — Rojo Santiago (igual en light y dark) */
+  --primary-foreground  /* #ffffff */
+
+### Secundario / neutro
+  --secondary           /* light: #f5f5f4   | dark: #2a2a28  */
+  --secondary-foreground/* light: #262624   | dark: #f2f2f0  */
+
+### Bordes
+  --border              /* light: #e5e5e5   | dark: #303030  */
+
+### Radio base
+  --radius              /* 0.5rem = 8px */
+
+### Tipografía
+  --font-sans           /* Inter, ui-sans-serif, system-ui */
+  --font-mono           /* Source Code Pro, monospace */
+
+## Paletas de gráficos (usar siempre estas, no inventar colores)
+
+Paleta identitaria (5 colores — preferida):
+  #c95b4a  Rojo Santiago (serie principal / destacado)
+  #4d5f7a  Azul pizarra
+  #b08f51  Dorado / ocre
+  #518765  Verde pino
+  #8a597a  Malva
+
+Semáforo (positivo / neutro / negativo):
+  #16a34a  Verde
+  #ca8a04  Ámbar
+  #c95b4a  Rojo
+
+Multicolor (10, sin rojo):
+  #2563eb #16a34a #ea580c #9333ea #0891b2
+  #ca8a04 #db2777 #0d9488 #b45309 #6d28d9
+
+Heatmap (5 tonos rojo):
+  #fee2e2 → #fca5a5 → #ef4444 → #b91c1c → #7f1d1d
+
+## Tipografía
+- Títulos: font-family var(--font-sans); font-weight 600–800; letter-spacing: -0.02em
+- Cuerpo: font-family var(--font-sans); font-weight 400–500
+- Números/datos: font-family var(--font-mono); font-weight 500
+
+## Componentes visuales — convenciones
+
+Tarjetas:
+  background: var(--card)
+  border: 0.5px solid var(--border)
+  border-radius: 12px
+  padding: 14px 16px
+
+Barras (bar charts):
+  border-radius: 4px (extremo de la barra)
+  gap entre barras: ~20% del ancho
+  color por defecto: #c95b4a o paleta identitaria
+
+Pills / badges:
+  border-radius: 9999px
+  padding: 2px 10px; font-size: 11px; font-weight: 500
+
+Líneas (line charts):
+  stroke-width: 2px
+  dot radius: 4px; dot fill: var(--background)
+
+Tooltips:
+  background: var(--card)
+  border: 1px solid var(--border)
+  border-radius: 8px; padding: 8px 12px
+  font-size: 12px; color: var(--foreground)
+
+Ejes y grillas:
+  color: var(--muted-foreground)
+  font-size: 11–12px
+  grid lines: var(--border), opacity 0.5
+
+## Modo light / dark
+El iframe detecta automáticamente el tema via CSS vars.
+Si necesitás reglas específicas usá @media (prefers-color-scheme: dark) { }.
+NO uses colores hardcodeados para texto/fondo; usá siempre las CSS vars.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INSTRUCCIONES DE ENTREGA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- NO incluyas <!DOCTYPE html>, <html>, <head> ni <body>
+- Solo el contenido interno: <style>, <div id="root">, <script>
+- Los datos ya están en window.__tableData (array de objetos, clave = nombre de columna)
+- Podés cargar librerías externas desde CDN con <script src="..."> si lo necesitás
+- El resultado se inyecta en un iframe que ya tiene todas las CSS vars disponibles
+- Usá margin: 0; padding: 0 en el elemento raíz y respetá el padding interno con el contenedor
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MARKUP ACTUAL (punto de partida o referencia)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 \`\`\`html
 ${currentMarkup}
 \`\`\``;
