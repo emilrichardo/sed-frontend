@@ -1261,8 +1261,16 @@ export async function updatePublicacionBlockVisualizacion(
   blockId: string,
   tipo_visualizacion: string,
 ): Promise<void> {
-  // 1. Fetch current publication
-  const getRes = await apiFetch(`/publicaciones/${publicacionId}?depth=0`);
+  const isClient = typeof window !== "undefined";
+
+  // 1. Fetch current publication (via BFF on client to get auth, direct on server)
+  const getUrl = isClient
+    ? `/api/cms?path=/publicaciones/${publicacionId}&qs=depth%3D0`
+    : null;
+  const getRes = getUrl
+    ? await fetch(getUrl, { cache: "no-store" })
+    : await apiFetch(`/publicaciones/${publicacionId}?depth=0`);
+
   if (!getRes.ok) {
     throw new Error(`No se pudo obtener la publicación (${getRes.status})`);
   }
@@ -1274,14 +1282,26 @@ export async function updatePublicacionBlockVisualizacion(
   const found = patchBlockInNode(contenido.root, blockId, tipo_visualizacion);
   if (!found) throw new Error("Bloque no encontrado en el contenido");
 
-  // 3. PATCH publication with updated contenido
-  const patchRes = await apiFetch(`/publicaciones/${publicacionId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ contenido }),
-  });
-  if (!patchRes.ok) {
-    const err = await patchRes.json().catch(() => ({}));
-    throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+  // 3. PATCH via BFF on client (adds auth cookie), direct apiFetch on server
+  if (isClient) {
+    const patchRes = await fetch(`/api/cms?path=/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
+  } else {
+    const patchRes = await apiFetch(`/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
   }
 }
 

@@ -112,7 +112,11 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
               );
             })()}
 
-            <EditContentButton collection="publicaciones" id={initialData.id} />
+            <EditContentButton
+              collection="publicaciones"
+              id={initialData.id}
+              adminUrl={process.env.PAYLOAD_API_URL}
+            />
           </div>
         )}
 
