@@ -38,13 +38,20 @@ const ALIAS_CSS = `
 
 const RESIZE_SCRIPT = `<script>
   function notifyHeight() {
-    var h = document.documentElement.scrollHeight;
+    var root = document.getElementById('custom-viz-root');
+    if (!root) return;
+    var h = root.scrollHeight;
     window.parent.postMessage({ type: 'custom-viz-height', height: h }, '*');
   }
   window.addEventListener('load', notifyHeight);
-  new MutationObserver(notifyHeight).observe(document.body, {
-    childList: true, subtree: true, attributes: true
-  });
+  var root = document.getElementById('custom-viz-root');
+  if (root && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(function() { notifyHeight(); }).observe(root);
+  } else if (root) {
+    new MutationObserver(notifyHeight).observe(root, {
+      childList: true, subtree: true, attributes: true
+    });
+  }
 <\/script>`;
 
 function readThemeStyle(): string {
@@ -75,8 +82,8 @@ export function CustomVizBlock({ custom_markup, data }: Props) {
 </head>
 <body>
   <script>window.__tableData = ${JSON.stringify(tableData)};<\/script>
+  <div id="custom-viz-root">${custom_markup}</div>
   ${RESIZE_SCRIPT}
-  ${custom_markup}
 </body>
 </html>`;
 
