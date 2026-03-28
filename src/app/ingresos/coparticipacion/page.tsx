@@ -40,7 +40,7 @@ function fmt(val: number) {
       currency: "ARS",
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
-    }).format(val) + " M"
+    }).format(val) + " millones"
   );
 }
 
@@ -61,14 +61,6 @@ function MonthBlock({
 
   const sorted = [...records].sort((a, b) => parseInt(a.dia) - parseInt(b.dia));
 
-  const sumNacional = records.reduce(
-    (a, r) => a + (r.recursos_nacional || 0),
-    0,
-  );
-  const sumConsenso = records.reduce(
-    (a, r) => a + (r.compensacion_consenso_fiscal || 0),
-    0,
-  );
   const sumTotal = records.reduce((a, r) => a + (r.total || 0), 0);
 
   const monthName = MONTH_NAMES[parseInt(month) - 1] || month;
@@ -102,19 +94,7 @@ function MonthBlock({
       {open && (
         <div className="border-t border-border">
           {/* Summary row */}
-          <div className="grid grid-cols-3 gap-4 px-5 py-4 bg-muted/30 text-sm">
-            <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                Rec. Nacionales
-              </span>
-              <span className="font-bold font-mono">{fmt(sumNacional)}</span>
-            </div>
-            <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                Consenso Fiscal
-              </span>
-              <span className="font-bold font-mono">{fmt(sumConsenso)}</span>
-            </div>
+          <div className="px-5 py-4 bg-muted/30 text-sm">
             <div>
               <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
                 Total
@@ -131,12 +111,6 @@ function MonthBlock({
               <thead className="bg-muted/20 text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <tr>
                   <th className="px-5 py-3 text-left font-bold">Fecha</th>
-                  <th className="px-5 py-3 text-right font-bold">
-                    Rec. Nacionales
-                  </th>
-                  <th className="px-5 py-3 text-right font-bold">
-                    Consenso Fiscal
-                  </th>
                   <th className="px-5 py-3 text-right font-bold">Total</th>
                 </tr>
               </thead>
@@ -157,12 +131,6 @@ function MonthBlock({
                           day: "2-digit",
                           month: "short",
                         })}
-                    </td>
-                    <td className="px-5 py-3 text-right font-mono text-muted-foreground">
-                      {fmt(r.recursos_nacional || 0)}
-                    </td>
-                    <td className="px-5 py-3 text-right font-mono text-muted-foreground">
-                      {fmt(r.compensacion_consenso_fiscal || 0)}
                     </td>
                     <td className="px-5 py-3 text-right font-mono font-bold">
                       {fmt(r.total || 0)}

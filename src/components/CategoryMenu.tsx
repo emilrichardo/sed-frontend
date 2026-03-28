@@ -129,8 +129,8 @@ export function CategoryDetailPanel({
         </div>
       )}
 
-      {/* Publications */}
-      <div>
+      {/* Publications — only shown when there are no subcategories */}
+      {(category.children.length > 0 || category.slug === "finanzas-provinciales") ? null : <div>
         <div className="flex items-baseline gap-2 px-4 pt-5 pb-2">
           <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
             Publicaciones
@@ -218,7 +218,7 @@ export function CategoryDetailPanel({
             No hay publicaciones en esta categoría.
           </p>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

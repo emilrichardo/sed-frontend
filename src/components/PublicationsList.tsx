@@ -13,7 +13,6 @@ import {
   Newspaper,
   TrendingUp,
   BookOpen,
-  SlidersHorizontal,
   MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
@@ -53,6 +52,7 @@ type TaxItem = { id: string | number; nombre: string; slug?: string };
 interface Props {
   items: FlatPublication[];
   allCategories: TaxItem[];
+  catParentMap: Record<string, string>;
 }
 
 function getDescription(item: ReportItem): string {
@@ -94,6 +94,7 @@ function GridCard({ item }: { item: FlatPublication }) {
   const date = item.publishedDate || item.createdAt;
   const img = getImg(item);
   const tags = getItemTags(item);
+  const description = getDescription(item);
 
   const useChart = shouldShowChart(item);
   const tablaBlocks = useChart ? extractAllTablaBlocks(item.contenido) : [];
@@ -101,14 +102,58 @@ function GridCard({ item }: { item: FlatPublication }) {
 
   return (
     <div className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-all h-full">
-      {/* Image / Chart preview */}
-      <div
-        className={`relative aspect-[16/9] shrink-0 bg-background overflow-hidden border-b border-border`}
-      >
+      {/* Text content — top */}
+      <div className="flex flex-col p-5 pb-4">
+        {item.parentTitle && (
+          <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-0.5">
+            <span className="truncate">{item.parentTitle}</span>
+            <ChevronRight className="h-3 w-3 shrink-0" />
+          </p>
+        )}
+
+        <h3 className="font-semibold text-base leading-snug group-hover:text-primary transition-colors line-clamp-2">
+          <Link
+            href={`/publicaciones/${item.slug}`}
+            className="hover:underline"
+          >
+            {item.titulo}
+          </Link>
+        </h3>
+
+        {description && (
+          <p className="mt-2 text-sm text-muted-foreground line-clamp-2 leading-snug">
+            {description}
+          </p>
+        )}
+
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <div className="flex gap-1 flex-wrap">
+            {tags.slice(0, 2).map((t) => (
+              <span
+                key={t.id}
+                className="px-1.5 py-0.5 bg-muted rounded text-[10px] text-muted-foreground"
+              >
+                {t.nombre}
+              </span>
+            ))}
+          </div>
+          {date && (
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              {new Date(date).toLocaleDateString("es-AR", {
+                year: "numeric",
+                month: "short",
+              })}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Image / Chart — bottom */}
+      <div className="relative flex-1 min-h-48 bg-background overflow-hidden border-t border-border">
         {!useChart && img ? (
           <Link
             href={`/publicaciones/${item.slug}`}
-            className="block w-full h-full relative"
+            className="block w-full h-full absolute inset-0"
           >
             <Image
               src={img.url!}
@@ -139,46 +184,6 @@ function GridCard({ item }: { item: FlatPublication }) {
             );
           })()
         )}
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-col flex-1 p-5">
-        {item.parentTitle && (
-          <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-0.5">
-            <span className="truncate">{item.parentTitle}</span>
-            <ChevronRight className="h-3 w-3 shrink-0" />
-          </p>
-        )}
-
-        <h3 className="font-semibold text-base leading-snug group-hover:text-primary transition-colors line-clamp-2">
-          <Link
-            href={`/publicaciones/${item.slug}`}
-            className="hover:underline"
-          >
-            {item.titulo}
-          </Link>
-        </h3>
-
-        <div className="mt-3 flex items-end justify-between gap-2">
-          <div className="flex gap-1 flex-wrap">
-            {tags.slice(0, 2).map((t) => (
-              <span
-                key={t.id}
-                className="px-1.5 py-0.5 bg-muted rounded text-[10px] text-muted-foreground"
-              >
-                {t.nombre}
-              </span>
-            ))}
-          </div>
-          {date && (
-            <span className="text-[10px] text-muted-foreground shrink-0">
-              {new Date(date).toLocaleDateString("es-AR", {
-                year: "numeric",
-                month: "short",
-              })}
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -304,21 +309,17 @@ function GroupedCard({ node }: { node: GroupedNode }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PublicationsList({ items, allCategories }: Props) {
+export function PublicationsList({ items, allCategories, catParentMap }: Props) {
   const [search, setSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<
-    Set<string | number>
-  >(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>("wide");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [moreOpen, setMoreOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+      if (moreRef.current && !moreRef.current.contains(e.target as Node))
+        setMoreOpen(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -328,8 +329,14 @@ export function PublicationsList({ items, allCategories }: Props) {
     if (search && !item.titulo.toLowerCase().includes(search.toLowerCase()))
       return false;
     if (selectedCategories.size > 0) {
-      const ids = getItemTags(item).map((t) => t.id);
-      if (!ids.some((id) => selectedCategories.has(id))) return false;
+      const ids = getItemTags(item).map((t) => String(t.id));
+      const matches = ids.some((id) => {
+        if (selectedCategories.has(id)) return true;
+        const parentId = catParentMap[id];
+        if (parentId && selectedCategories.has(parentId)) return true;
+        return false;
+      });
+      if (!matches) return false;
     }
     return true;
   };
@@ -358,12 +365,13 @@ export function PublicationsList({ items, allCategories }: Props) {
   }, [items, search, selectedCategories]);
 
   const toggleCategory = (id: string | number) => {
+    const sid = String(id);
     setSelectedCategories((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
+      if (next.has(sid)) {
+        next.delete(sid);
       } else {
-        next.add(id);
+        next.add(sid);
       }
       return next;
     });
@@ -378,7 +386,7 @@ export function PublicationsList({ items, allCategories }: Props) {
     viewMode === "grid" ? filteredGrid.length : filteredGrouped.length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-2">
         {/* Search */}
@@ -401,62 +409,10 @@ export function PublicationsList({ items, allCategories }: Props) {
           )}
         </div>
 
-        {/* Filter button */}
-        <div className="relative shrink-0" ref={filterRef}>
-          <button
-            onClick={() => { setFilterOpen((o) => !o); setMoreOpen(false); }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-              selectedCategories.size > 0
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:text-foreground"
-            }`}
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Filtros
-            {selectedCategories.size > 0 && (
-              <span className="ml-0.5 bg-primary-foreground/20 rounded-full px-1.5 text-[10px] font-bold">
-                {selectedCategories.size}
-              </span>
-            )}
-          </button>
-          {filterOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-background shadow-lg z-50 p-2 space-y-1">
-              {allCategories.length === 0 ? (
-                <p className="text-xs text-muted-foreground px-2 py-1">Sin categorías</p>
-              ) : (
-                allCategories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => toggleCategory(cat.id)}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      selectedCategories.has(cat.id)
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {cat.nombre}
-                  </button>
-                ))
-              )}
-              {selectedCategories.size > 0 && (
-                <>
-                  <div className="my-1 border-t border-border" />
-                  <button
-                    onClick={() => { setSelectedCategories(new Set()); setFilterOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-all"
-                  >
-                    Limpiar filtros
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* 3-dot menu */}
         <div className="relative shrink-0" ref={moreRef}>
           <button
-            onClick={() => { setMoreOpen((o) => !o); setFilterOpen(false); }}
+            onClick={() => setMoreOpen((o) => !o)}
             className="p-1.5 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors"
             title="Más opciones"
           >
@@ -464,15 +420,30 @@ export function PublicationsList({ items, allCategories }: Props) {
           </button>
           {moreOpen && (
             <div className="absolute right-0 mt-2 w-44 rounded-xl border border-border bg-background shadow-lg z-50 p-2 space-y-1">
-              <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vista</p>
-              {([
-                { mode: "wide" as ViewMode, Icon: LayoutList, label: "Amplio" },
-                { mode: "grid" as ViewMode, Icon: Grid2X2, label: "Grid" },
-                { mode: "agrupado" as ViewMode, Icon: ChevronRight, label: "Agrupado" },
-              ] as const).map(({ mode, Icon, label }) => (
+              <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Vista
+              </p>
+              {(
+                [
+                  {
+                    mode: "wide" as ViewMode,
+                    Icon: LayoutList,
+                    label: "Amplio",
+                  },
+                  { mode: "grid" as ViewMode, Icon: Grid2X2, label: "Grid" },
+                  {
+                    mode: "agrupado" as ViewMode,
+                    Icon: ChevronRight,
+                    label: "Agrupado",
+                  },
+                ] as const
+              ).map(({ mode, Icon, label }) => (
                 <button
                   key={mode}
-                  onClick={() => { setViewMode(mode); setMoreOpen(false); }}
+                  onClick={() => {
+                    setViewMode(mode);
+                    setMoreOpen(false);
+                  }}
                   className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     viewMode === mode
                       ? "bg-primary text-primary-foreground"
@@ -487,7 +458,10 @@ export function PublicationsList({ items, allCategories }: Props) {
                 <>
                   <div className="my-1 border-t border-border" />
                   <button
-                    onClick={() => { clearAll(); setMoreOpen(false); }}
+                    onClick={() => {
+                      clearAll();
+                      setMoreOpen(false);
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-all"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -499,6 +473,25 @@ export function PublicationsList({ items, allCategories }: Props) {
           )}
         </div>
       </div>
+
+      {/* ── Category pills ── */}
+      {allCategories.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {allCategories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => toggleCategory(cat.id)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                selectedCategories.has(String(cat.id))
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
+              }`}
+            >
+              {cat.nombre}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Results bar ── */}
       <div className="flex items-center justify-between text-xs text-muted-foreground border-b pb-3">
@@ -528,7 +521,7 @@ export function PublicationsList({ items, allCategories }: Props) {
           </p>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-2 gap-6 items-stretch">
           {filteredGrid.map((item) => (
             <GridCard key={item.id} item={item} />
           ))}

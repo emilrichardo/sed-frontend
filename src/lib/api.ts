@@ -691,10 +691,12 @@ export async function getReports(
     sort?: string;
     depth?: number;
     where?: Record<string, unknown>;
+    pagination?: boolean;
   } = {},
 ): Promise<PayloadResponse<ReportItem>> {
-  const { page = 1, limit = 10, sort = "-createdAt", depth, where } = params;
+  const { page = 1, limit = 10, sort = "-createdAt", depth, where, pagination } = params;
   let url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=${sort}`;
+  if (pagination === false) url += `&pagination=false`;
   if (depth !== undefined) url += `&depth=${depth}`;
 
   // Re-add draft=false if we want only published, but for now let's see why it's empty

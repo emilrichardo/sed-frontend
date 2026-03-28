@@ -11,9 +11,10 @@ interface Props {
   featuredItems: FeaturedPublicationNode[];
   flatItems: FlatPublication[];
   allCategories: TaxItem[];
+  catParentMap: Record<string, string>;
 }
 
-export function PublicationsPageContent({ featuredItems, flatItems, allCategories }: Props) {
+export function PublicationsPageContent({ featuredItems, flatItems, allCategories, catParentMap }: Props) {
   return (
     <div className="max-w-[960px] mx-auto space-y-8">
       {featuredItems.length > 0 && (
@@ -22,7 +23,7 @@ export function PublicationsPageContent({ featuredItems, flatItems, allCategorie
         </section>
       )}
 
-      <PublicationsList items={flatItems} allCategories={allCategories} />
+      <PublicationsList items={flatItems} allCategories={allCategories} catParentMap={catParentMap} />
     </div>
   );
 }
