@@ -10,7 +10,7 @@ type Props = {
   };
 };
 
-const THEME_VARS = [
+const STANDARD_VARS = [
   "--background", "--foreground",
   "--card", "--card-foreground",
   "--primary", "--primary-foreground",
@@ -18,7 +18,23 @@ const THEME_VARS = [
   "--muted", "--muted-foreground",
   "--accent", "--accent-foreground",
   "--destructive", "--border", "--radius",
+  "--font-sans", "--font-mono",
 ];
+
+// Aliases for common AI-generated variable names → mapped to standard vars
+const ALIAS_CSS = `
+  --color-text-primary: var(--foreground);
+  --color-text-secondary: var(--muted-foreground);
+  --color-text-tertiary: var(--muted-foreground);
+  --color-background-primary: var(--background);
+  --color-background-secondary: var(--muted);
+  --color-background-tertiary: var(--card);
+  --color-border-primary: var(--border);
+  --color-border-secondary: var(--border);
+  --color-border-tertiary: var(--border);
+  --color-accent: var(--primary);
+  --color-surface: var(--card);
+`;
 
 const RESIZE_SCRIPT = `<script>
   function notifyHeight() {
@@ -29,21 +45,40 @@ const RESIZE_SCRIPT = `<script>
   new MutationObserver(notifyHeight).observe(document.body, {
     childList: true, subtree: true, attributes: true
   });
-</script>`;
+<\/script>`;
+
+function readThemeStyle(): string {
+  if (typeof window === "undefined") return "";
+  const computed = window.getComputedStyle(document.documentElement);
+  const vars = STANDARD_VARS.map(
+    (v) => `${v}: ${computed.getPropertyValue(v).trim() || "unset"};`
+  ).join(" ");
+  return `:root { ${vars} ${ALIAS_CSS} } html, body { background-color: var(--background); color: var(--foreground); margin: 0; padding: 0; }`;
+}
 
 export function CustomVizBlock({ custom_markup, data }: Props) {
   const [height, setHeight] = useState(400);
-  const [themeStyle, setThemeStyle] = useState("");
+  // Lazy initializer: runs synchronously on the client before first render,
+  // avoiding the double-render / iframe-reload caused by a useEffect update.
+  const [themeStyle] = useState(readThemeStyle);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Read CSS custom properties from the host document and inject them into the iframe
-  useEffect(() => {
-    const computed = window.getComputedStyle(document.documentElement);
-    const vars = THEME_VARS.map(
-      (v) => `${v}: ${computed.getPropertyValue(v).trim()};`
-    ).join(" ");
-    setThemeStyle(`:root { ${vars} } html, body { background-color: var(--background); color: var(--foreground); margin: 0; padding: 0; }`);
-  }, []);
+  const tableData = data.rows.map((row) =>
+    Object.fromEntries(data.columns.map((col) => [col.header, row[col.id] ?? ""]))
+  );
+
+  const srcdoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>${themeStyle}</style>
+</head>
+<body>
+  <script>window.__tableData = ${JSON.stringify(tableData)};<\/script>
+  ${RESIZE_SCRIPT}
+  ${custom_markup}
+</body>
+</html>`;
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -57,23 +92,6 @@ export function CustomVizBlock({ custom_markup, data }: Props) {
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
   }, []);
-
-  const tableData = data.rows.map((row) =>
-    Object.fromEntries(data.columns.map((col) => [col.header, row[col.id]]))
-  );
-
-  const srcdoc = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>${themeStyle}</style>
-</head>
-<body>
-  <script>window.__tableData = ${JSON.stringify(tableData)};</script>
-  ${RESIZE_SCRIPT}
-  ${custom_markup}
-</body>
-</html>`;
 
   return (
     <iframe
