@@ -31,12 +31,18 @@ import {
   Save,
   Check,
   AlertCircle,
+  Pencil,
+  X,
+  Play,
+  Bot,
+  Copy,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
+import { CustomVizBlock } from "./CustomVizBlock";
 import { getTextFromNodes } from "./RichTextParser";
 import { useAuth } from "@/context/AuthContext";
 import { Download } from "lucide-react";
-import { updatePublicacionBlockVisualizacion } from "@/lib/api";
+import { updatePublicacionBlockVisualizacion, updatePublicacionBlockCustomMarkup } from "@/lib/api";
 
 // --- Column type detection ---
 
@@ -477,6 +483,7 @@ export const TableBlock = ({
     blockType: string;
     source_type?: string;
     tipo_visualizacion?: string;
+    custom_markup?: string;
     configuracion_visualizacion?: any;
     tabla_relacionada?: {
       titulo?: string;
@@ -618,19 +625,40 @@ export const TableBlock = ({
   const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
 
   const defaultChartType =
-    resolvedVisualizationType &&
-    allChartTypeIds.includes(resolvedVisualizationType)
-      ? resolvedVisualizationType
-      : compatibleIds.has(recommendedId)
-        ? recommendedId
-        : ([...compatibleIds][0] ?? "table");
+    resolvedVisualizationType === "custom_viz"
+      ? "custom_viz"
+      : resolvedVisualizationType &&
+          allChartTypeIds.includes(resolvedVisualizationType)
+        ? resolvedVisualizationType
+        : compatibleIds.has(recommendedId)
+          ? recommendedId
+          : ([...compatibleIds][0] ?? "table");
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [editingMarkup, setEditingMarkup] = useState(false);
+  const [markupDraft, setMarkupDraft] = useState(fields.custom_markup || "");
+  const [markupSaveState, setMarkupSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const blockId = fields.id;
   const savedChartType = resolvedVisualizationType ?? defaultChartType;
   const canSave = !!user && !!publicationId && !!blockId && selectedChartType !== savedChartType;
+
+  const handleSaveMarkup = async () => {
+    if (!publicationId || !blockId) return;
+    setMarkupSaveState("saving");
+    try {
+      await updatePublicacionBlockCustomMarkup(publicationId, blockId, markupDraft);
+      setMarkupSaveState("saved");
+      setEditingMarkup(false);
+      setTimeout(() => setMarkupSaveState("idle"), 2500);
+    } catch {
+      setMarkupSaveState("error");
+      setTimeout(() => setMarkupSaveState("idle"), 3000);
+    }
+  };
 
   const handleSave = async () => {
     if (!publicationId || !blockId) return;
@@ -772,6 +800,12 @@ export const TableBlock = ({
   const showChart =
     activeTab === "visualizacion" &&
     selectedChartType !== "table" &&
+    selectedChartType !== "custom_viz" &&
+    !showPublicTable;
+
+  const showCustomVizPanel =
+    activeTab === "visualizacion" &&
+    selectedChartType === "custom_viz" &&
     !showPublicTable;
 
   const handleDownloadCSV = () => {
@@ -809,6 +843,40 @@ export const TableBlock = ({
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "");
   }
+
+  const aiPrompt = (() => {
+    const tableData = filteredRows.map((row: any) =>
+      Object.fromEntries(
+        columns.map((col: any) => [
+          col.header,
+          row.cells
+            ? row.cells.find((c: any) => c.columnId === col.id)?.value ?? ""
+            : row[col.id] ?? "",
+        ])
+      )
+    );
+    const colNames = columns.map((c: any) => c.header).join(", ");
+    const currentMarkup = markupDraft || fields.custom_markup || "<!-- sin markup aún -->";
+    return `Tengo los siguientes datos y necesito una visualización personalizada en HTML + CSS + JS.
+
+## Columnas disponibles
+${colNames}
+
+## Datos (window.__tableData)
+${JSON.stringify(tableData, null, 2)}
+
+## Instrucciones
+- Los datos ya están cargados en window.__tableData como array de objetos (una clave por columna)
+- Usá las CSS variables del tema para colores: var(--background), var(--foreground), var(--primary), var(--primary-foreground), var(--muted), var(--muted-foreground), var(--border), var(--card), var(--card-foreground)
+- NO incluyas <!DOCTYPE html>, <html>, <head> ni <body> — solo el contenido interno (<style>, <div>, <script>)
+- Podés cargar librerías externas desde CDN con <script src="..."> si lo necesitás (Chart.js, D3, Plotly, etc.)
+- El bloque se inyecta en un iframe que ya tiene las CSS vars del tema disponibles
+
+## Markup actual (punto de partida)
+\`\`\`html
+${currentMarkup}
+\`\`\``;
+  })();
 
   return (
     <div
@@ -918,6 +986,24 @@ export const TableBlock = ({
               </button>
             );
           })}
+          {/* Custom viz button — only when block has custom_markup */}
+          {fields.custom_markup && (
+            <div className="flex items-center border-l ml-1 pl-2">
+              <button
+                title="Visualización personalizada (HTML/JS)"
+                onClick={() => setSelectedChartType("custom_viz")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  selectedChartType === "custom_viz"
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:hover:bg-violet-900/60 border border-violet-200 dark:border-violet-800"
+                }`}
+              >
+                <Code className="h-3.5 w-3.5" />
+                Custom
+              </button>
+            </div>
+          )}
+
           {/* Recommendation legend + Save button */}
           <div className="ml-auto flex items-center gap-2 pl-2">
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -1029,6 +1115,134 @@ export const TableBlock = ({
                       <TableIcon className="h-3 w-3" />
                       Ver datos
                     </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showCustomVizPanel && (
+              <div className="bg-card border-b">
+                {editingMarkup ? (
+                  /* ── Editor de markup ── */
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Code className="h-3.5 w-3.5" />
+                        Editar markup HTML / JS
+                      </span>
+                      <button
+                        onClick={() => { setEditingMarkup(false); setMarkupDraft(fields.custom_markup || ""); }}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Cancelar
+                      </button>
+                    </div>
+                    <textarea
+                      value={markupDraft}
+                      onChange={(e) => setMarkupDraft(e.target.value)}
+                      className="w-full h-72 font-mono text-xs bg-slate-950 text-slate-50 p-3 rounded border border-border resize-y focus:outline-none focus:ring-1 focus:ring-primary"
+                      spellCheck={false}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSaveMarkup}
+                        disabled={markupSaveState === "saving"}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all ${
+                          markupSaveState === "saved"
+                            ? "bg-green-600 text-white"
+                            : markupSaveState === "error"
+                              ? "bg-destructive text-destructive-foreground"
+                              : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                        }`}
+                      >
+                        {markupSaveState === "saved" ? (
+                          <><Check className="h-3.5 w-3.5" />Guardado</>
+                        ) : markupSaveState === "error" ? (
+                          <><AlertCircle className="h-3.5 w-3.5" />Error</>
+                        ) : markupSaveState === "saving" ? (
+                          <>Guardando...</>
+                        ) : (
+                          <><Save className="h-3.5 w-3.5" />Guardar markup</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Vista normal: toolbar (solo editor) + iframe ── */
+                  <div>
+                    {!!user && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-muted/10">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 flex-1">
+                          Visualización personalizada
+                        </span>
+                        {showPrompt ? (
+                          <button
+                            onClick={() => setShowPrompt(false)}
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                            Cerrar prompt
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setShowPrompt(true)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:hover:bg-violet-900/60 transition-colors border border-violet-200 dark:border-violet-800"
+                            >
+                              <Bot className="h-3.5 w-3.5" />
+                              Prompt IA
+                            </button>
+                            <button
+                              onClick={() => setEditingMarkup(true)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors border border-transparent hover:border-border"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Editar markup
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── Panel prompt IA ── */}
+                    {showPrompt && !!user && (
+                      <div className="p-4 border-b bg-violet-950/10 space-y-3">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Copiá este prompt y pegalo en tu IA favorita (ChatGPT, Claude, etc.) para generar una visualización personalizada con estos datos.
+                        </p>
+                        <textarea
+                          readOnly
+                          value={aiPrompt}
+                          className="w-full h-52 font-mono text-xs bg-slate-950 text-slate-50 p-3 rounded border border-border resize-y focus:outline-none"
+                          onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                        />
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(aiPrompt).then(() => {
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            });
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all ${
+                            copied
+                              ? "bg-green-600 text-white"
+                              : "bg-violet-600 text-white hover:bg-violet-700"
+                          }`}
+                        >
+                          {copied ? (
+                            <><Check className="h-3.5 w-3.5" />Copiado!</>
+                          ) : (
+                            <><Copy className="h-3.5 w-3.5" />Copiar prompt</>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    <CustomVizBlock
+                      custom_markup={markupDraft || fields.custom_markup || ""}
+                      data={{ columns, rows: filteredRows }}
+                    />
                   </div>
                 )}
               </div>

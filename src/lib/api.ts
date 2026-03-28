@@ -1256,6 +1256,66 @@ function patchBlockInNode(node: any, blockId: string, tipo_visualizacion: string
   return false;
 }
 
+function patchBlockCustomMarkupInNode(node: any, blockId: string, custom_markup: string): boolean {
+  if (!node) return false;
+  if (node.type === "block" && node.fields?.id === blockId) {
+    node.fields.custom_markup = custom_markup;
+    return true;
+  }
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      if (patchBlockCustomMarkupInNode(child, blockId, custom_markup)) return true;
+    }
+  }
+  return false;
+}
+
+export async function updatePublicacionBlockCustomMarkup(
+  publicacionId: string | number,
+  blockId: string,
+  custom_markup: string,
+): Promise<void> {
+  const isClient = typeof window !== "undefined";
+
+  const getUrl = isClient
+    ? `/api/cms?path=/publicaciones/${publicacionId}&qs=depth%3D0`
+    : null;
+  const getRes = getUrl
+    ? await fetch(getUrl, { cache: "no-store" })
+    : await apiFetch(`/publicaciones/${publicacionId}?depth=0`);
+
+  if (!getRes.ok) {
+    throw new Error(`No se pudo obtener la publicación (${getRes.status})`);
+  }
+  const pub = await getRes.json();
+
+  const contenido = pub.contenido;
+  if (!contenido?.root) throw new Error("La publicación no tiene contenido Lexical");
+  const found = patchBlockCustomMarkupInNode(contenido.root, blockId, custom_markup);
+  if (!found) throw new Error("Bloque no encontrado en el contenido");
+
+  if (isClient) {
+    const patchRes = await fetch(`/api/cms?path=/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
+  } else {
+    const patchRes = await apiFetch(`/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
+  }
+}
+
 export async function updatePublicacionBlockVisualizacion(
   publicacionId: string | number,
   blockId: string,
