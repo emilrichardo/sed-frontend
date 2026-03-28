@@ -15,7 +15,7 @@ export function EditContentButton({ collection, id }: EditContentButtonProps) {
 
   return (
     <a
-      href={`http://localhost:3000/admin/collections/${collection}/${id}`}
+      href={`${process.env.NEXT_PUBLIC_PAYLOAD_API_URL}/admin/collections/${collection}/${id}`}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center justify-center p-2 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-muted"

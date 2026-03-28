@@ -90,11 +90,18 @@ function getImg(item: ReportItem) {
 
 // ── Grid card ─────────────────────────────────────────────────────────────────
 
+function getAutor(item: ReportItem) {
+  const a = item.autor;
+  if (!a || typeof a !== "object") return null;
+  return a as { nombre: string; apellido: string; cargo?: string };
+}
+
 function GridCard({ item }: { item: FlatPublication }) {
   const date = item.publishedDate || item.createdAt;
   const img = getImg(item);
   const tags = getItemTags(item);
   const description = getDescription(item);
+  const autor = getAutor(item);
 
   const useChart = shouldShowChart(item);
   const tablaBlocks = useChart ? extractAllTablaBlocks(item.contenido) : [];
@@ -123,6 +130,13 @@ function GridCard({ item }: { item: FlatPublication }) {
         {description && (
           <p className="mt-2 text-sm text-muted-foreground line-clamp-2 leading-snug">
             {description}
+          </p>
+        )}
+
+        {autor && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {autor.nombre} {autor.apellido}
+            {autor.cargo && <span className="text-muted-foreground/60"> · {autor.cargo}</span>}
           </p>
         )}
 

@@ -863,7 +863,7 @@ export const TableBlock = ({
       )}
 
       {/* Chart type switcher */}
-      {!isWidget && activeTab === "visualizacion" && !isPublicUser && (
+      {!isWidget && activeTab === "visualizacion" && !!user && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 bg-muted/10 border-b flex-wrap">
           {CHART_CATALOG.map(({ id, label, Icon }) => {
             const isCompatible = compatibleIds.has(id);

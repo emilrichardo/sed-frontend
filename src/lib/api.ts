@@ -719,9 +719,15 @@ export async function getReports(
 
   console.log(`[getReports] Fetching: ${url}`);
 
+  const headers: Record<string, string> = {};
+  if (process.env.PAYLOAD_USER_TOKEN) {
+    headers["Authorization"] = `JWT ${process.env.PAYLOAD_USER_TOKEN}`;
+  }
+
   try {
     const res = await fetch(url, {
       next: { revalidate: 60 },
+      headers,
     });
 
     if (!res.ok) {
@@ -753,14 +759,18 @@ export async function getReportItem(slug: string): Promise<ReportItem | null> {
   try {
     // Search by slug
     const timestamp = Date.now();
+    const reqHeaders: Record<string, string> = {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+    };
+    if (process.env.PAYLOAD_USER_TOKEN) {
+      reqHeaders["Authorization"] = `JWT ${process.env.PAYLOAD_USER_TOKEN}`;
+    }
     const res = await fetch(
       `${API_URL}/publicaciones?where[slug][equals]=${slug}&depth=2&draft=false&t=${timestamp}`,
       {
         cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-        },
+        headers: reqHeaders,
       },
     );
 
@@ -1229,6 +1239,20 @@ export async function getAgent(
   }
 
   return res.json();
+}
+
+export async function updateTablaVisualizacion(
+  id: string | number,
+  tipo_visualizacion: string,
+): Promise<void> {
+  const res = await apiFetch(`/tablas/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ tipo_visualizacion }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+  }
 }
 
 export async function updateAgent(
