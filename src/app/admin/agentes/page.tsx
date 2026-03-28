@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import {
@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Play,
   Pause,
-  Clock,
 } from "lucide-react";
 import { getAgents, Agent } from "@/lib/api";
 
@@ -125,7 +124,7 @@ function AgentCard({ agent }: { agent: Agent }) {
             })}
           </span>
           <Link
-            href={`/admin/agentes/${agent.id}`}
+            href={`/admin/agentes/editar?id=${agent.id}`}
             className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
           >
             Editar

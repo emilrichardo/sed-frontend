@@ -9,34 +9,37 @@ interface StatItem {
   suffix?: string;
 }
 
-// Santiago del Estero has 27 departments — fixed geographic fact
+// Santiago del Estero — fixed geographic facts
 const DEPTOS_SANTIAGO = 27;
 
-function buildStats(counts?: SiteStatCounts): StatItem[] {
-  if (!counts) {
-    return [
-      { label: "Publicaciones", value: "320", suffix: "+" },
-      { label: "Categorías", value: "15" },
-      { label: "Boletines Oficiales", value: "1.200", suffix: "+" },
-      { label: "Datos Estadísticos", value: "48" },
-      { label: "Informes", value: "85" },
-      { label: "Departamentos", value: String(DEPTOS_SANTIAGO) },
-      { label: "Población", value: "1.000.000", suffix: "+" },
-    ];
-  }
+const GEO_STATS: StatItem[] = [
+  { label: "Superficie", value: "136.351km²" },
+  { label: "Hab", value: "1.060.906" },
+  { label: "Departamentos", value: String(DEPTOS_SANTIAGO) },
+];
 
+function buildStats(counts?: SiteStatCounts): StatItem[] {
   const fmt = (n: number) =>
     new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
 
-  return [
-    { label: "Publicaciones", value: fmt(counts.informes) },
-    { label: "Categorías", value: fmt(counts.categorias) },
-    { label: "Boletines Oficiales", value: fmt(counts.boletines) },
-    ...(counts.estadisticas > 0
-      ? [{ label: "Datos Estadísticos", value: fmt(counts.estadisticas) }]
-      : []),
-    { label: "Departamentos", value: String(DEPTOS_SANTIAGO) },
-  ];
+  const dynamicStats: StatItem[] = counts
+    ? [
+        { label: "Publicaciones", value: fmt(counts.informes) },
+        { label: "Categorías", value: fmt(counts.categorias) },
+        { label: "Boletines Oficiales", value: fmt(counts.boletines) },
+        ...(counts.estadisticas > 0
+          ? [{ label: "Datos Estadísticos", value: fmt(counts.estadisticas) }]
+          : []),
+      ]
+    : [
+        { label: "Publicaciones", value: "320", suffix: "+" },
+        { label: "Categorías", value: "15" },
+        { label: "Boletines Oficiales", value: "1.200", suffix: "+" },
+        { label: "Datos Estadísticos", value: "48" },
+        { label: "Informes", value: "85" },
+      ];
+
+  return [...GEO_STATS, ...dynamicStats];
 }
 
 interface Props {

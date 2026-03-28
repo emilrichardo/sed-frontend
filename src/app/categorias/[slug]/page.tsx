@@ -12,6 +12,8 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getAllCategorySlugs } from "@/lib/static-params";
 
+const isRootCategory = (children: Category[]) => children.length > 0;
+
 export const revalidate = 300;
 export async function generateStaticParams() {
   const slugs = await getAllCategorySlugs();
@@ -51,9 +53,11 @@ export default async function CategoryPage({ params }: PageProps) {
       }
     : { href: "/publicaciones", label: "Publicaciones" };
 
-  // Fetch publications for this category and all its subcategories
-  const allCategoryIds = [category.id, ...children.map((c) => c.id)];
-  const publicaciones = await getPublicacionesByCategoriaIds(allCategoryIds);
+  // Solo fetch publicaciones en subcategorías (sin hijos)
+  const publicaciones =
+    !isRootCategory(children)
+      ? await getPublicacionesByCategoriaIds([category.id])
+      : null;
 
   return (
     <>
@@ -116,19 +120,21 @@ export default async function CategoryPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Publicaciones */}
-        <section>
-          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
-            Publicaciones
-            {publicaciones.totalDocs > 0 && (
-              <span className="ml-2 text-foreground">
-                {publicaciones.totalDocs}
-              </span>
-            )}
-          </p>
+        {/* Publicaciones — solo en subcategorías */}
+        {publicaciones && (
+          <section>
+            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
+              Publicaciones
+              {publicaciones.totalDocs > 0 && (
+                <span className="ml-2 text-foreground">
+                  {publicaciones.totalDocs}
+                </span>
+              )}
+            </p>
 
-          <CategoryPublicationsList publications={publicaciones.docs} />
-        </section>
+            <CategoryPublicationsList publications={publicaciones.docs} />
+          </section>
+        )}
       </div>
     </>
   );

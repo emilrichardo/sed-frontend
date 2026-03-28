@@ -4,6 +4,7 @@ import {
   getReports,
   getCategories,
   getSiteStatCounts,
+  sortCategoriesByOrder,
 } from "@/lib/api";
 import type { Category } from "@/lib/api";
 import { HomeHero } from "@/components/HomeHero";
@@ -17,7 +18,7 @@ import { HomeWidgetGroup } from "@/components/HomeWidgetGroup";
 import { DesktopCategoryBar } from "@/components/DesktopCategoryBar";
 import { MobileScrollTransition } from "@/components/MobileScrollTransition";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Newspaper, ArrowUpRight } from "lucide-react";
 
 export const revalidate = 60;
 
@@ -38,14 +39,16 @@ export default async function Home() {
   // Build category tree for the shared CategoryMenu
   const roots = allCategories.filter((c: Category) => !c.parent);
   const childrenList = allCategories.filter((c: Category) => c.parent);
-  const categoryTree = roots.map((root: Category) => ({
-    ...root,
-    children: childrenList.filter((c: Category) => {
-      const pid =
-        typeof c.parent === "object" ? (c.parent as Category)?.id : c.parent;
-      return String(pid) === String(root.id);
-    }),
-  }));
+  const categoryTree = sortCategoriesByOrder(
+    roots.map((root: Category) => ({
+      ...root,
+      children: childrenList.filter((c: Category) => {
+        const pid =
+          typeof c.parent === "object" ? (c.parent as Category)?.id : c.parent;
+        return String(pid) === String(root.id);
+      }),
+    })),
+  );
 
   return (
     <div className="w-full">

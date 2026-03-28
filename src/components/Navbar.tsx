@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { API_URL } from "@/lib/api";
+import { API_URL, sortCategoriesByOrder } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import {
   LogOut,
@@ -148,16 +148,6 @@ function DesktopCategoryDropdown({
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
-  const sortedCategories = [...categories].sort((a, b) => {
-    const aHasSubs =
-      a.children.length > 0 || a.slug === "finanzas-provinciales";
-    const bHasSubs =
-      b.children.length > 0 || b.slug === "finanzas-provinciales";
-    if (aHasSubs && !bHasSubs) return -1;
-    if (!aHasSubs && bHasSubs) return 1;
-    return 0;
-  });
-
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -176,13 +166,12 @@ function DesktopCategoryDropdown({
 
       {open && (
         <div className="fixed top-[60px] right-4 bg-background border border-border rounded-xl shadow-xl z-[60] overflow-hidden grid grid-cols-2 gap-px w-[520px]">
-          {sortedCategories.map((cat, idx) => (
+          {categories.map((cat, idx) => (
             <div key={cat.id} className="bg-background">
-              {/* Category heading */}
               <Link
                 href={`/categorias/${cat.slug}`}
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-between gap-4 px-6 pt-5 pb-2 hover:bg-muted/50 transition-colors group"
+                className="flex items-center justify-between gap-4 px-6 py-5 hover:bg-muted/50 transition-colors group"
               >
                 <span className="flex items-center gap-3">
                   <span className="text-xs font-mono text-muted-foreground tabular-nums w-5 shrink-0">
@@ -194,39 +183,6 @@ function DesktopCategoryDropdown({
                 </span>
                 <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>
-
-              {/* Subcategories — aligned with category name (pl = px-6 + w-5 + gap-3) */}
-              {(cat.children.length > 0 ||
-                cat.slug === "finanzas-provinciales") && (
-                <ul className="pb-4">
-                  {cat.slug === "finanzas-provinciales" && (
-                    <>
-                      <li>
-                        <Link
-                          href="/ingresos"
-                          onClick={() => setOpen(false)}
-                          className="block pl-14 pr-6 py-1.5 text-base text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
-                        >
-                          Ingresos de la Provincia
-                        </Link>
-                      </li>
-                    </>
-                  )}
-                  {cat.children
-                    .filter((sub) => sub.slug !== "ingresos-de-la-provincia")
-                    .map((sub) => (
-                      <li key={sub.id}>
-                        <Link
-                          href={`/categorias/${sub.slug}`}
-                          onClick={() => setOpen(false)}
-                          className="block pl-14 pr-6 py-1.5 text-base text-primary hover:text-primary/70 hover:bg-muted/30 transition-colors whitespace-nowrap"
-                        >
-                          {sub.nombre}
-                        </Link>
-                      </li>
-                    ))}
-                </ul>
-              )}
             </div>
           ))}
         </div>
@@ -282,16 +238,18 @@ export function Navbar() {
         const all: Category[] = data.docs || [];
         const roots = all.filter((c) => !c.parent);
         const childrenList = all.filter((c) => c.parent);
-        const tree: CategoryWithChildren[] = roots.map((root) => ({
-          ...root,
-          children: childrenList.filter((c) => {
-            const pid =
-              typeof c.parent === "object"
-                ? (c.parent as Category)?.id
-                : c.parent;
-            return String(pid) === String(root.id);
-          }),
-        }));
+        const tree: CategoryWithChildren[] = sortCategoriesByOrder(
+          roots.map((root) => ({
+            ...root,
+            children: childrenList.filter((c) => {
+              const pid =
+                typeof c.parent === "object"
+                  ? (c.parent as Category)?.id
+                  : c.parent;
+              return String(pid) === String(root.id);
+            }),
+          })),
+        );
         setCategoryTree(tree);
       })
       .catch(() => {});

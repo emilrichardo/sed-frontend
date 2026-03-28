@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import {
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { getAgent, updateAgent, Agent } from "@/lib/api";
 
-// ── Form state shape ──────────────────────────────────────────────────────────
+// ── Form state ────────────────────────────────────────────────────────────────
 
 interface FormState {
   name: string;
@@ -68,7 +68,7 @@ function formToPayload(
   };
 }
 
-// ── Reusable field components ─────────────────────────────────────────────────
+// ── UI helpers ────────────────────────────────────────────────────────────────
 
 function Field({
   label,
@@ -82,9 +82,7 @@ function Field({
   return (
     <div>
       <label className="block text-sm font-semibold mb-1.5">{label}</label>
-      {hint && (
-        <p className="text-xs text-muted-foreground mb-2">{hint}</p>
-      )}
+      {hint && <p className="text-xs text-muted-foreground mb-2">{hint}</p>}
       {children}
     </div>
   );
@@ -92,8 +90,6 @@ function Field({
 
 const inputCls =
   "w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all";
-
-// ── Sources editor ────────────────────────────────────────────────────────────
 
 function SourcesEditor({
   sources,
@@ -106,9 +102,7 @@ function SourcesEditor({
 
   const add = () => {
     const val = draft.trim();
-    if (val && !sources.includes(val)) {
-      onChange([...sources, val]);
-    }
+    if (val && !sources.includes(val)) onChange([...sources, val]);
     setDraft("");
   };
 
@@ -163,8 +157,6 @@ function SourcesEditor({
   );
 }
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
-
 function Section({
   title,
   children,
@@ -184,13 +176,12 @@ function Section({
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Inner component (needs useSearchParams inside Suspense) ───────────────────
 
-export default function AgentEditPage() {
-  const params = useParams();
-  const router = useRouter();
+function AgentEditForm() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") ?? "";
   const { user } = useAuth();
-  const id = params.id as string;
 
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -201,6 +192,11 @@ export default function AgentEditPage() {
   const [form, setForm] = useState<FormState | null>(null);
 
   const load = useCallback(async () => {
+    if (!id) {
+      setError("ID de agente no especificado.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     const data = await getAgent(id);
@@ -217,15 +213,18 @@ export default function AgentEditPage() {
     if (user) load();
   }, [user, load]);
 
-  const set = (field: keyof FormState) => (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => setForm((prev) => prev && { ...prev, [field]: e.target.value });
+  const set =
+    (field: keyof FormState) =>
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) =>
+      setForm((prev) => prev && { ...prev, [field]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form) return;
+    if (!form || !id) return;
     setSaving(true);
     setSaveError(null);
     setSaved(false);
@@ -241,8 +240,6 @@ export default function AgentEditPage() {
       setSaving(false);
     }
   };
-
-  // ── Guards ──────────────────────────────────────────────────────────────────
 
   if (!user) {
     return (
@@ -273,17 +270,12 @@ export default function AgentEditPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
         <AlertCircle className="w-10 h-10 text-destructive" />
         <p className="text-muted-foreground">{error ?? "Error desconocido"}</p>
-        <Link
-          href="/admin/agentes"
-          className="text-primary hover:underline text-sm"
-        >
+        <Link href="/admin/agentes" className="text-primary hover:underline text-sm">
           Volver a Agentes
         </Link>
       </div>
     );
   }
-
-  // ── Form ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 font-sans">
@@ -307,7 +299,6 @@ export default function AgentEditPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* General */}
         <Section title="General">
           <Field label="Nombre">
             <input
@@ -317,25 +308,15 @@ export default function AgentEditPage() {
               className={inputCls}
             />
           </Field>
-
           <div className="grid grid-cols-2 gap-4">
             <Field label="Estado">
-              <select
-                value={form.status}
-                onChange={set("status")}
-                className={inputCls}
-              >
+              <select value={form.status} onChange={set("status")} className={inputCls}>
                 <option value="active">Activo</option>
                 <option value="inactive">Inactivo</option>
               </select>
             </Field>
-
             <Field label="Tipo">
-              <select
-                value={form.type}
-                onChange={set("type")}
-                className={inputCls}
-              >
+              <select value={form.type} onChange={set("type")} className={inputCls}>
                 <option value="extraction">Extracción</option>
                 <option value="learning">Aprendizaje</option>
               </select>
@@ -343,7 +324,6 @@ export default function AgentEditPage() {
           </div>
         </Section>
 
-        {/* Prompt */}
         <Section title="System Prompt">
           <Field
             label="Prompt del sistema"
@@ -358,7 +338,6 @@ export default function AgentEditPage() {
           </Field>
         </Section>
 
-        {/* Sources & Output */}
         <Section title="Fuentes y Salida">
           <Field
             label="Fuentes (colecciones)"
@@ -369,12 +348,8 @@ export default function AgentEditPage() {
               onChange={(s) => setForm((prev) => prev && { ...prev, sources: s })}
             />
           </Field>
-
           <div className="grid grid-cols-2 gap-4">
-            <Field
-              label="Colección de destino"
-              hint="Colección donde el agente escribe resultados."
-            >
+            <Field label="Colección de destino" hint="Colección donde el agente escribe resultados.">
               <input
                 value={form.destinationCollection}
                 onChange={set("destinationCollection")}
@@ -382,11 +357,7 @@ export default function AgentEditPage() {
                 className={inputCls}
               />
             </Field>
-
-            <Field
-              label="Campo de estado"
-              hint="Campo que el agente actualiza para marcar el estado."
-            >
+            <Field label="Campo de estado" hint="Campo que el agente actualiza para marcar el estado.">
               <input
                 value={form.statusField}
                 onChange={set("statusField")}
@@ -397,7 +368,6 @@ export default function AgentEditPage() {
           </div>
         </Section>
 
-        {/* Model settings */}
         <Section title="Configuración del modelo">
           <Field label="Nombre del modelo">
             <input
@@ -407,7 +377,6 @@ export default function AgentEditPage() {
               className={inputCls}
             />
           </Field>
-
           <div className="grid grid-cols-2 gap-4">
             <Field label="Temperatura" hint="Valor entre 0 (determinista) y 2 (creativo).">
               <input
@@ -420,7 +389,6 @@ export default function AgentEditPage() {
                 className={inputCls}
               />
             </Field>
-
             <Field label="API Key" hint="Dejar vacío para usar la clave global.">
               <input
                 type="password"
@@ -433,7 +401,6 @@ export default function AgentEditPage() {
           </div>
         </Section>
 
-        {/* Footer actions */}
         <div className="flex items-center justify-between pt-2">
           <Link
             href="/admin/agentes"
@@ -442,11 +409,8 @@ export default function AgentEditPage() {
             <Trash2 className="h-4 w-4" />
             Cancelar
           </Link>
-
           <div className="flex items-center gap-3">
-            {saveError && (
-              <p className="text-sm text-destructive">{saveError}</p>
-            )}
+            {saveError && <p className="text-sm text-destructive">{saveError}</p>}
             {saved && (
               <span className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
                 <CheckCircle className="h-4 w-4" />
@@ -469,5 +433,22 @@ export default function AgentEditPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+// ── Page export ───────────────────────────────────────────────────────────────
+// useSearchParams requires Suspense in static export mode.
+
+export default function AgentEditPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <AgentEditForm />
+    </Suspense>
   );
 }

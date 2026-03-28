@@ -429,6 +429,29 @@ export async function getCategories(
   }
 }
 
+const CATEGORY_ORDER = [
+  "trabajo",
+  "produccion",
+  "finanzas-provinciales",
+  "educacion",
+  "salud",
+  "infraestructura",
+  "ambiente",
+];
+
+export function sortCategoriesByOrder<T extends { slug: string }>(
+  categories: T[],
+): T[] {
+  return [...categories].sort((a, b) => {
+    const ai = CATEGORY_ORDER.indexOf(a.slug);
+    const bi = CATEGORY_ORDER.indexOf(b.slug);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+}
+
 export async function getCategoryBySlug(
   slug: string,
 ): Promise<Category | null> {

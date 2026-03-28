@@ -120,7 +120,6 @@ function useFiscalData() {
   useEffect(() => {
     const now = new Date();
     const year = now.getFullYear().toString();
-    const currentMes = (now.getMonth() + 1).toString();
 
     Promise.all([
       fetch(
@@ -160,22 +159,23 @@ function useFiscalData() {
         const yearCopa = months.reduce((s, m) => s + m.coparticipacion, 0);
         const yearIng = months.reduce((s, m) => s + m.ingresos, 0);
 
-        let currentMonth = months.find((m) => m.mes === currentMes);
+        // Latest month where BOTH coparticipacion AND ingresos are available
+        let currentMonth = months.find(
+          (m) => m.coparticipacion > 0 && m.ingresos > 0,
+        );
 
-        // If current calendar month has zero data for both, pick the latest month that has ANY data
-        if (
-          !currentMonth ||
-          (currentMonth.coparticipacion === 0 && currentMonth.ingresos === 0)
-        ) {
+        // Fallback: latest month with any data
+        if (!currentMonth) {
           currentMonth = months.find(
             (m) => m.coparticipacion > 0 || m.ingresos > 0,
           );
         }
 
         if (!currentMonth) {
+          const fallbackMes = (now.getMonth() + 1).toString();
           currentMonth = {
-            mes: currentMes,
-            nombre: MONTH_NAMES[parseInt(currentMes) - 1],
+            mes: fallbackMes,
+            nombre: MONTH_NAMES[parseInt(fallbackMes) - 1],
             coparticipacion: 0,
             ingresos: 0,
           };
@@ -247,17 +247,17 @@ function FiscalCTAs() {
   return (
     <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-border border-t border-border bg-muted/5">
       <Link
-        href="/coparticipacion"
+        href="/ingresos/coparticipacion"
         className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors group text-xs font-semibold text-muted-foreground hover:text-primary"
       >
         <span>Ver Coparticipación</span>
         <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
       </Link>
       <Link
-        href="/ingresos"
+        href="/ingresos/recaudacion"
         className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-muted/10 transition-colors group text-xs font-semibold text-muted-foreground hover:text-primary"
       >
-        <span>Ver Ingresos</span>
+        <span>Ver Recaudación</span>
         <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
       </Link>
     </div>
@@ -358,30 +358,13 @@ function VariantSM({ data, titulo }: { data: FiscalData; titulo: string }) {
 // ── MD ────────────────────────────────────────────────────────────────────────
 
 function VariantMD({ data, titulo }: { data: FiscalData; titulo: string }) {
-  // Only show the month row when the current month's ingresos data actually exists
-  const hasMonthIngresos =
-    data.month.coparticipacion > 0 && data.month.ingresos > 0;
-
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <Header titulo={titulo} />
 
       {/* Column headers */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-2 bg-muted/10 border-b border-border">
-        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground min-w-[60px]">
-          Período
-        </span>
-        <div className="flex justify-between text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          <span className="text-primary">Copa.</span>
-          <span>Rec.</span>
-        </div>
-        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground text-right min-w-[110px]">
-          Monto
-        </span>
-      </div>
 
-      {hasMonthIngresos && <MonthRow data={data.month} yearFallback={data.year} />}
-      <MonthRow data={data.year} isYear />
+      <MonthRow data={data.month} />
       <Legend />
       <FiscalCTAs />
     </div>
@@ -411,8 +394,7 @@ function VariantLG({ data, titulo }: { data: FiscalData; titulo: string }) {
         </span>
       </div>
 
-      <MonthRow data={data.month} yearFallback={data.year} />
-      <MonthRow data={data.year} isYear />
+      <MonthRow data={data.month} />
 
       {/* Expandable months */}
       {expanded &&
@@ -518,7 +500,7 @@ function VariantXL({ data, titulo }: { data: FiscalData; titulo: string }) {
       </div>
 
       {/* Current month always visible */}
-      <MonthRow data={data.month} yearFallback={data.year} />
+      <MonthRow data={data.month} />
 
       {/* Expandable all months */}
       {expanded &&

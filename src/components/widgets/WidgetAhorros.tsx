@@ -157,6 +157,7 @@ function VariantMD({
           </p>
           <p className="text-xl md:text-2xl font-bold font-mono tabular-nums">
             $ {fmtARS(entry.plazosFijos)}
+            <span className="text-xs font-normal text-muted-foreground ml-1.5">millones</span>
           </p>
         </div>
 
@@ -234,6 +235,7 @@ function VariantLG({
         </p>
         <p className="text-4xl font-bold font-mono tabular-nums tracking-tight">
           $ {fmtARS(entry.plazosFijos)}
+          <span className="text-sm font-normal text-muted-foreground ml-1.5">millones</span>
         </p>
       </div>
 
@@ -313,6 +315,7 @@ function VariantXL({
         </p>
         <p className="text-5xl font-bold font-mono tabular-nums tracking-tight">
           $ {fmtARS(entry.plazosFijos)}
+          <span className="text-base font-normal text-muted-foreground ml-1.5">millones</span>
         </p>
       </div>
 
