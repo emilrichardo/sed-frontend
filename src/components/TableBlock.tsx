@@ -28,11 +28,15 @@ import {
   Flame,
   TrendingUp,
   Star,
+  Save,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
 import { getTextFromNodes } from "./RichTextParser";
 import { useAuth } from "@/context/AuthContext";
 import { Download } from "lucide-react";
+import { updatePublicacionBlockVisualizacion } from "@/lib/api";
 
 // --- Column type detection ---
 
@@ -465,6 +469,7 @@ function getChartCompatibilityInfo(
 export const TableBlock = ({
   fields,
   isWidget = false,
+  publicationId,
 }: {
   fields: {
     id?: string;
@@ -487,6 +492,7 @@ export const TableBlock = ({
     [key: string]: any;
   };
   isWidget?: boolean;
+  publicationId?: string | number;
 }) => {
   const [activeTab, setActiveTab] = useState<"visualizacion" | "json">(
     "visualizacion",
@@ -620,6 +626,25 @@ export const TableBlock = ({
         : ([...compatibleIds][0] ?? "table");
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  const blockId = fields.id;
+  const savedChartType = resolvedVisualizationType ?? defaultChartType;
+  const canSave = !!user && !!publicationId && !!blockId && selectedChartType !== savedChartType;
+
+  const handleSave = async () => {
+    if (!publicationId || !blockId) return;
+    setSaveState("saving");
+    try {
+      await updatePublicacionBlockVisualizacion(publicationId, blockId, selectedChartType);
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 2500);
+    } catch {
+      setSaveState("error");
+      setTimeout(() => setSaveState("idle"), 3000);
+    }
+  };
+
   const [useHeatmap, setUseHeatmap] = useState(false);
   const [showTableView, setShowTableView] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
@@ -893,10 +918,35 @@ export const TableBlock = ({
               </button>
             );
           })}
-          {/* Recommendation legend */}
-          <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground pl-2">
-            <span className="w-2 h-2 bg-amber-400 rounded-full inline-block" />
-            <span className="hidden sm:inline">Recomendado</span>
+          {/* Recommendation legend + Save button */}
+          <div className="ml-auto flex items-center gap-2 pl-2">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span className="w-2 h-2 bg-amber-400 rounded-full inline-block" />
+              <span className="hidden sm:inline">Recomendado</span>
+            </div>
+            {canSave && (
+              <button
+                onClick={handleSave}
+                disabled={saveState === "saving"}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                  saveState === "saved"
+                    ? "bg-green-600 text-white"
+                    : saveState === "error"
+                      ? "bg-destructive text-destructive-foreground"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                }`}
+              >
+                {saveState === "saved" ? (
+                  <><Check className="h-3 w-3" />Guardado</>
+                ) : saveState === "error" ? (
+                  <><AlertCircle className="h-3 w-3" />Error</>
+                ) : saveState === "saving" ? (
+                  <>Guardando...</>
+                ) : (
+                  <><Save className="h-3 w-3" />Guardar</>
+                )}
+              </button>
+            )}
           </div>
           {(selectedChartType === "table" ||
             selectedChartType === "advanced_table") && (

@@ -146,7 +146,7 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
       {hasContent && (
         <div className="prose prose-neutral max-w-none font-sans mt-4">
           {initialData.contenido?.root?.children ? (
-            <RichTextParser content={initialData.contenido.root.children} />
+            <RichTextParser content={initialData.contenido.root.children} publicationId={initialData.id} />
           ) : (
             <BlockRenderer blocks={initialData.layout || []} />
           )}

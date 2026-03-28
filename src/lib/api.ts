@@ -1241,17 +1241,47 @@ export async function getAgent(
   return res.json();
 }
 
-export async function updateTablaVisualizacion(
-  id: string | number,
+/** Recursively updates tipo_visualizacion on a block by ID within Lexical JSON */
+function patchBlockInNode(node: any, blockId: string, tipo_visualizacion: string): boolean {
+  if (!node) return false;
+  if (node.type === "block" && node.fields?.id === blockId) {
+    node.fields.tipo_visualizacion = tipo_visualizacion;
+    return true;
+  }
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      if (patchBlockInNode(child, blockId, tipo_visualizacion)) return true;
+    }
+  }
+  return false;
+}
+
+export async function updatePublicacionBlockVisualizacion(
+  publicacionId: string | number,
+  blockId: string,
   tipo_visualizacion: string,
 ): Promise<void> {
-  const res = await apiFetch(`/tablas/${id}`, {
+  // 1. Fetch current publication
+  const getRes = await apiFetch(`/publicaciones/${publicacionId}?depth=0`);
+  if (!getRes.ok) {
+    throw new Error(`No se pudo obtener la publicación (${getRes.status})`);
+  }
+  const pub = await getRes.json();
+
+  // 2. Patch the block in the Lexical contenido tree
+  const contenido = pub.contenido;
+  if (!contenido?.root) throw new Error("La publicación no tiene contenido Lexical");
+  const found = patchBlockInNode(contenido.root, blockId, tipo_visualizacion);
+  if (!found) throw new Error("Bloque no encontrado en el contenido");
+
+  // 3. PATCH publication with updated contenido
+  const patchRes = await apiFetch(`/publicaciones/${publicacionId}`, {
     method: "PATCH",
-    body: JSON.stringify({ tipo_visualizacion }),
+    body: JSON.stringify({ contenido }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+  if (!patchRes.ok) {
+    const err = await patchRes.json().catch(() => ({}));
+    throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
   }
 }
 
