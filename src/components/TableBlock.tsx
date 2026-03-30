@@ -857,7 +857,18 @@ export const TableBlock = ({
     );
     const colNames = columns.map((c: any) => c.header).join(", ");
     const currentMarkup = markupDraft || fields.custom_markup || "<!-- sin markup aún -->";
-    return `Necesito una visualización personalizada en HTML + CSS + JS para el sitio "Santiago en Datos".
+    return `Sos un experto en visualización de datos con el nivel de The Pudding, NYT Graphics y Bloomberg Visual Data. Tu tarea es crear una visualización interactiva y de alto impacto en HTML + CSS + JS para el sitio "Santiago en Datos".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 1 — ANÁLISIS DE DATOS (hacé esto mentalmente antes de codear)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Antes de elegir el tipo de gráfico, respondé estas preguntas:
+1. ¿Qué historia cuentan estos datos? ¿Cuál es el insight principal?
+2. ¿Cuántas dimensiones hay? ¿Hay una dimensión temporal, geográfica, jerárquica?
+3. ¿Qué relación queremos mostrar: comparación, distribución, composición, tendencia, flujo?
+4. ¿Cuántos registros hay? (1–5 → KPI/infografía; 6–20 → gráfico estándar; 20+ → gráfico denso / interactivo con filtro)
+5. ¿Hay valores extremos, outliers o datos que merezcan destacarse?
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DATOS
@@ -868,50 +879,106 @@ window.__tableData (ya disponible en el iframe):
 ${JSON.stringify(tableData, null, 2)}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 2 — ELEGÍ UNA VISUALIZACIÓN DE ALTO IMPACTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROHIBIDO: usar barras/columnas si hay una opción más interesante. El default es la peor opción.
+
+CATÁLOGO CREATIVO — elegí la que mejor comunique la historia:
+
+▸ COMPARACIÓN ENTRE CATEGORÍAS
+  - Lollipop chart: puntos en extremos de líneas, mucho más elegante que barras
+  - Dot plot divergente: valores positivos/negativos desde un eje central
+  - Slope chart: compara dos momentos (antes/después) con líneas que muestran dirección
+  - Beeswarm plot: puntos distribuidos sin superposición, muestra distribución real
+  - Ranking animado: lista ordenable con transiciones suaves al cambiar métrica
+
+▸ COMPOSICIÓN / PARTES DE UN TODO
+  - Waffle chart: grilla de cuadraditos, intuitiva para porcentajes
+  - Pictogram chart: íconos SVG repetidos (personas, casas, etc.) como unidad visual
+  - Treemap interactivo: rectángulos con hover detail, mejor que torta para muchas categorías
+  - Packed circles: burbujas agrupadas por categoría, impacto visual inmediato
+  - Stacked area con brushing: área apilada + selector de rango temporal
+
+▸ DISTRIBUCIÓN / DENSIDAD
+  - Ridgeline / joy plot: múltiples distribuciones superpuestas en cascada
+  - Violin plot: distribución completa + media, más rico que boxplot
+  - Strip plot: puntos individuales en columnas, honesto con los datos
+  - Hexbin: densidad en grilla hexagonal para datasets grandes
+
+▸ RELACIÓN / CORRELACIÓN
+  - Scatter con tooltips ricos: tamaño = tercera variable, color = categoría
+  - Bubble chart animado (Gapminder-style): tiempo controlado con slider
+  - Connected scatter: puntos unidos por línea mostrando trayectoria temporal
+  - Matrix heatmap: correlación entre todas las variables, gradiente de color
+
+▸ TENDENCIA TEMPORAL
+  - Area chart con anotaciones: hitos importantes marcados con líneas + labels
+  - Small multiples / facet: misma serie para cada categoría en grilla compacta
+  - Bump chart: evolución de rankings en el tiempo (cruces de líneas)
+  - Step line: para datos que cambian abruptamente (tarifas, políticas)
+  - Horizon chart: para muchas series temporales en poco espacio
+
+▸ FLUJO / JERARQUÍA
+  - Sankey: flujos entre nodos, ideal para presupuestos, migraciones
+  - Sunburst interactivo: jerarquías con zoom al hacer click
+  - Network graph: relaciones entre entidades
+  - Chord diagram: flujos bidireccionales entre categorías
+
+▸ GEOGRAFÍA
+  - Choropleth con tooltip hover
+  - Cartograma: tamaño distorsionado por valor (más honesto que choropleth)
+  - Dot map: puntos individuales geolocalizados
+
+▸ KPI / STORYTELLING (pocos datos, máximo impacto)
+  - Número animado con counter.js: el valor "crece" hasta el final al cargar
+  - Big number + sparkline contextual + anotación de tendencia
+  - Infografía narrativa: texto + datos integrados, como artículo visual
+  - Comparador tipo "X veces más que Y" con representación visual proporcional
+  - Progress ring / gauge con gradiente y label central
+  - Timeline horizontal de eventos con íconos y descripciones expandibles
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 3 — REQUISITOS DE INTERACTIVIDAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+La visualización DEBE incluir al menos 2 de estos elementos:
+
+✓ TOOLTIPS RICOS — al hover, mostrar panel con todos los datos relevantes del elemento, no solo el valor
+✓ ANIMACIÓN DE ENTRADA — los elementos aparecen con transición (barras crecen, puntos aparecen en cascada, números cuentan)
+✓ FILTRO / SELECTOR — botones o dropdown para filtrar por categoría o cambiar la métrica mostrada
+✓ HIGHLIGHT — al hover un elemento, los demás se atenúan (opacity 0.3), el hover queda al 100%
+✓ ORDENAMIENTO — click en encabezado para reordenar ASC/DESC
+✓ CLICK-TO-DETAIL — click en elemento expande panel con información adicional
+✓ SLIDER TEMPORAL — si hay fechas/años, un input range para navegar el tiempo
+✓ ANOTACIONES — labels flotantes en los puntos más relevantes (máximo, mínimo, outlier)
+✓ COMPARADOR — toggle entre dos vistas o dos métricas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DESIGN SYSTEM — Santiago en Datos
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## CSS Variables disponibles en el iframe (light / dark automático)
-
-### Fondos y texto
+## CSS Variables (light / dark automático)
   --background          /* light: #ffffff   | dark: #161614  */
   --foreground          /* light: #262624   | dark: #f2f2f0  */
   --card                /* light: #ffffff   | dark: #1e1e1c  */
-  --card-foreground     /* light: #262624   | dark: #f2f2f0  */
   --muted               /* light: #f5f5f4   | dark: #2a2a28  */
   --muted-foreground    /* light: #666666   | dark: #a3a3a0  */
-
-### Acento / primario
-  --primary             /* #c95b4a  — Rojo Santiago (igual en light y dark) */
+  --primary             /* #c95b4a  — Rojo Santiago */
   --primary-foreground  /* #ffffff */
-
-### Secundario / neutro
   --secondary           /* light: #f5f5f4   | dark: #2a2a28  */
-  --secondary-foreground/* light: #262624   | dark: #f2f2f0  */
-
-### Bordes
   --border              /* light: #e5e5e5   | dark: #303030  */
-
-### Radio base
   --radius              /* 0.5rem = 8px */
-
-### Tipografía
   --font-sans           /* Inter, ui-sans-serif, system-ui */
   --font-mono           /* Source Code Pro, monospace */
 
-## Paletas de gráficos (usar siempre estas, no inventar colores)
+## Paletas (usar SIEMPRE estas, no inventar colores)
 
-Paleta identitaria (5 colores — preferida):
-  #c95b4a  Rojo Santiago (serie principal / destacado)
-  #4d5f7a  Azul pizarra
-  #b08f51  Dorado / ocre
-  #518765  Verde pino
-  #8a597a  Malva
+Identitaria (5 colores, preferida para series principales):
+  #c95b4a  Rojo Santiago  |  #4d5f7a  Azul pizarra
+  #b08f51  Dorado/ocre    |  #518765  Verde pino  |  #8a597a  Malva
 
-Semáforo (positivo / neutro / negativo):
-  #16a34a  Verde
-  #ca8a04  Ámbar
-  #c95b4a  Rojo
+Semáforo:  #16a34a verde  |  #ca8a04 ámbar  |  #c95b4a rojo
 
 Multicolor (10, sin rojo):
   #2563eb #16a34a #ea580c #9333ea #0891b2
@@ -920,47 +987,39 @@ Multicolor (10, sin rojo):
 Heatmap (5 tonos rojo):
   #fee2e2 → #fca5a5 → #ef4444 → #b91c1c → #7f1d1d
 
+Gradiente sugerido para fills continuos:
+  rgba(201,91,74,0.15) → rgba(201,91,74,0.85)
+
 ## Tipografía
-- Títulos: font-family var(--font-sans); font-weight 600–800; letter-spacing: -0.02em
-- Cuerpo: font-family var(--font-sans); font-weight 400–500
-- Números/datos: font-family var(--font-mono); font-weight 500
+- Títulos: var(--font-sans); font-weight: 700–800; letter-spacing: -0.02em
+- Subtítulos / labels: var(--font-sans); font-weight: 500
+- Números/datos: var(--font-mono); font-weight: 600
 
-## Componentes visuales — convenciones
+## Componentes visuales
+Tarjetas: background var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px 16px
+Tooltips: background var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 20px rgba(0,0,0,.12); font-size: 12px
+Pills: border-radius: 9999px; padding: 2px 10px; font-size: 11px; font-weight: 500
+Ejes: color var(--muted-foreground); font-size: 11px; grid lines var(--border) opacity 0.4
 
-Tarjetas:
-  background: var(--card)
-  border: 0.5px solid var(--border)
-  border-radius: 12px
-  padding: 14px 16px
+## Animaciones recomendadas
+  transition: all 0.2s ease                    /* hover states */
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px) } }
+  @keyframes growBar { from { transform: scaleX(0) } }  /* para barras horizontales */
+  @keyframes countUp { /* usar requestAnimationFrame para números */ }
 
-Barras (bar charts):
-  border-radius: 4px (extremo de la barra)
-  gap entre barras: ~20% del ancho
-  color por defecto: #c95b4a o paleta identitaria
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LIBRERÍAS DISPONIBLES VÍA CDN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Podés cargar cualquiera según lo que necesites:
+  D3.js v7:      https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js
+  Chart.js:      https://cdn.jsdelivr.net/npm/chart.js
+  Plotly.js:     https://cdn.plot.ly/plotly-2.35.2.min.js
+  Observable Plot: https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/dist/plot.umd.min.js
+  GSAP (animaciones): https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js
 
-Pills / badges:
-  border-radius: 9999px
-  padding: 2px 10px; font-size: 11px; font-weight: 500
-
-Líneas (line charts):
-  stroke-width: 2px
-  dot radius: 4px; dot fill: var(--background)
-
-Tooltips:
-  background: var(--card)
-  border: 1px solid var(--border)
-  border-radius: 8px; padding: 8px 12px
-  font-size: 12px; color: var(--foreground)
-
-Ejes y grillas:
-  color: var(--muted-foreground)
-  font-size: 11–12px
-  grid lines: var(--border), opacity 0.5
-
-## Modo light / dark
-El iframe detecta automáticamente el tema via CSS vars.
-Si necesitás reglas específicas usá @media (prefers-color-scheme: dark) { }.
-NO uses colores hardcodeados para texto/fondo; usá siempre las CSS vars.
+Para SVG e infografías simples: usá SVG vanilla + CSS animations (sin dependencias).
+Para gráficos estadísticos complejos: D3.js o Observable Plot.
+Para iconos: incluí SVG inline, no uses librerías de iconos.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INSTRUCCIONES DE ENTREGA
@@ -968,9 +1027,12 @@ INSTRUCCIONES DE ENTREGA
 - NO incluyas <!DOCTYPE html>, <html>, <head> ni <body>
 - Solo el contenido interno: <style>, <div id="root">, <script>
 - Los datos ya están en window.__tableData (array de objetos, clave = nombre de columna)
-- Podés cargar librerías externas desde CDN con <script src="..."> si lo necesitás
 - El resultado se inyecta en un iframe que ya tiene todas las CSS vars disponibles
-- Usá margin: 0; padding: 0 en el elemento raíz y respetá el padding interno con el contenedor
+- Usá margin: 0; padding: 0 en el elemento raíz; respetá padding interno con el contenedor
+- NO uses colores hardcodeados para texto/fondo; usá siempre las CSS vars
+- Si el modo dark/light es relevante, usá @media (prefers-color-scheme: dark) { }
+- El código debe funcionar sin servidor (no fetch(), no módulos ES, no imports dinámicos)
+- Priorizá legibilidad mobile: texto mínimo 12px, touch targets mínimo 44px
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MARKUP ACTUAL (punto de partida o referencia)
