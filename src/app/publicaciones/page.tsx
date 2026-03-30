@@ -10,8 +10,8 @@ export const revalidate = 60;
 
 export default async function PublicationsArchivePage() {
   const [all, pinned, rootCategories, allCats] = await Promise.all([
-    getReports({ pagination: false, limit: 1000, sort: "-createdAt", depth: 2 }),
-    getReports({ limit: 5, sort: "-createdAt", depth: 2, where: { fijado: { equals: true } } }),
+    getReports({ pagination: false, limit: 1000, sort: "orden,-createdAt", depth: 2 }),
+    getReports({ limit: 5, sort: "orden,-createdAt", depth: 2, where: { fijado: { equals: true } } }),
     getCategories({ sinPadre: true }),
     getCategories({ limit: 500 }),
   ]);

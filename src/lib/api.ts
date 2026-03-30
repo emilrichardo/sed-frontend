@@ -97,6 +97,7 @@ export interface NewsItem {
   publishedDate?: string;
   createdAt?: string;
   fijado?: boolean;
+  orden?: number | null;
   layout?: PayloadBlock[];
   contenido?: {
     root?: {
@@ -262,6 +263,7 @@ export async function fetchEntriesForCollection(
       case "publicaciones": {
         const result = await getReports({
           limit,
+          sort: "orden,-createdAt",
           where: { parent: { exists: false } },
         });
         return result.docs.map((item) => ({
@@ -604,7 +606,7 @@ export async function getPublicacionesByCategoria(
   params: { page?: number; limit?: number } = {},
 ): Promise<PayloadResponse<ReportItem>> {
   const { page = 1, limit = 20 } = params;
-  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=-createdAt&depth=1&where[categorias][in][0]=${categoriaId}`;
+  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=orden,-createdAt&depth=1&where[categorias][in][0]=${categoriaId}`;
   try {
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok)
@@ -648,7 +650,7 @@ export async function getPublicacionesByCategoriaIds(
   const inParams = categoriaIds
     .map((id, i) => `where[categorias][in][${i}]=${id}`)
     .join("&");
-  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=-createdAt&depth=1&${inParams}`;
+  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=orden,-createdAt&depth=1&${inParams}`;
   try {
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok)
@@ -694,7 +696,7 @@ export async function getReports(
     pagination?: boolean;
   } = {},
 ): Promise<PayloadResponse<ReportItem>> {
-  const { page = 1, limit = 10, sort = "-createdAt", depth, where, pagination } = params;
+  const { page = 1, limit = 10, sort = "orden,-createdAt", depth, where, pagination } = params;
   let url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=${sort}`;
   if (pagination === false) url += `&pagination=false`;
   if (depth !== undefined) url += `&depth=${depth}`;

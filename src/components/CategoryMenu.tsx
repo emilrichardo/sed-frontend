@@ -55,7 +55,7 @@ export function CategoryDetailPanel({
     setPublications([]);
     setSelectedTipo(null);
     fetch(
-      `${API_URL}/publicaciones?where[categorias][in][0]=${category.id}&limit=30&sort=-createdAt&depth=1`,
+      `${API_URL}/publicaciones?where[categorias][in][0]=${category.id}&limit=30&sort=orden,-createdAt&depth=1`,
     )
       .then((r) => r.json())
       .then((data) => {

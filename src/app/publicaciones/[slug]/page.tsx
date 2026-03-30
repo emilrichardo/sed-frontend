@@ -156,7 +156,7 @@ export default async function PublicationPage({ params }: PageProps) {
   // 1. Fetch Children (Sub-reports)
   const childrenData = await getReports({
     where: { parent: { equals: reportItem.id } },
-    sort: "createdAt", // or bespoke sort order if available
+    sort: "orden,createdAt", // or bespoke sort order if available
     limit: 100,
   });
   const children = childrenData.docs;

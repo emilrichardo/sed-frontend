@@ -41,7 +41,7 @@ export async function GET(
   // Fetch child sections
   const childrenData = await getReports({
     where: { parent: { equals: reportItem.id } },
-    sort: "createdAt",
+    sort: "orden,createdAt",
     limit: 100,
   });
 
