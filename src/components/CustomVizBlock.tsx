@@ -39,43 +39,50 @@ const ALIAS_CSS = `
 const RESIZE_SCRIPT = `<script>
   (function() {
     var lastHeight = 0;
-    function notifyHeight() {
+    var reported = false;
+    
+    function getContentHeight() {
       var root = document.getElementById('custom-viz-root');
-      if (!root) return;
-      // Calcula altura considerando el contenido real, no solo scrollHeight
-      var rect = root.getBoundingClientRect();
-      var computed = window.getComputedStyle(root);
-      var marginTop = parseFloat(computed.marginTop) || 0;
-      var marginBottom = parseFloat(computed.marginBottom) || 0;
-      var h = Math.ceil(rect.height + marginTop + marginBottom);
-      // Fallback a scrollHeight si el cálculo da 0 o muy pequeño
-      if (h < 50) h = root.scrollHeight;
-      // Mínimo razonable para evitar colapsos
-      h = Math.max(h, 50);
-      // Solo notifica si cambió significativamente (evita loops)
-      if (Math.abs(h - lastHeight) > 2) {
+      if (!root) return 400;
+      
+      // Obtener el elemento más alto dentro del root
+      var children = root.children;
+      var maxChildHeight = 0;
+      for (var i = 0; i < children.length; i++) {
+        var rect = children[i].getBoundingClientRect();
+        var childBottom = rect.top + rect.height;
+        if (childBottom > maxChildHeight) {
+          maxChildHeight = childBottom;
+        }
+      }
+      
+      // Si encontramos hijos con altura, usamos esa
+      if (maxChildHeight > 50) {
+        return Math.ceil(maxChildHeight + 20); // +20px de margen
+      }
+      
+      // Fallback a scrollHeight del root
+      return Math.max(root.scrollHeight, 200);
+    }
+    
+    function notifyHeight() {
+      if (reported) return; // Solo reportar una vez
+      
+      var h = getContentHeight();
+      // Limitar entre 100px y 1200px
+      h = Math.min(1200, Math.max(100, h));
+      
+      if (Math.abs(h - lastHeight) > 5) {
         lastHeight = h;
         window.parent.postMessage({ type: 'custom-viz-height', height: h }, '*');
+        reported = true;
       }
     }
-    // Notificar en diferentes momentos
-    window.addEventListener('load', notifyHeight);
-    document.addEventListener('DOMContentLoaded', notifyHeight);
-    // Retraso para asegurar que estilos y fuentes cargaron
-    setTimeout(notifyHeight, 100);
-    setTimeout(notifyHeight, 500);
-    setTimeout(notifyHeight, 1000);
     
-    var root = document.getElementById('custom-viz-root');
-    if (root && typeof ResizeObserver !== 'undefined') {
-      new ResizeObserver(function() { notifyHeight(); }).observe(root);
-    } else if (root) {
-      new MutationObserver(notifyHeight).observe(root, {
-        childList: true, subtree: true, attributes: true
-      });
-    }
-    // Intervalo de seguridad por si hay animaciones
-    setInterval(notifyHeight, 2000);
+    // Reportar solo una vez, después de que todo cargue
+    window.addEventListener('load', notifyHeight);
+    setTimeout(notifyHeight, 500);
+    setTimeout(notifyHeight, 1500);
   })();
 <\/script>`;
 
@@ -85,7 +92,7 @@ function readThemeStyle(): string {
   const vars = STANDARD_VARS.map(
     (v) => `${v}: ${computed.getPropertyValue(v).trim() || "unset"};`
   ).join(" ");
-  return `:root { ${vars} ${ALIAS_CSS} } html, body { background-color: var(--background); color: var(--foreground); margin: 0; padding: 0; overflow: hidden; } #custom-viz-root { box-sizing: border-box; }`;
+  return `:root { ${vars} ${ALIAS_CSS} } html, body { background-color: var(--background); color: var(--foreground); margin: 0; padding: 0; } #custom-viz-root { box-sizing: border-box; height: auto; display: block; }`;
 }
 
 export function CustomVizBlock({ custom_markup, data }: Props) {
@@ -120,20 +127,17 @@ export function CustomVizBlock({ custom_markup, data }: Props) {
         e.data?.type === "custom-viz-height" &&
         typeof e.data.height === "number"
       ) {
-        // Limita la altura máxima a 1200px para evitar iframes descontrolados
-        // y mínimo de 100px para contenido vacío
-        const newHeight = Math.min(1200, Math.max(100, e.data.height));
-        setHeight(newHeight);
-        
-        // Resetea el timeout de seguridad
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
+        // Solo aceptar la primera altura reportada válida
+        setHeight((prev) => {
+          if (prev !== null) return prev; // Ya tenemos altura, no cambiar
+          const h = Math.min(1200, Math.max(100, e.data.height));
+          return h;
+        });
       }
     };
     window.addEventListener("message", handler);
     
-    // Timeout de seguridad: si no recibimos altura en 3 segundos, usamos auto
+    // Timeout de seguridad
     timeoutRef.current = setTimeout(() => {
       setHeight((prev) => (prev === null ? 400 : prev));
     }, 3000);
@@ -157,13 +161,11 @@ export function CustomVizBlock({ custom_markup, data }: Props) {
         width: "100%", 
         height: `${finalHeight}px`, 
         border: "none", 
-        display: "block",
-        overflow: "hidden"
+        display: "block"
       }}
       title="Visualización personalizada"
       sandbox="allow-scripts"
       allow="clipboard-write"
-      scrolling="no"
     />
   );
 }

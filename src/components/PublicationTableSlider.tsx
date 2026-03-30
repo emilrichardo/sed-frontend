@@ -115,6 +115,7 @@ export function PublicationTableSlider({
               <div
                 key={index}
                 className="w-full shrink-0 h-full overflow-y-auto custom-scrollbar relative"
+                style={{ minHeight: 'fit-content' }}
               >
                 <TableBlock fields={block as any} isWidget={true} />
 
