@@ -200,7 +200,11 @@ function CompactVariant({
               <div className="absolute inset-0 bg-primary flex items-center justify-center overflow-hidden">
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
                   <div className="aspect-square h-[300%]">
-                    <SunRaysAnimated fill cycleDuration={6} strokeColor="black" />
+                    <SunRaysAnimated
+                      fill
+                      cycleDuration={6}
+                      strokeColor="black"
+                    />
                   </div>
                 </div>
                 <div className="relative z-10 flex items-center justify-center w-10 h-10 rounded-full bg-white">
@@ -294,7 +298,7 @@ function WideVariant({
         </div>
 
         {/* Media (Right) — 40% */}
-        <div className="lg:w-[40%] shrink-0 bg-background border-t lg:border-t-0 lg:border-l border-border relative overflow-hidden flex items-center justify-center h-[260px] lg:h-auto lg:self-stretch">
+        <div className="lg:w-[40%] shrink-0 bg-background border-t lg:border-t-0 lg:border-l border-border relative overflow-hidden flex items-center justify-center max-h-[320px]   lg:self-stretch">
           {!useChart && img?.url ? (
             <>
               <div className="absolute inset-0">
@@ -324,7 +328,11 @@ function WideVariant({
                 <div className="relative w-full h-full bg-primary flex items-center justify-center overflow-hidden">
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
                     <div className="aspect-square h-[200%]">
-                      <SunRaysAnimated fill cycleDuration={6} strokeColor="black" />
+                      <SunRaysAnimated
+                        fill
+                        cycleDuration={6}
+                        strokeColor="black"
+                      />
                     </div>
                   </div>
                   <div className="relative z-10 flex items-center justify-center w-20 h-20 rounded-full bg-white">
