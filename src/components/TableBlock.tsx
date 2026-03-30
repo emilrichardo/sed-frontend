@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   Table as TableIcon,
   Code,
@@ -641,6 +641,7 @@ export const TableBlock = ({
   const [markupSaveState, setMarkupSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [showPrompt, setShowPrompt] = useState(false);
   const [copied, setCopied] = useState(false);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const blockId = fields.id;
   const savedChartType = resolvedVisualizationType ?? defaultChartType;
@@ -1376,6 +1377,7 @@ ${currentMarkup}
                           Copiá este prompt y pegalo en tu IA favorita (ChatGPT, Claude, etc.) para generar una visualización personalizada con estos datos.
                         </p>
                         <textarea
+                          ref={promptTextareaRef}
                           readOnly
                           value={aiPrompt}
                           className="w-full h-52 font-mono text-xs bg-slate-950 text-slate-50 p-3 rounded border border-border resize-y focus:outline-none"
@@ -1383,10 +1385,20 @@ ${currentMarkup}
                         />
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(aiPrompt).then(() => {
-                              setCopied(true);
-                              setTimeout(() => setCopied(false), 2000);
-                            });
+                            const ta = promptTextareaRef.current;
+                            if (ta) {
+                              ta.select();
+                              ta.setSelectionRange(0, 99999);
+                            }
+                            if (navigator.clipboard && window.isSecureContext) {
+                              navigator.clipboard.writeText(aiPrompt).catch(() => {
+                                if (ta) document.execCommand("copy");
+                              });
+                            } else {
+                              document.execCommand("copy");
+                            }
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
                           }}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all ${
                             copied
