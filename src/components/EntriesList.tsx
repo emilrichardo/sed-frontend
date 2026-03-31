@@ -47,7 +47,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
 
   // New State for Table/Processing
   const [viewMode, setViewMode] = useState<"table" | "list">("table");
-  const { isEditing } = useAuth();
+  const { isEditing, user } = useAuth();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [localStatuses, setLocalStatuses] = useState<Record<string, string>>(
     {},
@@ -62,12 +62,28 @@ export default function EntriesList({ filters }: EntriesListProps) {
     async function loadEntries() {
       setLoading(true);
       try {
+        // Obtener token de autenticación si el usuario está logueado
+        let authToken: string | undefined;
+        if (user) {
+          try {
+            const meRes = await fetch("/api/auth/me");
+            if (meRes.ok) {
+              // El token se envía automáticamente via cookie, pero para el filtro
+              // necesitamos indicar que hay autenticación
+              authToken = "authenticated";
+            }
+          } catch {
+            // Ignorar error
+          }
+        }
+        
         const data = await getActosAdministrativos({
           page,
           limit: 20,
           where: filters,
           depth: 1,
           sort: "-createdAt",
+          authToken,
         });
         setEntries(data);
       } catch (error) {
@@ -77,7 +93,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
       }
     }
     loadEntries();
-  }, [page, filters]);
+  }, [page, filters, user]);
 
   useEffect(() => {
     setExpandedEntryId(null);

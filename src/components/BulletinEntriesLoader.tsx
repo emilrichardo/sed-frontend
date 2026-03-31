@@ -10,6 +10,7 @@ import {
 import { Loader2, AlertCircle, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface BulletinEntriesLoaderProps {
   bulletin: Boletin;
@@ -31,6 +32,7 @@ export default function BulletinEntriesLoader({
   const [entries, setEntries] = useState<ActoAdministrativo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   // Prefer server-resolved URL (has PDF_HOST_OVERRIDE applied); fall back to client-computed
   const pdfUrl = resolvedPdfUrl ?? getPdfUrl(bulletin);
 
@@ -39,10 +41,24 @@ export default function BulletinEntriesLoader({
       setLoading(true);
       setError(null);
       try {
+        // Obtener token de autenticación si el usuario está logueado
+        let authToken: string | undefined;
+        if (user) {
+          try {
+            const meRes = await fetch("/api/auth/me");
+            if (meRes.ok) {
+              authToken = "authenticated";
+            }
+          } catch {
+            // Ignorar error
+          }
+        }
+        
         const data = await getActosAdministrativos({
           where: { boletin: bulletin.id },
           limit: 100,
           sort: "-createdAt",
+          authToken,
         });
 
         const sortedDocs = data.docs.sort((a, b) => {
@@ -75,7 +91,7 @@ export default function BulletinEntriesLoader({
     if (bulletin.id) {
       loadEntries();
     }
-  }, [bulletin]);
+  }, [bulletin, user]);
 
   if (loading) {
     return (
