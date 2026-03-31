@@ -1027,6 +1027,7 @@ export async function getActoByIdentifier(
   const res = await apiFetch(
     `/actos-administrativos${queryString}`,
     { next: { revalidate: 10 } },
+    authToken,
   );
 
   if (!res.ok) {
@@ -1060,6 +1061,7 @@ export async function getActoByIdentifier(
     const resLike = await apiFetch(
       `/actos-administrativos${likeQueryString}`,
       { next: { revalidate: 60 } },
+      authToken,
     );
     const dataLike = await resLike.json();
     if (dataLike.docs && dataLike.docs.length > 0) {
