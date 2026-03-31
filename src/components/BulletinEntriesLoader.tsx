@@ -154,11 +154,9 @@ export default function BulletinEntriesLoader({
   };
 
   const sorted = [...entries].sort((a, b) => priority(b) - priority(a));
-  // Sin login: solo mostrar actos destacados
-  const visibleEntries = user ? sorted : sorted.filter((a) => a.destacado);
-  const featured = visibleEntries.filter((a) => priority(a) >= 2); // destacado + alta + relevante
-  const notable = user ? visibleEntries.filter((a) => priority(a) === 1) : []; // solo con login
-  const minor = user ? visibleEntries.filter((a) => priority(a) === 0) : [];   // solo con login
+  const featured = sorted.filter((a) => priority(a) >= 2); // destacado + alta + relevante
+  const notable = sorted.filter((a) => priority(a) === 1); // tiene título/resumen pero no relevante
+  const minor = user ? sorted.filter((a) => priority(a) === 0) : []; // sin contenido: solo con login
 
   const hasJournalistContent =
     featured.length > 0 ||
