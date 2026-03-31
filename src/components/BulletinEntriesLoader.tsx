@@ -32,6 +32,7 @@ export default function BulletinEntriesLoader({
   const [entries, setEntries] = useState<ActoAdministrativo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{total: number, publicados: number, borradores: number} | null>(null);
   const { user } = useAuth();
   // Prefer server-resolved URL (has PDF_HOST_OVERRIDE applied); fall back to client-computed
   const pdfUrl = resolvedPdfUrl ?? getPdfUrl(bulletin);
@@ -54,12 +55,27 @@ export default function BulletinEntriesLoader({
           }
         }
         
+        console.log(`[BulletinEntriesLoader] Boletín ${bulletin.id} - authToken: ${authToken ? 'presente' : 'no presente'}`);
+        
         const data = await getActosAdministrativos({
           where: { boletin: bulletin.id },
           limit: 100,
           sort: "-createdAt",
           authToken,
         });
+
+        console.log(`[BulletinEntriesLoader] Boletín ${bulletin.id} - Actos recibidos: ${data.docs.length}`);
+        console.log(`[BulletinEntriesLoader] Primeros actos:`, data.docs.slice(0, 3).map(a => ({ 
+          id: a.id, 
+          status: a.status, 
+          identificador: a.identificador_de_acto,
+          titulo: a.titulo_periodistico?.slice(0, 50)
+        })));
+
+        // Calcular info de debug
+        const publicados = data.docs.filter(a => a.status === 'publicado').length;
+        const borradores = data.docs.filter(a => a.status !== 'publicado').length;
+        setDebugInfo({ total: data.docs.length, publicados, borradores });
 
         const sortedDocs = data.docs.sort((a, b) => {
           if (a.destacado === b.destacado) return 0;
@@ -118,6 +134,12 @@ export default function BulletinEntriesLoader({
         <p className="text-muted-foreground font-medium uppercase text-sm">
           No hay actos registrados para este boletín.
         </p>
+        {debugInfo && debugInfo.borradores > 0 && !user && (
+          <p className="text-amber-600 text-sm mt-2">
+            ⚠️ Hay {debugInfo.borradores} acto(s) en borrador. 
+            <a href="/login" className="underline">Iniciá sesión</a> para verlos.
+          </p>
+        )}
       </div>
     );
   }
@@ -258,6 +280,14 @@ export default function BulletinEntriesLoader({
             Versión Periodística
           </h2>
         </div>
+
+        {/* Banner informativo si hay actos en borrador */}
+        {debugInfo && debugInfo.borradores > 0 && !user && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+            <span className="font-medium">⚠️ Hay {debugInfo.borradores} acto(s) en borrador.</span>{" "}
+            <a href="/login" className="underline font-medium">Iniciá sesión</a> para verlos y publicarlos.
+          </div>
+        )}
 
         {/* Featured / Relevant acts — full cards */}
         {featured.length > 0 && (
