@@ -962,32 +962,39 @@ export async function getActosAdministrativos(
   } = params;
   let queryString = `?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}&draft=false`;
 
+  // Collect all where conditions as and[n] blocks
+  const andClauses: string[] = [];
+
   // Si no hay token de autenticación, filtrar solo actos publicados
   if (!authToken) {
-    queryString += `&where[status][equals]=publicado`;
+    andClauses.push(`where[and][0][status][equals]=publicado`);
   }
 
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
+        const i = andClauses.length;
         if (key === "search") {
           queryString += `&where[or][0][identificador_de_acto][contains]=${value}`;
           queryString += `&where[or][1][titulo][contains]=${value}`;
+          return;
         } else if (key === "fecha_desde") {
-          queryString += `&where[boletin.fecha_publicacion][greater_than_equal]=${value}`;
+          andClauses.push(`where[and][${i}][boletin.fecha_publicacion][greater_than_equal]=${value}`);
         } else if (key === "fecha_hasta") {
-          queryString += `&where[boletin.fecha_publicacion][less_than_equal]=${value}`;
+          andClauses.push(`where[and][${i}][boletin.fecha_publicacion][less_than_equal]=${value}`);
         } else {
-          // Map some old field names to new ones for compatibility
           let apiKey = key;
           if (key === "identificador_acto") apiKey = "identificador_de_acto";
           if (key === "tipo_acto") apiKey = "tipo_de_acto";
           if (key === "referencia") apiKey = "titulo";
-
-          queryString += `&where[${apiKey}][equals]=${value}`;
+          andClauses.push(`where[and][${i}][${apiKey}][equals]=${value}`);
         }
       }
     });
+  }
+
+  if (andClauses.length > 0) {
+    queryString += `&${andClauses.join("&")}`;
   }
 
   const res = await apiFetch(
