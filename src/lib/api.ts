@@ -886,46 +886,57 @@ export async function getBulletin(
   const idStr = String(idOrSlug);
   console.log(`fetching bulletin: ${idStr}`);
 
-  // 1. Try direct ID fetch first
+  // 1. Search by slug field (always first — avoids collisions with DB numeric IDs)
+  try {
+    const res = await apiFetch(
+      `/boletines?where[slug][equals]=${idStr}&draft=false&depth=2`,
+      { next: { revalidate: 3600 } },
+      authToken,
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data.docs && data.docs.length > 0) {
+        console.log(`bulletin found by slug field: ${idStr}`);
+        return data.docs[0];
+      }
+    }
+  } catch (e) {
+    console.log(`slug search failed for ${idStr}`);
+  }
+
+  // 2. If numeric, search by numero
+  if (/^\d+$/.test(idStr)) {
+    try {
+      const res = await apiFetch(
+        `/boletines?where[numero][equals]=${idStr}&sort=-createdAt&draft=false&depth=2`,
+        { next: { revalidate: 3600 } },
+        authToken,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.docs && data.docs.length > 0) {
+          console.log(`bulletin found by numero: ${idStr}`);
+          return data.docs[0];
+        }
+      }
+    } catch (e) {
+      console.log(`numero search failed for ${idStr}`);
+    }
+  }
+
+  // 3. Last resort: direct ID fetch
   try {
     const res = await apiFetch(
       `/boletines/${idStr}?draft=false&depth=2`,
-      {
-        next: { revalidate: 3600 },
-      },
+      { next: { revalidate: 3600 } },
       authToken,
     );
-
     if (res.ok) {
       console.log(`bulletin found as direct ID: ${idStr}`);
       return await res.json();
     }
   } catch (e) {
-    console.log(`direct ID fetch failed for ${idStr}, trying slug search...`);
-  }
-
-  // 2. Fallback: Search by slug or numero
-  const isNumber = /^\d+$/.test(idStr);
-  const query = isNumber
-    ? `?where[numero][equals]=${idStr}&sort=-createdAt&draft=false&depth=2`
-    : `?where[slug][equals]=${idStr}&draft=false&depth=2`;
-
-  const res = await apiFetch(
-    `/boletines${query}`,
-    {
-      next: { revalidate: 3600 },
-    },
-    authToken,
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch bulletin (search): ${res.status}`);
-  }
-
-  const data = await res.json();
-  if (data.docs && data.docs.length > 0) {
-    console.log(`bulletin found via search: ${idStr}`);
-    return data.docs[0];
+    console.log(`direct ID fetch failed for ${idStr}`);
   }
 
   throw new Error(`Bulletin not found: ${idStr}`);
