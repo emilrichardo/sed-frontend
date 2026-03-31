@@ -100,10 +100,23 @@ export default async function CategoryPage({ params }: PageProps) {
                     </span>
                     <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                   </Link>
+                  <Link
+                    href="/ahorros"
+                    className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
+                  >
+                    <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                      Ahorros de la Provincia
+                    </span>
+                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </Link>
                 </>
               )}
               {children
-                .filter((sub) => sub.slug !== "ingresos-de-la-provincia")
+                .filter(
+                  (sub) =>
+                    sub.slug !== "ingresos-de-la-provincia" &&
+                    sub.slug !== "ahorros-de-la-provincia",
+                )
                 .map((sub) => (
                   <Link
                     key={sub.id}

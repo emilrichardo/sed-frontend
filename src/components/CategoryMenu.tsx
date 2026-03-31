@@ -109,10 +109,24 @@ export function CategoryDetailPanel({
                 </span>
                 <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>
+              <Link
+                href="/ahorros"
+                onClick={onNavigate}
+                className="flex items-center justify-between w-full px-4 py-5 border-b border-border hover:bg-muted/50 transition-colors group"
+              >
+                <span className="text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
+                  Ahorros de la Provincia
+                </span>
+                <ArrowUpRight className="h-6 w-6 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+              </Link>
             </>
           )}
           {category.children
-            .filter((sub) => sub.slug !== "ingresos-de-la-provincia")
+            .filter(
+              (sub) =>
+                sub.slug !== "ingresos-de-la-provincia" &&
+                sub.slug !== "ahorros-de-la-provincia",
+            )
             .map((sub) => (
             <Link
               key={sub.id}
