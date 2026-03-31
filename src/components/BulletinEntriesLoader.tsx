@@ -155,8 +155,8 @@ export default function BulletinEntriesLoader({
 
   const sorted = [...entries].sort((a, b) => priority(b) - priority(a));
   const featured = sorted.filter((a) => priority(a) >= 2); // destacado + alta + relevante
-  const notable = sorted.filter((a) => priority(a) === 1); // tiene título/resumen pero no relevante
-  const minor = user ? sorted.filter((a) => priority(a) === 0) : []; // sin contenido: solo con login
+  const notable = user ? sorted.filter((a) => priority(a) === 1) : []; // título/resumen: solo con login
+  const minor = user ? sorted.filter((a) => priority(a) === 0) : [];   // sin contenido: solo con login
 
   const hasJournalistContent =
     featured.length > 0 ||
