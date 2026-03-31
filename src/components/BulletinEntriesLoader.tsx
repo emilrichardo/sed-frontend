@@ -45,6 +45,8 @@ export default function BulletinEntriesLoader({
           sort: "-createdAt",
         });
 
+        console.log(`[BulletinEntriesLoader] bulletin.id=${bulletin.id} → ${data.docs.length} actos (totalDocs=${data.totalDocs})`);
+
         const sortedDocs = data.docs.sort((a, b) => {
           if (a.destacado === b.destacado) return 0;
           return a.destacado ? -1 : 1;
@@ -120,7 +122,11 @@ export default function BulletinEntriesLoader({
   const notable = sorted.filter((a) => priority(a) === 1); // tiene título/resumen pero no relevante
   const minor = sorted.filter((a) => priority(a) === 0);   // sin contenido periodístico
 
-  const hasJournalistContent = featured.length > 0 || notable.length > 0;
+  const hasJournalistContent =
+    featured.length > 0 ||
+    notable.length > 0 ||
+    !!bulletin.titulo_periodistico ||
+    !!bulletin.resumen;
 
   // When no journalistic content but there is a PDF: show PDF centered full-width
   if (!hasJournalistContent && pdfUrl) {
