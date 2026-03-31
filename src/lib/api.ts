@@ -1169,6 +1169,37 @@ export async function updateActoAdministrativo(
   data: Partial<ActoAdministrativo>,
   authToken?: string,
 ): Promise<{ doc: ActoAdministrativo; message: string }> {
+  const isClient = typeof window !== "undefined";
+
+  console.log(`[updateActoAdministrativo] id=${id}, isClient=${isClient}, hasAuthToken=${!!authToken}`);
+  console.log(`[updateActoAdministrativo] data=`, JSON.stringify(data));
+
+  // En el cliente, usar el BFF /api/cms que maneja la cookie de autenticación
+  if (isClient && !authToken) {
+    const url = `/api/cms?path=/actos-administrativos/${encodeURIComponent(id)}`;
+    console.log(`[updateActoAdministrativo] Using BFF: ${url}`);
+    
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    console.log(`[updateActoAdministrativo] BFF response status: ${res.status}`);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error("[updateActoAdministrativo] Error response:", errorData);
+      const errorMessage = errorData.error || errorData.message || errorData.errors?.[0]?.message || `Error ${res.status}: ${res.statusText}`;
+      throw new Error(errorMessage);
+    }
+    
+    const result = await res.json();
+    console.log("[updateActoAdministrativo] Success:", result);
+    return result;
+  }
+
+  // En el servidor o con token explícito, usar apiFetch directo
   const res = await apiFetch(
     `/actos-administrativos/${id}`,
     {
