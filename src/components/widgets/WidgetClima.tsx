@@ -81,14 +81,14 @@ function VariantXS() {
   const info = data ? weatherInfo(data.weathercode) : null;
 
   return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs">
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs text-foreground">
       {info ? (
         <info.Icon className={`h-3.5 w-3.5 shrink-0 ${info.color}`} />
       ) : (
         <Pulse w="w-3.5" h="h-3.5" />
       )}
       {data ? (
-        <span className="font-bold tabular-nums">{data.temperature}°C</span>
+        <span className="font-bold tabular-nums text-card-foreground">{data.temperature}°C</span>
       ) : (
         <Pulse w="w-8" />
       )}
@@ -104,7 +104,7 @@ function VariantSM() {
   const info = data ? weatherInfo(data.weathercode) : null;
 
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card text-xs">
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card text-xs text-foreground">
       {info ? (
         <info.Icon className={`h-3.5 w-3.5 shrink-0 ${info.color}`} />
       ) : (
@@ -134,7 +134,7 @@ function VariantMD() {
   const info = data ? weatherInfo(data.weathercode) : null;
 
   return (
-    <div className="bg-card border border-border rounded-xl px-4 py-4 flex items-center gap-4">
+    <div className="bg-card border border-border rounded-xl px-4 py-4 flex items-center gap-4 text-foreground">
       <div className="shrink-0">
         {info ? (
           <info.Icon className={`h-10 w-10 ${info.color}`} />
@@ -148,7 +148,7 @@ function VariantMD() {
         </p>
         {data ? (
           <>
-            <p className="text-2xl font-bold tabular-nums leading-none">
+            <p className="text-2xl font-bold tabular-nums leading-none text-card-foreground">
               {data.temperature}°C
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -174,7 +174,7 @@ function VariantLG() {
   const info = data ? weatherInfo(data.weathercode) : null;
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col">
+    <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col text-foreground">
       <div className="px-5 pt-5 pb-3">
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
           Clima actual
@@ -190,7 +190,7 @@ function VariantLG() {
         )}
         {data ? (
           <>
-            <p className="text-5xl font-bold tabular-nums tracking-tight">
+            <p className="text-5xl font-bold tabular-nums tracking-tight text-card-foreground">
               {data.temperature}°
               <span className="text-2xl text-muted-foreground">C</span>
             </p>
@@ -233,7 +233,7 @@ function VariantXL() {
 
   return (
     <div
-      className={`bg-gradient-to-br ${gradientClass} border border-border rounded-xl overflow-hidden flex flex-col`}
+      className={`bg-gradient-to-br ${gradientClass} border border-border rounded-xl overflow-hidden flex flex-col text-foreground`}
     >
       <div className="px-6 pt-5 pb-2 flex items-start justify-between">
         <div>
@@ -257,7 +257,7 @@ function VariantXL() {
         <div>
           {data ? (
             <>
-              <p className="text-6xl font-bold tabular-nums leading-none">
+              <p className="text-6xl font-bold tabular-nums leading-none text-card-foreground">
                 {data.temperature}°
               </p>
               <p className="text-sm text-muted-foreground font-medium mt-1">
