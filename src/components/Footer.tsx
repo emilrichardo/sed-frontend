@@ -78,9 +78,20 @@ export function Footer() {
           <p className="text-xs text-muted-foreground">
             © {currentYear} Santiago en Datos. Todos los derechos reservados.
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            Desarrollado con precisión técnica para{" "}
-            <span className="font-bold text-foreground">Santiago en Datos</span>
+          <div className="flex items-center gap-6 text-xs">
+            <Link 
+              href="/privacidad" 
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Política de Privacidad
+            </Link>
+            <span className="text-border">|</span>
+            <Link 
+              href="/legales" 
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Aviso Legal
+            </Link>
           </div>
         </div>
       </div>
