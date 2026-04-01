@@ -78,14 +78,14 @@ function VariantXS() {
   const rate = rates[0];
 
   return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs">
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs text-foreground">
       <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">
         USD
       </span>
       {rate ? (
         <>
           <span className="text-muted-foreground">Oficial</span>
-          <span className="font-bold tabular-nums">{fmtARS(rate.venta)}</span>
+          <span className="font-bold tabular-nums text-card-foreground">{fmtARS(rate.venta)}</span>
         </>
       ) : (
         <Pulse w="w-16" />
@@ -101,7 +101,7 @@ function VariantSM() {
   if (error) return null;
 
   return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs">
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs text-foreground">
       <span className="font-bold uppercase tracking-wider text-muted-foreground text-[10px] shrink-0">
         USD
       </span>
@@ -150,7 +150,7 @@ function VariantMD() {
   const top3 = rates.slice(0, 3);
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden text-foreground">
       <div className="px-4 py-3 border-b border-border/50 bg-muted/20 flex items-center gap-2">
         <DollarSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -176,7 +176,7 @@ function VariantMD() {
                 <span className="text-sm font-medium">
                   {NOMBRES[rate.casa] ?? rate.nombre}
                 </span>
-                <span className="text-sm font-bold tabular-nums">
+                <span className="text-sm font-bold tabular-nums text-card-foreground">
                   {fmtARS(rate.venta)}
                 </span>
               </div>
@@ -194,7 +194,7 @@ function VariantLG() {
   const top4 = rates.slice(0, 4);
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden text-foreground">
       <div className="px-5 py-3.5 border-b border-border/50 bg-muted/20 flex items-center gap-2">
         <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
         <p className="text-sm font-bold">Cotización USD</p>
@@ -240,7 +240,7 @@ function VariantLG() {
                   <td className="px-4 py-3 text-right text-muted-foreground tabular-nums">
                     {fmtARS(rate.compra)}
                   </td>
-                  <td className="px-5 py-3 text-right font-bold tabular-nums">
+                  <td className="px-5 py-3 text-right font-bold tabular-nums text-card-foreground">
                     {fmtARS(rate.venta)}
                   </td>
                 </tr>
@@ -258,7 +258,7 @@ function VariantXL() {
   if (error) return null;
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden text-foreground">
       <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
@@ -316,7 +316,7 @@ function VariantXL() {
                   <td className="px-4 py-3 text-right text-muted-foreground tabular-nums">
                     {fmtARS(rate.compra)}
                   </td>
-                  <td className="px-5 py-3 text-right font-bold tabular-nums">
+                  <td className="px-5 py-3 text-right font-bold tabular-nums text-card-foreground">
                     {fmtARS(rate.venta)}
                   </td>
                 </tr>

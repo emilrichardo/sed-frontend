@@ -54,65 +54,166 @@ export function splitIntoChunks(text: string, maxLen = 200): string[] {
   return chunks;
 }
 
-/** Returns an array of Spanish voices, prioritizing finding at least one female and one male voice for alternation. */
+/**
+ * Latin American Spanish language codes.
+ */
+const LATIN_AMERICAN_LOCALES = [
+  "es-mx", // Mexico
+  "es-ar", // Argentina
+  "es-us", // United States (Spanish)
+  "es-co", // Colombia
+  "es-cl", // Chile
+  "es-pe", // Peru
+  "es-ve", // Venezuela
+  "es-ec", // Ecuador
+  "es-uy", // Uruguay
+  "es-py", // Paraguay
+  "es-bo", // Bolivia
+  "es-gt", // Guatemala
+  "es-sv", // El Salvador
+  "es-hn", // Honduras
+  "es-ni", // Nicaragua
+  "es-cr", // Costa Rica
+  "es-pa", // Panama
+  "es-pr", // Puerto Rico
+  "es-cu", // Cuba
+  "es-do", // Dominican Republic
+];
+
+/**
+ * Quality scores for known voice providers.
+ * Higher = better quality (more natural sounding).
+ */
+const VOICE_QUALITY_RANK: Record<string, number> = {
+  // Premium cloud voices (best quality)
+  "google": 10,
+  "microsoft": 9,
+  "apple": 9,
+  "amazon": 9,
+  "azure": 9,
+  // Good quality Latin American voices
+  "diego": 8,
+  "paulina": 8,
+  "monica": 8,
+  "luciana": 8,
+  "jorge": 7,
+  "carlos": 7,
+  "laura": 7,
+  "elena": 7,
+  "sofia": 8,
+  "valentina": 8,
+  "camila": 7,
+  "fernanda": 7,
+  // Lower quality / robotic voices to avoid
+  "microsoft sabina": 3,  // Old Windows voice, robotic
+  "microsoft helena": 3,
+  "microsoft laura": 3,
+};
+
+/**
+ * Known robotic/low-quality voice patterns to filter out.
+ */
+const LOW_QUALITY_PATTERNS = [
+  /microsoft.*desktop/i,
+  /microsoft.*mobile/i,
+  /^sapi/i,
+];
+
+/**
+ * Returns true if a voice appears to be low quality.
+ */
+function isLowQualityVoice(voice: SpeechSynthesisVoice): boolean {
+  const nameLower = voice.name.toLowerCase();
+  return LOW_QUALITY_PATTERNS.some((pattern) => pattern.test(nameLower));
+}
+
+/**
+ * Returns true if the voice is Latin American Spanish.
+ */
+function isLatinAmericanVoice(voice: SpeechSynthesisVoice): boolean {
+  const langLower = voice.lang.toLowerCase();
+  return LATIN_AMERICAN_LOCALES.some((locale) => langLower.startsWith(locale));
+}
+
+/**
+ * Returns a quality score for a voice (higher = better).
+ */
+function getVoiceQuality(voice: SpeechSynthesisVoice): number {
+  const nameLower = voice.name.toLowerCase();
+  
+  // Check for known quality rankings
+  for (const [key, score] of Object.entries(VOICE_QUALITY_RANK)) {
+    if (nameLower.includes(key)) return score;
+  }
+  
+  // Default scores based on voice URI patterns
+  if (voice.voiceURI.includes("Google")) return 10;
+  if (voice.voiceURI.includes("Apple")) return 9;
+  if (voice.voiceURI.includes("Microsoft")) return 5; // Mixed quality
+  
+  // Local voices usually lower quality
+  return 3;
+}
+
+/**
+ * Returns an array of Latin American Spanish voices sorted by quality (best first).
+ * Filters out known low-quality/robotic voices and Spanish from Spain (es-ES).
+ */
 export function getSpanishVoices(): SpeechSynthesisVoice[] {
   const voices = speechSynthesis.getVoices();
 
-  // First get all spanish voices
-  const esVoices = voices.filter((v) => v.lang.startsWith("es"));
+  // Get all Latin American Spanish voices (exclude es-ES)
+  const latAmVoices = voices.filter((v) => {
+    // Must start with "es-" but NOT "es-es" (Spain)
+    const langLower = v.lang.toLowerCase();
+    return langLower.startsWith("es-") && !langLower.startsWith("es-es");
+  });
+  
+  if (latAmVoices.length === 0) {
+    // Fallback: try any Spanish voice if no Latin American found
+    const esVoices = voices.filter((v) => v.lang.startsWith("es"));
+    if (esVoices.length > 0) {
+      return esVoices;
+    }
+    return voices;
+  }
 
-  // Common names to distinguish female vs male voices if available
-  const femaleNames = [
-    "paulina",
-    "monica",
-    "luciana",
-    "sabina",
-    "victoria",
-    "elena",
-    "laura",
-    "google español",
-  ];
-  const maleNames = [
-    "diego",
-    "jorge",
-    "carlos",
-    "juan",
-    "alvaro",
-    "pablo",
-    "raul",
-  ];
+  // Filter out low quality voices
+  const goodVoices = latAmVoices.filter((v) => !isLowQualityVoice(v));
+  
+  // If all voices were filtered out, use the original list
+  const candidates = goodVoices.length > 0 ? goodVoices : latAmVoices;
 
-  let female = esVoices.find((v) =>
+  // Sort by quality score (descending)
+  const sorted = candidates.sort((a, b) => getVoiceQuality(b) - getVoiceQuality(a));
+
+  // Try to find one female and one male voice from top quality voices
+  const femaleNames = ["paulina", "monica", "luciana", "laura", "elena", "valentina", "camila", "fernanda", "sofia", "female", "mujer"];
+  const maleNames = ["diego", "jorge", "carlos", "juan", "alvaro", "pablo", "raul", "male", "hombre"];
+
+  const topVoices = sorted.slice(0, 6); // Consider top 6 for gender selection
+  
+  let female = topVoices.find((v) =>
     femaleNames.some((n) => v.name.toLowerCase().includes(n)),
   );
-  let male = esVoices.find((v) =>
+  let male = topVoices.find((v) =>
     maleNames.some((n) => v.name.toLowerCase().includes(n)),
   );
 
-  // Fallbacks if not enough recognizable names are found
-  if (!female && esVoices.length > 0) {
-    // If not found, just pick the first one as female
-    female = esVoices.find((v) => v !== male) || esVoices[0];
-  }
-  if (!male && esVoices.length > 1) {
-    // Pick the next available different one as male
-    male = esVoices.find((v) => v !== female) || esVoices[1];
-  }
-
+  // Build result prioritizing quality first, then gender variety
   const result: SpeechSynthesisVoice[] = [];
-  if (female) result.push(female);
-  if (male && male !== female) result.push(male);
-
-  // If we couldn't find 2, just return what we have
-  if (result.length < 2 && esVoices.length >= 2) {
-    return [esVoices[0], esVoices[1]];
+  
+  // Add the highest quality voice first
+  if (sorted[0]) result.push(sorted[0]);
+  
+  // Add a voice of different gender if available
+  if (female && !result.includes(female)) result.push(female);
+  else if (male && !result.includes(male)) result.push(male);
+  
+  // Add remaining high-quality voices
+  for (const v of sorted) {
+    if (!result.includes(v)) result.push(v);
   }
 
-  // If we found our female/male pair, try to append any other voices just in case
-  const finalResult = [...result];
-  for (const v of esVoices) {
-    if (!finalResult.includes(v)) finalResult.push(v);
-  }
-
-  return finalResult.length > 0 ? finalResult : voices;
+  return result;
 }

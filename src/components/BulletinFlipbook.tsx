@@ -134,6 +134,7 @@ export default function BulletinFlipbook({
                 className="flex justify-center"
               >
                 <HTMLFlipBook
+                  key={numPages ?? "loading"}
                   width={pageWidth}
                   height={pageWidth * 1.4142} // A4 ratio approx
                   size="fixed"
