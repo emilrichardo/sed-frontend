@@ -64,18 +64,7 @@ export default function BulletinEntriesLoader({
           authToken,
         });
 
-        console.log(`[BulletinEntriesLoader] Boletín ${bulletin.id} - Actos recibidos: ${data.docs.length}`);
-        console.log(`[BulletinEntriesLoader] Primeros actos:`, data.docs.slice(0, 3).map(a => ({ 
-          id: a.id, 
-          status: a.status, 
-          identificador: a.identificador_de_acto,
-          titulo: a.titulo_periodistico?.slice(0, 50)
-        })));
-
-        // Calcular info de debug
-        const publicados = data.docs.filter(a => a.status === 'publicado').length;
-        const borradores = data.docs.filter(a => a.status !== 'publicado').length;
-        setDebugInfo({ total: data.docs.length, publicados, borradores });
+        console.log(`[BulletinEntriesLoader] bulletin.id=${bulletin.id} → ${data.docs.length} actos (totalDocs=${data.totalDocs})`);
 
         const sortedDocs = data.docs.sort((a, b) => {
           if (a.destacado === b.destacado) return 0;
