@@ -39,50 +39,149 @@ const ALIAS_CSS = `
 const RESIZE_SCRIPT = `<script>
   (function() {
     var lastHeight = 0;
-    var reported = false;
+    var observer = null;
+    var checkInterval = null;
+    var timeoutId = null;
+    var startTime = Date.now();
+    var isStable = false;
+    var stabilityCounter = 0;
     
     function getContentHeight() {
       var root = document.getElementById('custom-viz-root');
       if (!root) return 400;
       
+      // Obtener todas las dimensiones posibles
+      var scrollHeight = root.scrollHeight;
+      var offsetHeight = root.offsetHeight;
+      
       // Obtener el elemento más alto dentro del root
       var children = root.children;
-      var maxChildHeight = 0;
+      var maxChildBottom = 0;
+      var hasVisibleChildren = false;
+      
       for (var i = 0; i < children.length; i++) {
-        var rect = children[i].getBoundingClientRect();
-        var childBottom = rect.top + rect.height;
-        if (childBottom > maxChildHeight) {
-          maxChildHeight = childBottom;
+        var child = children[i];
+        var rect = child.getBoundingClientRect();
+        if (rect.height > 0) {
+          hasVisibleChildren = true;
+          var childBottom = rect.bottom;
+          if (childBottom > maxChildBottom) {
+            maxChildBottom = childBottom;
+          }
+        }
+        // También considerar scrollHeight de los hijos (para elementos con overflow)
+        var childScrollHeight = child.scrollHeight;
+        if (childScrollHeight > 0) {
+          hasVisibleChildren = true;
         }
       }
       
-      // Si encontramos hijos con altura, usamos esa
-      if (maxChildHeight > 50) {
-        return Math.ceil(maxChildHeight + 20); // +20px de margen
-      }
+      // Calcular altura considerando todos los factores
+      var heightFromChildren = hasVisibleChildren ? Math.ceil(maxChildBottom + 20) : 0;
+      var heightFromScroll = scrollHeight > 50 ? scrollHeight + 20 : 0;
+      var heightFromOffset = offsetHeight > 50 ? offsetHeight + 20 : 0;
       
-      // Fallback a scrollHeight del root
-      return Math.max(root.scrollHeight, 200);
+      // Tomar el máximo de todas las mediciones
+      var finalHeight = Math.max(heightFromChildren, heightFromScroll, heightFromOffset, 200);
+      
+      // Limitar entre 100px y 1500px
+      return Math.min(1500, Math.max(100, finalHeight));
     }
     
-    function notifyHeight() {
-      if (reported) return; // Solo reportar una vez
-      
+    function notifyHeight(force) {
       var h = getContentHeight();
-      // Limitar entre 100px y 1200px
-      h = Math.min(1200, Math.max(100, h));
+      var hasChanged = Math.abs(h - lastHeight) > 3;
       
-      if (Math.abs(h - lastHeight) > 5) {
+      if (force || hasChanged) {
         lastHeight = h;
         window.parent.postMessage({ type: 'custom-viz-height', height: h }, '*');
-        reported = true;
+        
+        // Reset stability counter cuando hay cambios
+        if (hasChanged) {
+          stabilityCounter = 0;
+          isStable = false;
+        }
+      } else {
+        // Contar estabilidad
+        stabilityCounter++;
+        if (stabilityCounter >= 3) {
+          isStable = true;
+        }
       }
+      
+      return isStable;
     }
     
-    // Reportar solo una vez, después de que todo cargue
-    window.addEventListener('load', notifyHeight);
-    setTimeout(notifyHeight, 500);
-    setTimeout(notifyHeight, 1500);
+    function startObserving() {
+      var root = document.getElementById('custom-viz-root');
+      if (!root) return;
+      
+      // Notificar altura inicial
+      notifyHeight(true);
+      
+      // ResizeObserver para detectar cambios de tamaño
+      if (typeof ResizeObserver !== 'undefined') {
+        observer = new ResizeObserver(function(entries) {
+          setTimeout(function() { notifyHeight(false); }, 50);
+        });
+        observer.observe(root);
+        
+        // Observar hijos directos también
+        for (var i = 0; i < root.children.length; i++) {
+          observer.observe(root.children[i]);
+        }
+      }
+      
+      // MutationObserver para detectar cambios en el DOM
+      if (typeof MutationObserver !== 'undefined') {
+        var mutationObserver = new MutationObserver(function(mutations) {
+          setTimeout(function() { notifyHeight(false); }, 100);
+        });
+        mutationObserver.observe(root, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['style', 'class']
+        });
+      }
+      
+      // Intervalo de verificación durante los primeros 10 segundos
+      checkInterval = setInterval(function() {
+        var elapsed = Date.now() - startTime;
+        
+        // Verificar altura periódicamente
+        notifyHeight(false);
+        
+        // Detener después de 10 segundos o cuando sea estable por suficiente tiempo
+        if (elapsed > 10000 || (elapsed > 3000 && isStable)) {
+          clearInterval(checkInterval);
+          if (observer) {
+            observer.disconnect();
+          }
+        }
+      }, 300);
+    }
+    
+    // Iniciar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startObserving);
+    } else {
+      startObserving();
+    }
+    
+    // También en window.load (para recursos externos)
+    window.addEventListener('load', function() {
+      setTimeout(function() { notifyHeight(true); }, 100);
+      setTimeout(function() { notifyHeight(true); }, 500);
+      setTimeout(function() { notifyHeight(true); }, 1000);
+    });
+    
+    // Cleanup en unload
+    window.addEventListener('beforeunload', function() {
+      if (checkInterval) clearInterval(checkInterval);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (observer) observer.disconnect();
+    });
   })();
 <\/script>`;
 
@@ -122,36 +221,61 @@ export function CustomVizBlock({ custom_markup, data }: Props) {
 </html>`;
 
   useEffect(() => {
+    let debounceTimeout: NodeJS.Timeout | null = null;
+    let lastUpdateTime = Date.now();
+    
     const handler = (e: MessageEvent) => {
       if (
         e.data?.type === "custom-viz-height" &&
         typeof e.data.height === "number"
       ) {
-        // Solo aceptar la primera altura reportada válida
-        setHeight((prev) => {
-          if (prev !== null) return prev; // Ya tenemos altura, no cambiar
-          const h = Math.min(1200, Math.max(100, e.data.height));
-          return h;
-        });
+        const newHeight = Math.min(1500, Math.max(100, e.data.height));
+        const now = Date.now();
+        
+        // Si es la primera vez, aplicar inmediatamente
+        if (height === null) {
+          setHeight(newHeight);
+          lastUpdateTime = now;
+          return;
+        }
+        
+        // Para actualizaciones posteriores, usar debounce de 100ms
+        // pero permitir updates inmediatos si han pasado más de 500ms desde el último
+        if (debounceTimeout) {
+          clearTimeout(debounceTimeout);
+        }
+        
+        if (now - lastUpdateTime > 500) {
+          setHeight(newHeight);
+          lastUpdateTime = now;
+        } else {
+          debounceTimeout = setTimeout(() => {
+            setHeight(newHeight);
+            lastUpdateTime = Date.now();
+          }, 100);
+        }
       }
     };
     window.addEventListener("message", handler);
     
-    // Timeout de seguridad
+    // Timeout de seguridad - si no recibimos altura en 5 segundos, usar default
     timeoutRef.current = setTimeout(() => {
-      setHeight((prev) => (prev === null ? 400 : prev));
-    }, 3000);
+      setHeight((prev) => (prev === null ? 600 : prev));
+    }, 5000);
     
     return () => {
       window.removeEventListener("message", handler);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
     };
-  }, []);
+  }, [height]); // Dependencia height para poder comparar con valor anterior
 
   // Altura final: usa la recibida del iframe o el valor por defecto
-  const finalHeight = height ?? 400;
+  const finalHeight = height ?? 600;
   
   return (
     <iframe
