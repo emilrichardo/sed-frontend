@@ -1302,8 +1302,20 @@ export async function createTaxonomy(
 // --- Agents & Learning API Functions ---
 
 export async function getAgents(authToken?: string): Promise<Agent[]> {
-  const res = await apiFetch("/agents", { cache: "no-store" }, authToken);
-
+  // Si hay authToken explícito, llamar directo al CMS (server-side)
+  if (authToken) {
+    const res = await apiFetch("/agents", { cache: "no-store" }, authToken);
+    if (!res.ok) {
+      console.error("API: getAgents error:", res.status, res.statusText);
+      return [];
+    }
+    const data = await res.json();
+    return data.docs || [];
+  }
+  
+  // Cliente: usar ruta API local para que la cookie HttpOnly se envíe automáticamente
+  const res = await fetch("/api/agents", { cache: "no-store" });
+  
   if (!res.ok) {
     console.error("API: getAgents error:", res.status, res.statusText);
     return [];
@@ -1317,8 +1329,19 @@ export async function getAgent(
   id: string,
   authToken?: string,
 ): Promise<Agent | null> {
-  const res = await apiFetch(`/agents/${id}`, { cache: "no-store" }, authToken);
-
+  // Si hay authToken explícito, llamar directo al CMS (server-side)
+  if (authToken) {
+    const res = await apiFetch(`/agents/${id}`, { cache: "no-store" }, authToken);
+    if (!res.ok) {
+      console.error(`API: getAgent(${id}) error:`, res.status, res.statusText);
+      return null;
+    }
+    return res.json();
+  }
+  
+  // Cliente: usar ruta API local para que la cookie HttpOnly se envíe automáticamente
+  const res = await fetch(`/api/agents/${id}`, { cache: "no-store" });
+  
   if (!res.ok) {
     console.error(`API: getAgent(${id}) error:`, res.status, res.statusText);
     return null;
@@ -1455,14 +1478,16 @@ export async function updateAgent(
   id: string,
   data: Partial<Omit<Agent, "id" | "createdAt" | "updatedAt">>,
 ): Promise<Agent> {
-  const res = await apiFetch(`/agents/${id}`, {
+  // Cliente: usar ruta API local para que la cookie HttpOnly se envíe automáticamente
+  const res = await fetch(`/api/agents/${id}`, {
     method: "PATCH",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+    throw new Error(err.error || err.errors?.[0]?.message || err.message || `Error ${res.status}`);
   }
 
   const body = await res.json();
@@ -1472,14 +1497,16 @@ export async function updateAgent(
 export async function createAgent(
   data: Partial<Omit<Agent, "id" | "createdAt" | "updatedAt">>,
 ): Promise<Agent> {
-  const res = await apiFetch("/agents", {
+  // Cliente: usar ruta API local para que la cookie HttpOnly se envíe automáticamente
+  const res = await fetch("/api/agents", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+    throw new Error(err.error || err.errors?.[0]?.message || err.message || `Error ${res.status}`);
   }
 
   const body = await res.json();
