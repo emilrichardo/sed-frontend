@@ -19,7 +19,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      `connect-src 'self' https://api.open-meteo.com https://dolarapi.com${payloadPublicUrl ? ` ${payloadPublicUrl}` : ""}`,
+      `connect-src 'self' https://api.open-meteo.com https://dolarapi.com https://sb.santiagoendatos.com${payloadPublicUrl ? ` ${payloadPublicUrl}` : ""}`,
       "frame-src 'self' blob: https: http://127.0.0.1:54321",
       "worker-src 'self' blob: https://unpkg.com",
     ].join("; "),
