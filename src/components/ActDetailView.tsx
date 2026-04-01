@@ -42,6 +42,8 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
   const [isEditingResumen, setIsEditingResumen] = useState(false);
   const [resumenValue, setResumenValue] = useState(entry.resumen || "");
   const [isSavingResumen, setIsSavingResumen] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-AR", {
@@ -63,13 +65,26 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
   };
 
   const toggleStatus = async () => {
+    if (!entry.id) {
+      setSaveError("Error: ID del acto no encontrado");
+      return;
+    }
+    
     const newStatus = status === "publicado" ? "borrador" : "publicado";
+    setSaveError(null);
+    setIsSavingStatus(true);
     setStatus(newStatus); // Optimistic
+    
     try {
-      await updateActoAdministrativo(entry.id, { status: newStatus });
+      console.log(`[toggleStatus] Actualizando acto ${entry.id} a estado: ${newStatus}`);
+      const result = await updateActoAdministrativo(entry.id, { status: newStatus });
+      console.log("[toggleStatus] Actualización exitosa:", result);
     } catch (error) {
-      console.error("Failed to update status:", error);
+      console.error("[toggleStatus] Error al actualizar:", error);
+      setSaveError(error instanceof Error ? error.message : "Error al guardar el estado");
       setStatus(status); // Revert
+    } finally {
+      setIsSavingStatus(false);
     }
   };
 
@@ -205,8 +220,9 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   {isEditing ? (
                     <button
                       onClick={toggleStatus}
+                      disabled={isSavingStatus}
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-0.5 border text-xs font-bold transition-all uppercase tracking-normal rounded-full",
+                        "flex items-center gap-1.5 px-2.5 py-0.5 border text-xs font-bold transition-all uppercase tracking-normal rounded-full disabled:opacity-50",
                         status === "publicado"
                           ? "bg-green-600 text-white border-green-600 hover:bg-green-700"
                           : "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-600",
@@ -217,12 +233,17 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                           : "Clic para publicar"
                       }
                     >
-                      {status === "publicado" ? (
+                      {isSavingStatus ? (
+                        <>
+                          <span className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full" />
+                          Guardando...
+                        </>
+                      ) : status === "publicado" ? (
                         <Eye className="h-3 w-3" />
                       ) : (
                         <EyeOff className="h-3 w-3" />
                       )}
-                      {status === "publicado" ? "Publicado" : "Borrador"}
+                      {!isSavingStatus && (status === "publicado" ? "Publicado" : "Borrador")}
                     </button>
                   ) : (
                     status !== "publicado" && (
@@ -255,6 +276,11 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                     </div>
                   )}
                 </div>
+                {saveError && (
+                  <div className="text-red-500 text-xs mt-2 bg-red-50 px-3 py-2 rounded border border-red-200">
+                    ⚠️ {saveError}
+                  </div>
+                )}
               </div>
             </div>
 

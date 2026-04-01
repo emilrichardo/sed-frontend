@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   Table as TableIcon,
   Code,
@@ -28,11 +28,22 @@ import {
   Flame,
   TrendingUp,
   Star,
+  Save,
+  Check,
+  AlertCircle,
+  Pencil,
+  X,
+  Play,
+  Bot,
+  Copy,
+  Maximize2,
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
+import { CustomVizBlock } from "./CustomVizBlock";
 import { getTextFromNodes } from "./RichTextParser";
 import { useAuth } from "@/context/AuthContext";
 import { Download } from "lucide-react";
+import { updatePublicacionBlockVisualizacion, updatePublicacionBlockCustomMarkup } from "@/lib/api";
 
 // --- Column type detection ---
 
@@ -465,6 +476,7 @@ function getChartCompatibilityInfo(
 export const TableBlock = ({
   fields,
   isWidget = false,
+  publicationId,
 }: {
   fields: {
     id?: string;
@@ -472,6 +484,7 @@ export const TableBlock = ({
     blockType: string;
     source_type?: string;
     tipo_visualizacion?: string;
+    custom_markup?: string;
     configuracion_visualizacion?: any;
     tabla_relacionada?: {
       titulo?: string;
@@ -487,6 +500,7 @@ export const TableBlock = ({
     [key: string]: any;
   };
   isWidget?: boolean;
+  publicationId?: string | number;
 }) => {
   const [activeTab, setActiveTab] = useState<"visualizacion" | "json">(
     "visualizacion",
@@ -612,14 +626,56 @@ export const TableBlock = ({
   const allChartTypeIds = useMemo(() => CHART_CATALOG.map((ct) => ct.id), []);
 
   const defaultChartType =
-    resolvedVisualizationType &&
-    allChartTypeIds.includes(resolvedVisualizationType)
-      ? resolvedVisualizationType
-      : compatibleIds.has(recommendedId)
-        ? recommendedId
-        : ([...compatibleIds][0] ?? "table");
+    resolvedVisualizationType === "custom_viz"
+      ? "custom_viz"
+      : resolvedVisualizationType &&
+          allChartTypeIds.includes(resolvedVisualizationType)
+        ? resolvedVisualizationType
+        : compatibleIds.has(recommendedId)
+          ? recommendedId
+          : ([...compatibleIds][0] ?? "table");
 
   const [selectedChartType, setSelectedChartType] = useState(defaultChartType);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [editingMarkup, setEditingMarkup] = useState(false);
+  const [markupDraft, setMarkupDraft] = useState(fields.custom_markup || "");
+  const [markupSaveState, setMarkupSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isCustomVizExpanded, setIsCustomVizExpanded] = useState(false);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const blockId = fields.id;
+  const savedChartType = resolvedVisualizationType ?? defaultChartType;
+  const canSave = !!user && !!publicationId && !!blockId && selectedChartType !== savedChartType;
+
+  const handleSaveMarkup = async () => {
+    if (!publicationId || !blockId) return;
+    setMarkupSaveState("saving");
+    try {
+      await updatePublicacionBlockCustomMarkup(publicationId, blockId, markupDraft);
+      setMarkupSaveState("saved");
+      setEditingMarkup(false);
+      setTimeout(() => setMarkupSaveState("idle"), 2500);
+    } catch {
+      setMarkupSaveState("error");
+      setTimeout(() => setMarkupSaveState("idle"), 3000);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!publicationId || !blockId) return;
+    setSaveState("saving");
+    try {
+      await updatePublicacionBlockVisualizacion(publicationId, blockId, selectedChartType);
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 2500);
+    } catch {
+      setSaveState("error");
+      setTimeout(() => setSaveState("idle"), 3000);
+    }
+  };
+
   const [useHeatmap, setUseHeatmap] = useState(false);
   const [showTableView, setShowTableView] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
@@ -747,6 +803,12 @@ export const TableBlock = ({
   const showChart =
     activeTab === "visualizacion" &&
     selectedChartType !== "table" &&
+    selectedChartType !== "custom_viz" &&
+    !showPublicTable;
+
+  const showCustomVizPanel =
+    activeTab === "visualizacion" &&
+    selectedChartType === "custom_viz" &&
     !showPublicTable;
 
   const handleDownloadCSV = () => {
@@ -785,11 +847,209 @@ export const TableBlock = ({
       .replace(/(^-|-$)+/g, "");
   }
 
+  const aiPrompt = (() => {
+    const tableData = filteredRows.map((row: any) =>
+      Object.fromEntries(
+        columns.map((col: any) => [
+          col.header,
+          row.cells
+            ? row.cells.find((c: any) => c.columnId === col.id)?.value ?? ""
+            : row[col.id] ?? "",
+        ])
+      )
+    );
+    const colNames = columns.map((c: any) => c.header).join(", ");
+    const currentMarkup = markupDraft || fields.custom_markup || "<!-- sin markup aún -->";
+    return `Sos un experto en visualización de datos con el nivel de The Pudding, NYT Graphics y Bloomberg Visual Data. Tu tarea es crear una visualización interactiva y de alto impacto en HTML + CSS + JS para el sitio "Santiago en Datos".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 1 — ANÁLISIS DE DATOS (hacé esto mentalmente antes de codear)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Antes de elegir el tipo de gráfico, respondé estas preguntas:
+1. ¿Qué historia cuentan estos datos? ¿Cuál es el insight principal?
+2. ¿Cuántas dimensiones hay? ¿Hay una dimensión temporal, geográfica, jerárquica?
+3. ¿Qué relación queremos mostrar: comparación, distribución, composición, tendencia, flujo?
+4. ¿Cuántos registros hay? (1–5 → KPI/infografía; 6–20 → gráfico estándar; 20+ → gráfico denso / interactivo con filtro)
+5. ¿Hay valores extremos, outliers o datos que merezcan destacarse?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Columnas: ${colNames}
+
+window.__tableData (ya disponible en el iframe):
+${JSON.stringify(tableData, null, 2)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 2 — ELEGÍ UNA VISUALIZACIÓN DE ALTO IMPACTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROHIBIDO: usar barras/columnas si hay una opción más interesante. El default es la peor opción.
+
+CATÁLOGO CREATIVO — elegí la que mejor comunique la historia:
+
+▸ COMPARACIÓN ENTRE CATEGORÍAS
+  - Lollipop chart: puntos en extremos de líneas, mucho más elegante que barras
+  - Dot plot divergente: valores positivos/negativos desde un eje central
+  - Slope chart: compara dos momentos (antes/después) con líneas que muestran dirección
+  - Beeswarm plot: puntos distribuidos sin superposición, muestra distribución real
+  - Ranking animado: lista ordenable con transiciones suaves al cambiar métrica
+
+▸ COMPOSICIÓN / PARTES DE UN TODO
+  - Waffle chart: grilla de cuadraditos, intuitiva para porcentajes
+  - Pictogram chart: íconos SVG repetidos (personas, casas, etc.) como unidad visual
+  - Treemap interactivo: rectángulos con hover detail, mejor que torta para muchas categorías
+  - Packed circles: burbujas agrupadas por categoría, impacto visual inmediato
+  - Stacked area con brushing: área apilada + selector de rango temporal
+
+▸ DISTRIBUCIÓN / DENSIDAD
+  - Ridgeline / joy plot: múltiples distribuciones superpuestas en cascada
+  - Violin plot: distribución completa + media, más rico que boxplot
+  - Strip plot: puntos individuales en columnas, honesto con los datos
+  - Hexbin: densidad en grilla hexagonal para datasets grandes
+
+▸ RELACIÓN / CORRELACIÓN
+  - Scatter con tooltips ricos: tamaño = tercera variable, color = categoría
+  - Bubble chart animado (Gapminder-style): tiempo controlado con slider
+  - Connected scatter: puntos unidos por línea mostrando trayectoria temporal
+  - Matrix heatmap: correlación entre todas las variables, gradiente de color
+
+▸ TENDENCIA TEMPORAL
+  - Area chart con anotaciones: hitos importantes marcados con líneas + labels
+  - Small multiples / facet: misma serie para cada categoría en grilla compacta
+  - Bump chart: evolución de rankings en el tiempo (cruces de líneas)
+  - Step line: para datos que cambian abruptamente (tarifas, políticas)
+  - Horizon chart: para muchas series temporales en poco espacio
+
+▸ FLUJO / JERARQUÍA
+  - Sankey: flujos entre nodos, ideal para presupuestos, migraciones
+  - Sunburst interactivo: jerarquías con zoom al hacer click
+  - Network graph: relaciones entre entidades
+  - Chord diagram: flujos bidireccionales entre categorías
+
+▸ GEOGRAFÍA
+  - Choropleth con tooltip hover
+  - Cartograma: tamaño distorsionado por valor (más honesto que choropleth)
+  - Dot map: puntos individuales geolocalizados
+
+▸ KPI / STORYTELLING (pocos datos, máximo impacto)
+  - Número animado con counter.js: el valor "crece" hasta el final al cargar
+  - Big number + sparkline contextual + anotación de tendencia
+  - Infografía narrativa: texto + datos integrados, como artículo visual
+  - Comparador tipo "X veces más que Y" con representación visual proporcional
+  - Progress ring / gauge con gradiente y label central
+  - Timeline horizontal de eventos con íconos y descripciones expandibles
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 3 — REQUISITOS DE INTERACTIVIDAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+La visualización DEBE incluir al menos 2 de estos elementos:
+
+✓ TOOLTIPS RICOS — al hover, mostrar panel con todos los datos relevantes del elemento, no solo el valor
+✓ ANIMACIÓN DE ENTRADA — los elementos aparecen con transición (barras crecen, puntos aparecen en cascada, números cuentan)
+✓ FILTRO / SELECTOR — botones o dropdown para filtrar por categoría o cambiar la métrica mostrada
+✓ HIGHLIGHT — al hover un elemento, los demás se atenúan (opacity 0.3), el hover queda al 100%
+✓ ORDENAMIENTO — click en encabezado para reordenar ASC/DESC
+✓ CLICK-TO-DETAIL — click en elemento expande panel con información adicional
+✓ SLIDER TEMPORAL — si hay fechas/años, un input range para navegar el tiempo
+✓ ANOTACIONES — labels flotantes en los puntos más relevantes (máximo, mínimo, outlier)
+✓ COMPARADOR — toggle entre dos vistas o dos métricas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN SYSTEM — Santiago en Datos
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## CSS Variables (light / dark automático)
+  --background          /* light: #ffffff   | dark: #161614  */
+  --foreground          /* light: #262624   | dark: #f2f2f0  */
+  --card                /* light: #ffffff   | dark: #1e1e1c  */
+  --muted               /* light: #f5f5f4   | dark: #2a2a28  */
+  --muted-foreground    /* light: #666666   | dark: #a3a3a0  */
+  --primary             /* #c95b4a  — Rojo Santiago */
+  --primary-foreground  /* #ffffff */
+  --secondary           /* light: #f5f5f4   | dark: #2a2a28  */
+  --border              /* light: #e5e5e5   | dark: #303030  */
+  --radius              /* 0.5rem = 8px */
+  --font-sans           /* Inter, ui-sans-serif, system-ui */
+  --font-mono           /* Source Code Pro, monospace */
+
+## Paletas (usar SIEMPRE estas, no inventar colores)
+
+Identitaria (5 colores, preferida para series principales):
+  #c95b4a  Rojo Santiago  |  #4d5f7a  Azul pizarra
+  #b08f51  Dorado/ocre    |  #518765  Verde pino  |  #8a597a  Malva
+
+Semáforo:  #16a34a verde  |  #ca8a04 ámbar  |  #c95b4a rojo
+
+Multicolor (10, sin rojo):
+  #2563eb #16a34a #ea580c #9333ea #0891b2
+  #ca8a04 #db2777 #0d9488 #b45309 #6d28d9
+
+Heatmap (5 tonos rojo):
+  #fee2e2 → #fca5a5 → #ef4444 → #b91c1c → #7f1d1d
+
+Gradiente sugerido para fills continuos:
+  rgba(201,91,74,0.15) → rgba(201,91,74,0.85)
+
+## Tipografía
+- Títulos: var(--font-sans); font-weight: 700–800; letter-spacing: -0.02em
+- Subtítulos / labels: var(--font-sans); font-weight: 500
+- Números/datos: var(--font-mono); font-weight: 600
+
+## Componentes visuales
+Tarjetas: background var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 14px 16px
+Tooltips: background var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 20px rgba(0,0,0,.12); font-size: 12px
+Pills: border-radius: 9999px; padding: 2px 10px; font-size: 11px; font-weight: 500
+Ejes: color var(--muted-foreground); font-size: 11px; grid lines var(--border) opacity 0.4
+
+## Animaciones recomendadas
+  transition: all 0.2s ease                    /* hover states */
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px) } }
+  @keyframes growBar { from { transform: scaleX(0) } }  /* para barras horizontales */
+  @keyframes countUp { /* usar requestAnimationFrame para números */ }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LIBRERÍAS DISPONIBLES VÍA CDN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Podés cargar cualquiera según lo que necesites:
+  D3.js v7:      https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js
+  Chart.js:      https://cdn.jsdelivr.net/npm/chart.js
+  Plotly.js:     https://cdn.plot.ly/plotly-2.35.2.min.js
+  Observable Plot: https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/dist/plot.umd.min.js
+  GSAP (animaciones): https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js
+
+Para SVG e infografías simples: usá SVG vanilla + CSS animations (sin dependencias).
+Para gráficos estadísticos complejos: D3.js o Observable Plot.
+Para iconos: incluí SVG inline, no uses librerías de iconos.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INSTRUCCIONES DE ENTREGA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- NO incluyas <!DOCTYPE html>, <html>, <head> ni <body>
+- Solo el contenido interno: <style>, <div id="root">, <script>
+- Los datos ya están en window.__tableData (array de objetos, clave = nombre de columna)
+- El resultado se inyecta en un iframe que ya tiene todas las CSS vars disponibles
+- Usá margin: 0; padding: 0 en el elemento raíz; respetá padding interno con el contenedor
+- NO uses colores hardcodeados para texto/fondo; usá siempre las CSS vars
+- Si el modo dark/light es relevante, usá @media (prefers-color-scheme: dark) { }
+- El código debe funcionar sin servidor (no fetch(), no módulos ES, no imports dinámicos)
+- Priorizá legibilidad mobile: texto mínimo 12px, touch targets mínimo 44px
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MARKUP ACTUAL (punto de partida o referencia)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\`\`\`html
+${currentMarkup}
+\`\`\``;
+  })();
+
   return (
     <div
       className={
         isWidget
-          ? "w-full h-full bg-background flex flex-col justify-center"
+          ? "w-full bg-background flex flex-col"
           : "my-8 border rounded-lg shadow-sm bg-background"
       }
     >
@@ -863,7 +1123,7 @@ export const TableBlock = ({
       )}
 
       {/* Chart type switcher */}
-      {!isWidget && activeTab === "visualizacion" && !isPublicUser && (
+      {!isWidget && activeTab === "visualizacion" && !!user && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 bg-muted/10 border-b flex-wrap">
           {CHART_CATALOG.map(({ id, label, Icon }) => {
             const isCompatible = compatibleIds.has(id);
@@ -893,10 +1153,53 @@ export const TableBlock = ({
               </button>
             );
           })}
-          {/* Recommendation legend */}
-          <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground pl-2">
-            <span className="w-2 h-2 bg-amber-400 rounded-full inline-block" />
-            <span className="hidden sm:inline">Recomendado</span>
+          {/* Custom viz button — only when block has custom_markup */}
+          {fields.custom_markup && (
+            <div className="flex items-center border-l ml-1 pl-2">
+              <button
+                title="Visualización personalizada (HTML/JS)"
+                onClick={() => setSelectedChartType("custom_viz")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  selectedChartType === "custom_viz"
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:hover:bg-violet-900/60 border border-violet-200 dark:border-violet-800"
+                }`}
+              >
+                <Code className="h-3.5 w-3.5" />
+                Custom
+              </button>
+            </div>
+          )}
+
+          {/* Recommendation legend + Save button */}
+          <div className="ml-auto flex items-center gap-2 pl-2">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span className="w-2 h-2 bg-amber-400 rounded-full inline-block" />
+              <span className="hidden sm:inline">Recomendado</span>
+            </div>
+            {canSave && (
+              <button
+                onClick={handleSave}
+                disabled={saveState === "saving"}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                  saveState === "saved"
+                    ? "bg-green-600 text-white"
+                    : saveState === "error"
+                      ? "bg-destructive text-destructive-foreground"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                }`}
+              >
+                {saveState === "saved" ? (
+                  <><Check className="h-3 w-3" />Guardado</>
+                ) : saveState === "error" ? (
+                  <><AlertCircle className="h-3 w-3" />Error</>
+                ) : saveState === "saving" ? (
+                  <>Guardando...</>
+                ) : (
+                  <><Save className="h-3 w-3" />Guardar</>
+                )}
+              </button>
+            )}
           </div>
           {(selectedChartType === "table" ||
             selectedChartType === "advanced_table") && (
@@ -960,7 +1263,7 @@ export const TableBlock = ({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto w-full h-full flex-1">
+          <div className="w-full flex-1 overflow-visible">
             {showChart && (
               <div className={isWidget ? "p-4 h-full" : "px-2 py-3 md:px-4 md:py-4 bg-card border-b"}>
                 <ChartRenderer
@@ -979,6 +1282,182 @@ export const TableBlock = ({
                       <TableIcon className="h-3 w-3" />
                       Ver datos
                     </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showCustomVizPanel && (
+              <div className="bg-card border-b h-auto relative group" style={{ minHeight: 'fit-content' }}>
+                {editingMarkup ? (
+                  /* ── Editor de markup ── */
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Code className="h-3.5 w-3.5" />
+                        Editar markup HTML / JS
+                      </span>
+                      <button
+                        onClick={() => { setEditingMarkup(false); setMarkupDraft(fields.custom_markup || ""); }}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Cancelar
+                      </button>
+                    </div>
+                    <textarea
+                      value={markupDraft}
+                      onChange={(e) => setMarkupDraft(e.target.value)}
+                      className="w-full h-72 font-mono text-xs bg-slate-950 text-slate-50 p-3 rounded border border-border resize-y focus:outline-none focus:ring-1 focus:ring-primary"
+                      spellCheck={false}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSaveMarkup}
+                        disabled={markupSaveState === "saving"}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all ${
+                          markupSaveState === "saved"
+                            ? "bg-green-600 text-white"
+                            : markupSaveState === "error"
+                              ? "bg-destructive text-destructive-foreground"
+                              : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                        }`}
+                      >
+                        {markupSaveState === "saved" ? (
+                          <><Check className="h-3.5 w-3.5" />Guardado</>
+                        ) : markupSaveState === "error" ? (
+                          <><AlertCircle className="h-3.5 w-3.5" />Error</>
+                        ) : markupSaveState === "saving" ? (
+                          <>Guardando...</>
+                        ) : (
+                          <><Save className="h-3.5 w-3.5" />Guardar markup</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Vista normal: toolbar (solo editor) + iframe ── */
+                  <div>
+                    {!!user && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 border-b bg-muted/10">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 flex-1">
+                          Visualización personalizada
+                        </span>
+                        {showPrompt ? (
+                          <button
+                            onClick={() => setShowPrompt(false)}
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                            Cerrar prompt
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setShowPrompt(true)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:hover:bg-violet-900/60 transition-colors border border-violet-200 dark:border-violet-800"
+                            >
+                              <Bot className="h-3.5 w-3.5" />
+                              Prompt IA
+                            </button>
+                            <button
+                              onClick={() => setEditingMarkup(true)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors border border-transparent hover:border-border"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Editar markup
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── Panel prompt IA ── */}
+                    {showPrompt && !!user && (
+                      <div className="p-4 border-b bg-violet-950/10 space-y-3">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Copiá este prompt y pegalo en tu IA favorita (ChatGPT, Claude, etc.) para generar una visualización personalizada con estos datos.
+                        </p>
+                        <textarea
+                          ref={promptTextareaRef}
+                          readOnly
+                          value={aiPrompt}
+                          className="w-full h-52 font-mono text-xs bg-slate-950 text-slate-50 p-3 rounded border border-border resize-y focus:outline-none"
+                          onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                        />
+                        <button
+                          onClick={() => {
+                            const ta = promptTextareaRef.current;
+                            if (ta) {
+                              ta.select();
+                              ta.setSelectionRange(0, 99999);
+                            }
+                            if (navigator.clipboard && window.isSecureContext) {
+                              navigator.clipboard.writeText(aiPrompt).catch(() => {
+                                if (ta) document.execCommand("copy");
+                              });
+                            } else {
+                              document.execCommand("copy");
+                            }
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all ${
+                            copied
+                              ? "bg-green-600 text-white"
+                              : "bg-violet-600 text-white hover:bg-violet-700"
+                          }`}
+                        >
+                          {copied ? (
+                            <><Check className="h-3.5 w-3.5" />Copiado!</>
+                          ) : (
+                            <><Copy className="h-3.5 w-3.5" />Copiar prompt</>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Expand button for custom viz */}
+                    <button
+                      onClick={() => setIsCustomVizExpanded(true)}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg border border-border bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all opacity-0 group-hover:opacity-100 z-20 shadow-sm"
+                      title="Ver en pantalla completa"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </button>
+
+                    <CustomVizBlock
+                      custom_markup={markupDraft || fields.custom_markup || ""}
+                      data={{ columns, rows: filteredRows }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Fuente y notas — shown for custom viz */}
+            {selectedChartType === "custom_viz" && (notas || fuente) && (
+              <div className="px-4 py-3 border-t border-border/50 text-xs space-y-1.5">
+                {notas && (
+                  <div className="text-muted-foreground italic leading-relaxed">
+                    <span className="font-semibold text-foreground/70 not-italic mr-1.5">
+                      Notas:
+                    </span>
+                    {typeof notas === "string"
+                      ? notas
+                      : getTextFromNodes(notas)}
+                  </div>
+                )}
+                {fuente && (
+                  <div className="text-muted-foreground leading-relaxed flex items-start gap-1.5">
+                    <span className="font-semibold text-foreground/70 shrink-0">
+                      Fuente:
+                    </span>
+                    <span>
+                      {typeof fuente === "string"
+                        ? fuente
+                        : getTextFromNodes(fuente)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -1121,6 +1600,59 @@ export const TableBlock = ({
               </div>
             )}
         </>
+      )}
+
+      {/* Expanded Custom Viz Modal */}
+      {isCustomVizExpanded && selectedChartType === "custom_viz" && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex flex-col animate-in fade-in duration-200"
+          onClick={() => setIsCustomVizExpanded(false)}
+        >
+          <div
+            className="relative flex flex-col bg-background w-full h-full md:m-6 md:rounded-xl md:h-[calc(100vh-3rem)] md:w-[calc(100vw-3rem)] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border shrink-0 bg-background">
+              <span className="text-sm font-medium text-muted-foreground font-mono uppercase tracking-widest">
+                Visualización personalizada
+              </span>
+              <button
+                onClick={() => setIsCustomVizExpanded(false)}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content — full size, scrollable */}
+            <div className="flex-1 overflow-auto p-4 md:p-6">
+              <CustomVizBlock
+                custom_markup={markupDraft || fields.custom_markup || ""}
+                data={{ columns, rows: filteredRows }}
+              />
+              
+              {/* Notas y fuentes en el modal expandido */}
+              {(notas || fuente) && (
+                <div className="mt-6 pt-4 border-t border-border/50 text-sm space-y-2">
+                  {notas && (
+                    <div className="text-muted-foreground italic">
+                      <span className="font-semibold text-foreground/70 not-italic mr-1.5">Notas:</span>
+                      {typeof notas === "string" ? notas : getTextFromNodes(notas)}
+                    </div>
+                  )}
+                  {fuente && (
+                    <div className="text-muted-foreground">
+                      <span className="font-semibold text-foreground/70 mr-1.5">Fuente:</span>
+                      {typeof fuente === "string" ? fuente : getTextFromNodes(fuente)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

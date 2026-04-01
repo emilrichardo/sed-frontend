@@ -8,8 +8,11 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const isExpired = searchParams.get("expired") === "true";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const devEmail = process.env.NEXT_PUBLIC_DEV_LOGIN_EMAIL || "";
+  const devPassword = process.env.NEXT_PUBLIC_DEV_LOGIN_PASSWORD || "";
+
+  const [email, setEmail] = useState(devEmail);
+  const [password, setPassword] = useState(devPassword);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -107,6 +110,25 @@ function LoginContent() {
           >
             {loading ? "Cargando..." : "Ingresar"}
           </button>
+
+          {devEmail && devPassword && (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setEmail(devEmail);
+                setPassword(devPassword);
+                // Auto-submit after a tick so React updates state
+                setTimeout(() => {
+                  const form = document.querySelector("form");
+                  form?.requestSubmit();
+                }, 0);
+              }}
+              className="w-full border border-dashed border-muted-foreground/50 text-muted-foreground font-medium py-2 rounded-md hover:bg-muted transition-opacity disabled:opacity-50 text-sm"
+            >
+              {loading ? "Cargando..." : "Dev Login"}
+            </button>
+          )}
         </form>
       </div>
     </div>

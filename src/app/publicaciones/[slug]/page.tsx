@@ -17,14 +17,26 @@ import {
   isEstadistica,
   hasRealContent,
 } from "@/utils/publicacion";
+import { publicationToMarkdown } from "@/lib/toMarkdown";
 
-export const revalidate = 0;
+import { getAllPublicationSlugs } from "@/lib/static-params";
+
+export const dynamic = "force-static";
+
+export async function generateStaticParams() {
+  const slugs = await getAllPublicationSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 interface PageProps {
   params: Promise<{
     slug: string;
   }>;
 }
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+  "https://santiagoendatos.com";
 
 export async function generateMetadata({
   params,
@@ -33,13 +45,68 @@ export async function generateMetadata({
   const reportItem = await getReportItem(slug);
 
   if (!reportItem) {
-    return {
-      title: "Publicación no encontrada",
-    };
+    return { title: "Publicación no encontrada" };
   }
+
+  const description = getDescription(reportItem);
+  const img =
+    typeof reportItem.imagen_destacada === "object" && reportItem.imagen_destacada
+      ? (reportItem.imagen_destacada as { url?: string; alt?: string })
+      : null;
+
+  const canonicalUrl = `${SITE_URL}/publicaciones/${slug}`;
+  const mdUrl = `${SITE_URL}/publicaciones/${slug}/md`;
+
+  const tipo =
+    typeof reportItem.tipo_publicacion === "object" && reportItem.tipo_publicacion
+      ? (reportItem.tipo_publicacion as { nombre?: string }).nombre
+      : undefined;
+
+  const autor =
+    typeof reportItem.autor === "object" && reportItem.autor
+      ? (reportItem.autor as { nombre?: string; apellido?: string })
+      : null;
+  const autorName = autor
+    ? [autor.nombre, autor.apellido].filter(Boolean).join(" ")
+    : undefined;
 
   return {
     title: `${reportItem.titulo} | Santiago en Datos`,
+    description,
+    authors: autorName ? [{ name: autorName }] : undefined,
+    keywords: [
+      ...(reportItem.categorias?.map((c) => c.nombre) ?? []),
+      ...(reportItem.tags?.map((t) => t.nombre) ?? []),
+      ...(reportItem.taxonomias?.map((t) => t.nombre) ?? []),
+      tipo,
+      "Santiago del Estero",
+      "datos abiertos",
+    ].filter(Boolean) as string[],
+    alternates: {
+      canonical: canonicalUrl,
+      types: {
+        "text/markdown": mdUrl,
+      },
+    },
+    openGraph: {
+      type: "article",
+      url: canonicalUrl,
+      title: reportItem.titulo,
+      description,
+      siteName: "Santiago en Datos",
+      locale: "es_AR",
+      publishedTime: reportItem.createdAt,
+      authors: autorName ? [autorName] : undefined,
+      images: img?.url
+        ? [{ url: img.url, alt: img.alt || reportItem.titulo }]
+        : undefined,
+    },
+    twitter: {
+      card: img?.url ? "summary_large_image" : "summary",
+      title: reportItem.titulo,
+      description,
+      images: img?.url ? [img.url] : undefined,
+    },
   };
 }
 
@@ -89,13 +156,23 @@ export default async function PublicationPage({ params }: PageProps) {
   // 1. Fetch Children (Sub-reports)
   const childrenData = await getReports({
     where: { parent: { equals: reportItem.id } },
-    sort: "createdAt", // or bespoke sort order if available
+    sort: "orden,createdAt", // or bespoke sort order if available
     limit: 100,
   });
   const children = childrenData.docs;
 
   // 3. Extract Headings for TOC
   const headings = extractHeadings(reportItem.contenido?.root);
+
+  // 4. Generate Markdown for download button and AI endpoint
+  const mdContent = publicationToMarkdown(reportItem, {
+    includeChildren: true,
+    children: children.map((c) => ({
+      titulo: c.titulo,
+      contenido: c.contenido,
+      fuentes: (c as Record<string, unknown>).fuentes as string | undefined,
+    })),
+  });
 
   // Determine Back Link
   const backLink = parent
@@ -120,6 +197,7 @@ export default async function PublicationPage({ params }: PageProps) {
         <NewsDetail
           initialData={reportItem}
           hideSources={true}
+          mdContent={mdContent}
           childrenItems={children.map((c) => ({
             titulo: c.titulo,
             contenido: c.contenido,

@@ -26,8 +26,13 @@ const securityHeaders = [
   },
 ];
 
+const isStaticExport = process.env.NEXT_STATIC_EXPORT === "true";
+
 const nextConfig: NextConfig = {
+  ...(isStaticExport && { output: "export" }),
   images: {
+    // En static export next/image no puede optimizar en servidor; usamos unoptimized
+    ...(isStaticExport && { unoptimized: true }),
     remotePatterns: [
       {
         protocol: "http",
@@ -41,17 +46,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
-  },
-  async rewrites() {
-    return [
-      {
-        source: "/api-proxy/:path*",
-        destination: `${(process.env.PAYLOAD_API_URL || "http://localhost:3000").replace(/\/+$/, "")}/api/:path*`,
-      },
-    ];
-  },
+  // headers y rewrites no están disponibles en static export
+  ...(!isStaticExport && {
+    async headers() {
+      return [{ source: "/(.*)", headers: securityHeaders }];
+    },
+    async rewrites() {
+      return [
+        {
+          source: "/api-proxy/:path*",
+          destination: `${(process.env.PAYLOAD_API_URL || "http://localhost:3000").replace(/\/+$/, "")}/api/:path*`,
+        },
+      ];
+    },
+  }),
 };
 
 export default nextConfig;

@@ -3,7 +3,20 @@ const IS_SERVER = typeof window === "undefined";
 const BASE_URL = (
   process.env.PAYLOAD_API_URL || "http://localhost:3000"
 ).replace(/\/+$/, "");
-export const API_URL = IS_SERVER ? `${BASE_URL}/api` : "/api-proxy";
+// En static export el cliente llama directo al CMS (NEXT_PUBLIC_PAYLOAD_API_URL).
+// En SSR el cliente usa /api-proxy (rewrite de Next.js).
+const CLIENT_BASE = process.env.NEXT_PUBLIC_PAYLOAD_API_URL
+  ? process.env.NEXT_PUBLIC_PAYLOAD_API_URL.replace(/\/+$/, "")
+  : null;
+export const API_URL = IS_SERVER
+  ? `${BASE_URL}/api`
+  : CLIENT_BASE
+    ? `${CLIENT_BASE}/api`
+    : "/api-proxy";
+
+// Base URL of the CMS (no /api suffix) — used for building CMS admin links.
+// On the client: the NEXT_PUBLIC_PAYLOAD_API_URL value, or null in proxy mode.
+export const CMS_BASE_URL: string | null = IS_SERVER ? BASE_URL : CLIENT_BASE;
 
 /**
  * Rewrite PDF/media URLs from the internal Supabase host to a public host.
@@ -84,6 +97,7 @@ export interface NewsItem {
   publishedDate?: string;
   createdAt?: string;
   fijado?: boolean;
+  orden?: number | null;
   layout?: PayloadBlock[];
   contenido?: {
     root?: {
@@ -249,6 +263,7 @@ export async function fetchEntriesForCollection(
       case "publicaciones": {
         const result = await getReports({
           limit,
+          sort: "orden,-createdAt",
           where: { parent: { exists: false } },
         });
         return result.docs.map((item) => ({
@@ -416,6 +431,29 @@ export async function getCategories(
   }
 }
 
+const CATEGORY_ORDER = [
+  "trabajo",
+  "produccion",
+  "finanzas-provinciales",
+  "educacion",
+  "salud",
+  "infraestructura",
+  "ambiente",
+];
+
+export function sortCategoriesByOrder<T extends { slug: string }>(
+  categories: T[],
+): T[] {
+  return [...categories].sort((a, b) => {
+    const ai = CATEGORY_ORDER.indexOf(a.slug);
+    const bi = CATEGORY_ORDER.indexOf(b.slug);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+}
+
 export async function getCategoryBySlug(
   slug: string,
 ): Promise<Category | null> {
@@ -568,7 +606,7 @@ export async function getPublicacionesByCategoria(
   params: { page?: number; limit?: number } = {},
 ): Promise<PayloadResponse<ReportItem>> {
   const { page = 1, limit = 20 } = params;
-  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=-createdAt&depth=1&where[categorias][in][0]=${categoriaId}`;
+  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=orden,-createdAt&depth=1&where[categorias][in][0]=${categoriaId}`;
   try {
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok)
@@ -612,7 +650,7 @@ export async function getPublicacionesByCategoriaIds(
   const inParams = categoriaIds
     .map((id, i) => `where[categorias][in][${i}]=${id}`)
     .join("&");
-  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=-createdAt&depth=1&${inParams}`;
+  const url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=orden,-createdAt&depth=1&${inParams}`;
   try {
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok)
@@ -655,10 +693,12 @@ export async function getReports(
     sort?: string;
     depth?: number;
     where?: Record<string, unknown>;
+    pagination?: boolean;
   } = {},
 ): Promise<PayloadResponse<ReportItem>> {
-  const { page = 1, limit = 10, sort = "-createdAt", depth, where } = params;
+  const { page = 1, limit = 10, sort = "orden,-createdAt", depth, where, pagination } = params;
   let url = `${API_URL}/publicaciones?page=${page}&limit=${limit}&sort=${sort}`;
+  if (pagination === false) url += `&pagination=false`;
   if (depth !== undefined) url += `&depth=${depth}`;
 
   // Re-add draft=false if we want only published, but for now let's see why it's empty
@@ -681,9 +721,15 @@ export async function getReports(
 
   console.log(`[getReports] Fetching: ${url}`);
 
+  const headers: Record<string, string> = {};
+  if (process.env.PAYLOAD_USER_TOKEN) {
+    headers["Authorization"] = `JWT ${process.env.PAYLOAD_USER_TOKEN}`;
+  }
+
   try {
     const res = await fetch(url, {
       next: { revalidate: 60 },
+      headers,
     });
 
     if (!res.ok) {
@@ -715,14 +761,18 @@ export async function getReportItem(slug: string): Promise<ReportItem | null> {
   try {
     // Search by slug
     const timestamp = Date.now();
+    const reqHeaders: Record<string, string> = {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+    };
+    if (process.env.PAYLOAD_USER_TOKEN) {
+      reqHeaders["Authorization"] = `JWT ${process.env.PAYLOAD_USER_TOKEN}`;
+    }
     const res = await fetch(
       `${API_URL}/publicaciones?where[slug][equals]=${slug}&depth=2&draft=false&t=${timestamp}`,
       {
         cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-        },
+        headers: reqHeaders,
       },
     );
 
@@ -740,32 +790,22 @@ export async function getReportItem(slug: string): Promise<ReportItem | null> {
     if (report.autor && typeof report.autor !== "object") {
       try {
         const authorId = report.autor;
-        console.log(
-          `[getReportItem] Author is ID (${authorId}), fetching user details...`,
-        );
-        const userRes = await fetch(`${API_URL}/users/${authorId}`, {
+        const authHeaders: Record<string, string> = { "cache-control": "no-store" };
+        if (process.env.PAYLOAD_USER_TOKEN) {
+          authHeaders["Authorization"] = `JWT ${process.env.PAYLOAD_USER_TOKEN}`;
+        }
+        const userRes = await fetch(`${BASE_URL}/api/users/${authorId}`, {
           cache: "no-store",
+          headers: authHeaders,
         });
         if (userRes.ok) {
           const user = await userRes.json();
-          console.log(
-            `[getReportItem] Author fetched: ${user.nombre} ${user.apellido}`,
-          );
           report.autor = user;
-        } else {
-          console.error(
-            `[getReportItem] Failed to fetch author ${authorId}: ${userRes.status}`,
-          );
         }
-      } catch (err) {
-        console.error(`[getReportItem] Error fetching author manually:`, err);
+      } catch {
+        // silently skip
       }
     }
-
-    console.log(
-      `[getReportItem] Fetched ${slug}. Autor final:`,
-      JSON.stringify(report.autor, null, 2),
-    );
 
     return report;
   } catch (error) {
@@ -922,27 +962,39 @@ export async function getActosAdministrativos(
   } = params;
   let queryString = `?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}&draft=false`;
 
+  // Collect all where conditions as and[n] blocks
+  const andClauses: string[] = [];
+
+  // Si no hay token de autenticación, filtrar solo actos publicados
+  if (!authToken) {
+    andClauses.push(`where[and][0][status][equals]=publicado`);
+  }
+
   if (where) {
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
+        const i = andClauses.length;
         if (key === "search") {
           queryString += `&where[or][0][identificador_de_acto][contains]=${value}`;
           queryString += `&where[or][1][titulo][contains]=${value}`;
+          return;
         } else if (key === "fecha_desde") {
-          queryString += `&where[boletin.fecha_publicacion][greater_than_equal]=${value}`;
+          andClauses.push(`where[and][${i}][boletin.fecha_publicacion][greater_than_equal]=${value}`);
         } else if (key === "fecha_hasta") {
-          queryString += `&where[boletin.fecha_publicacion][less_than_equal]=${value}`;
+          andClauses.push(`where[and][${i}][boletin.fecha_publicacion][less_than_equal]=${value}`);
         } else {
-          // Map some old field names to new ones for compatibility
           let apiKey = key;
           if (key === "identificador_acto") apiKey = "identificador_de_acto";
           if (key === "tipo_acto") apiKey = "tipo_de_acto";
           if (key === "referencia") apiKey = "titulo";
-
-          queryString += `&where[${apiKey}][equals]=${value}`;
+          andClauses.push(`where[and][${i}][${apiKey}][equals]=${value}`);
         }
       }
     });
+  }
+
+  if (andClauses.length > 0) {
+    queryString += `&${andClauses.join("&")}`;
   }
 
   const res = await apiFetch(
@@ -966,14 +1018,23 @@ export async function getActosAdministrativos(
 
 export async function getActoByIdentifier(
   identifier: string,
+  authToken?: string,
 ): Promise<ActoAdministrativo> {
   console.log(`getActoByIdentifier: searching for "${identifier}"`);
 
   // Search by identificador_de_acto
   const encodedId = encodeURIComponent(identifier);
+  let queryString = `?where[identificador_de_acto][equals]=${encodedId}&depth=2`;
+  
+  // Si no hay token de autenticación, filtrar solo actos publicados
+  if (!authToken) {
+    queryString += `&where[status][equals]=publicado`;
+  }
+  
   const res = await apiFetch(
-    `/actos-administrativos?where[identificador_de_acto][equals]=${encodedId}&depth=2`,
+    `/actos-administrativos${queryString}`,
     { next: { revalidate: 10 } },
+    authToken,
   );
 
   if (!res.ok) {
@@ -994,15 +1055,20 @@ export async function getActoByIdentifier(
 
   // Fallback: Try by ID if identifier looks like an ID (numeric)
   if (/^\d+$/.test(identifier)) {
-    return getActoAdministrativo(identifier);
+    return getActoAdministrativo(identifier, authToken);
   }
 
   // Fallback 2: Try "like" search if it failed (sometimes encoding issues)
   // Only if identifier is long enough to be specific
   if (identifier.length > 5) {
+    let likeQueryString = `?where[identificador_de_acto][like]=${encodedId}&depth=2`;
+    if (!authToken) {
+      likeQueryString += `&where[status][equals]=publicado`;
+    }
     const resLike = await apiFetch(
-      `/actos-administrativos?where[identificador_de_acto][like]=${encodedId}&depth=2`,
+      `/actos-administrativos${likeQueryString}`,
       { next: { revalidate: 60 } },
+      authToken,
     );
     const dataLike = await resLike.json();
     if (dataLike.docs && dataLike.docs.length > 0) {
@@ -1016,12 +1082,28 @@ export async function getActoByIdentifier(
 
 export async function getActoAdministrativo(
   id: string,
+  authToken?: string,
 ): Promise<ActoAdministrativo> {
-  const res = await apiFetch(`/actos-administrativos/${id}?depth=2`, {
+  let queryString = `?depth=2`;
+  
+  // Si no hay token de autenticación, filtrar solo actos publicados
+  if (!authToken) {
+    queryString += `&where[status][equals]=publicado`;
+  }
+  
+  const res = await apiFetch(`/actos-administrativos/${id}${queryString}`, {
     next: { revalidate: 60 },
   });
   if (!res.ok) throw new Error("Failed to fetch acto administrativo");
-  return res.json();
+  
+  const acto = await res.json();
+  
+  // Verificación adicional: si no hay token y el acto no está publicado, rechazar
+  if (!authToken && acto.status !== "publicado") {
+    throw new Error("Acto no disponible");
+  }
+  
+  return acto;
 }
 
 export async function getEntryDetails(
@@ -1140,6 +1222,37 @@ export async function updateActoAdministrativo(
   data: Partial<ActoAdministrativo>,
   authToken?: string,
 ): Promise<{ doc: ActoAdministrativo; message: string }> {
+  const isClient = typeof window !== "undefined";
+
+  console.log(`[updateActoAdministrativo] id=${id}, isClient=${isClient}, hasAuthToken=${!!authToken}`);
+  console.log(`[updateActoAdministrativo] data=`, JSON.stringify(data));
+
+  // En el cliente, usar el BFF /api/cms que maneja la cookie de autenticación
+  if (isClient && !authToken) {
+    const url = `/api/cms?path=/actos-administrativos/${encodeURIComponent(id)}`;
+    console.log(`[updateActoAdministrativo] Using BFF: ${url}`);
+    
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    console.log(`[updateActoAdministrativo] BFF response status: ${res.status}`);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error("[updateActoAdministrativo] Error response:", errorData);
+      const errorMessage = errorData.error || errorData.message || errorData.errors?.[0]?.message || `Error ${res.status}: ${res.statusText}`;
+      throw new Error(errorMessage);
+    }
+    
+    const result = await res.json();
+    console.log("[updateActoAdministrativo] Success:", result);
+    return result;
+  }
+
+  // En el servidor o con token explícito, usar apiFetch directo
   const res = await apiFetch(
     `/actos-administrativos/${id}`,
     {
@@ -1212,6 +1325,165 @@ export async function getAgent(
   }
 
   return res.json();
+}
+
+/** Recursively updates tipo_visualizacion on a block by ID within Lexical JSON */
+function patchBlockInNode(node: any, blockId: string, tipo_visualizacion: string): boolean {
+  if (!node) return false;
+  if (node.type === "block" && node.fields?.id === blockId) {
+    node.fields.tipo_visualizacion = tipo_visualizacion;
+    return true;
+  }
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      if (patchBlockInNode(child, blockId, tipo_visualizacion)) return true;
+    }
+  }
+  return false;
+}
+
+function patchBlockCustomMarkupInNode(node: any, blockId: string, custom_markup: string): boolean {
+  if (!node) return false;
+  if (node.type === "block" && node.fields?.id === blockId) {
+    node.fields.custom_markup = custom_markup;
+    return true;
+  }
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      if (patchBlockCustomMarkupInNode(child, blockId, custom_markup)) return true;
+    }
+  }
+  return false;
+}
+
+export async function updatePublicacionBlockCustomMarkup(
+  publicacionId: string | number,
+  blockId: string,
+  custom_markup: string,
+): Promise<void> {
+  const isClient = typeof window !== "undefined";
+
+  const getUrl = isClient
+    ? `/api/cms?path=/publicaciones/${publicacionId}&qs=depth%3D0`
+    : null;
+  const getRes = getUrl
+    ? await fetch(getUrl, { cache: "no-store" })
+    : await apiFetch(`/publicaciones/${publicacionId}?depth=0`);
+
+  if (!getRes.ok) {
+    throw new Error(`No se pudo obtener la publicación (${getRes.status})`);
+  }
+  const pub = await getRes.json();
+
+  const contenido = pub.contenido;
+  if (!contenido?.root) throw new Error("La publicación no tiene contenido Lexical");
+  const found = patchBlockCustomMarkupInNode(contenido.root, blockId, custom_markup);
+  if (!found) throw new Error("Bloque no encontrado en el contenido");
+
+  if (isClient) {
+    const patchRes = await fetch(`/api/cms?path=/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
+  } else {
+    const patchRes = await apiFetch(`/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
+  }
+}
+
+export async function updatePublicacionBlockVisualizacion(
+  publicacionId: string | number,
+  blockId: string,
+  tipo_visualizacion: string,
+): Promise<void> {
+  const isClient = typeof window !== "undefined";
+
+  // 1. Fetch current publication (via BFF on client to get auth, direct on server)
+  const getUrl = isClient
+    ? `/api/cms?path=/publicaciones/${publicacionId}&qs=depth%3D0`
+    : null;
+  const getRes = getUrl
+    ? await fetch(getUrl, { cache: "no-store" })
+    : await apiFetch(`/publicaciones/${publicacionId}?depth=0`);
+
+  if (!getRes.ok) {
+    throw new Error(`No se pudo obtener la publicación (${getRes.status})`);
+  }
+  const pub = await getRes.json();
+
+  // 2. Patch the block in the Lexical contenido tree
+  const contenido = pub.contenido;
+  if (!contenido?.root) throw new Error("La publicación no tiene contenido Lexical");
+  const found = patchBlockInNode(contenido.root, blockId, tipo_visualizacion);
+  if (!found) throw new Error("Bloque no encontrado en el contenido");
+
+  // 3. PATCH via BFF on client (adds auth cookie), direct apiFetch on server
+  if (isClient) {
+    const patchRes = await fetch(`/api/cms?path=/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
+  } else {
+    const patchRes = await apiFetch(`/publicaciones/${publicacionId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ contenido }),
+    });
+    if (!patchRes.ok) {
+      const err = await patchRes.json().catch(() => ({}));
+      throw new Error(err.errors?.[0]?.message || err.message || `Error ${patchRes.status}`);
+    }
+  }
+}
+
+export async function updateAgent(
+  id: string,
+  data: Partial<Omit<Agent, "id" | "createdAt" | "updatedAt">>,
+): Promise<Agent> {
+  const res = await apiFetch(`/agents/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+  }
+
+  const body = await res.json();
+  return body.doc ?? body;
+}
+
+export async function createAgent(
+  data: Partial<Omit<Agent, "id" | "createdAt" | "updatedAt">>,
+): Promise<Agent> {
+  const res = await apiFetch("/agents", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.errors?.[0]?.message || err.message || `Error ${res.status}`);
+  }
+
+  const body = await res.json();
+  return body.doc ?? body;
 }
 
 export async function createLearningRecord(

@@ -10,8 +10,15 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { getAllCategorySlugs } from "@/lib/static-params";
+
+const isRootCategory = (children: Category[]) => children.length > 0;
 
 export const revalidate = 300;
+export async function generateStaticParams() {
+  const slugs = await getAllCategorySlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -46,9 +53,11 @@ export default async function CategoryPage({ params }: PageProps) {
       }
     : { href: "/publicaciones", label: "Publicaciones" };
 
-  // Fetch publications for this category and all its subcategories
-  const allCategoryIds = [category.id, ...children.map((c) => c.id)];
-  const publicaciones = await getPublicacionesByCategoriaIds(allCategoryIds);
+  // Solo fetch publicaciones en subcategorías (sin hijos)
+  const publicaciones =
+    !isRootCategory(children)
+      ? await getPublicacionesByCategoriaIds([category.id])
+      : null;
 
   return (
     <>
@@ -92,18 +101,22 @@ export default async function CategoryPage({ params }: PageProps) {
                     <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                   </Link>
                   <Link
-                    href="/coparticipacion"
+                    href="/ahorros"
                     className="flex items-center justify-between py-5 border-b border-border hover:bg-muted/50 transition-colors group -mx-4 px-4 md:-mx-8 md:px-8"
                   >
                     <span className="text-xl md:text-2xl font-heading font-bold tracking-tight group-hover:text-primary transition-colors">
-                      Coparticipación
+                      Ahorros de la Provincia
                     </span>
                     <ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                   </Link>
                 </>
               )}
               {children
-                .filter((sub) => sub.slug !== "ingresos-de-la-provincia")
+                .filter(
+                  (sub) =>
+                    sub.slug !== "ingresos-de-la-provincia" &&
+                    sub.slug !== "ahorros-de-la-provincia",
+                )
                 .map((sub) => (
                   <Link
                     key={sub.id}
@@ -120,19 +133,21 @@ export default async function CategoryPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Publicaciones */}
-        <section>
-          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
-            Publicaciones
-            {publicaciones.totalDocs > 0 && (
-              <span className="ml-2 text-foreground">
-                {publicaciones.totalDocs}
-              </span>
-            )}
-          </p>
+        {/* Publicaciones — solo en subcategorías */}
+        {publicaciones && (
+          <section>
+            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
+              Publicaciones
+              {publicaciones.totalDocs > 0 && (
+                <span className="ml-2 text-foreground">
+                  {publicaciones.totalDocs}
+                </span>
+              )}
+            </p>
 
-          <CategoryPublicationsList publications={publicaciones.docs} />
-        </section>
+            <CategoryPublicationsList publications={publicaciones.docs} />
+          </section>
+        )}
       </div>
     </>
   );

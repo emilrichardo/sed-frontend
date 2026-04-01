@@ -1,4 +1,10 @@
 import { getActoByIdentifier, ActoAdministrativo } from "@/lib/api";
+import { getAllActoParams } from "@/lib/static-params";
+import { cookies } from "next/headers";
+
+export async function generateStaticParams() {
+  return getAllActoParams();
+}
 import { ActDetailView } from "@/components/ActDetailView";
 import ClientActoDetailFetcher from "@/components/ClientActoDetailFetcher";
 
@@ -12,8 +18,12 @@ export default async function ActoDetailPage({
   let entry: ActoAdministrativo | null = null;
   let serverError: string | null = null;
 
+  // Verificar si el usuario está autenticado (cookie payload-token)
+  const cookieStore = await cookies();
+  const authToken = cookieStore.get("payload-token")?.value;
+
   try {
-    entry = await getActoByIdentifier(decodeURIComponent(actoId));
+    entry = await getActoByIdentifier(decodeURIComponent(actoId), authToken);
   } catch (err: unknown) {
     serverError = err instanceof Error ? err.message : "Error desconocido";
     console.error(`Server fetch failed for acto ${actoId}:`, serverError);

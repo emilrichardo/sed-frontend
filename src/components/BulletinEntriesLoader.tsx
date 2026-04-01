@@ -10,6 +10,7 @@ import {
 import { Loader2, AlertCircle, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface BulletinEntriesLoaderProps {
   bulletin: Boletin;
@@ -31,6 +32,8 @@ export default function BulletinEntriesLoader({
   const [entries, setEntries] = useState<ActoAdministrativo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{total: number, publicados: number, borradores: number} | null>(null);
+  const { user } = useAuth();
   // Prefer server-resolved URL (has PDF_HOST_OVERRIDE applied); fall back to client-computed
   const pdfUrl = resolvedPdfUrl ?? getPdfUrl(bulletin);
 
@@ -39,10 +42,26 @@ export default function BulletinEntriesLoader({
       setLoading(true);
       setError(null);
       try {
+        // Obtener token de autenticación si el usuario está logueado
+        let authToken: string | undefined;
+        if (user) {
+          try {
+            const meRes = await fetch("/api/auth/me");
+            if (meRes.ok) {
+              authToken = "authenticated";
+            }
+          } catch {
+            // Ignorar error
+          }
+        }
+        
+        console.log(`[BulletinEntriesLoader] Boletín ${bulletin.id} - authToken: ${authToken ? 'presente' : 'no presente'}`);
+        
         const data = await getActosAdministrativos({
           where: { boletin: bulletin.id },
           limit: 100,
           sort: "-createdAt",
+          authToken,
         });
 
         console.log(`[BulletinEntriesLoader] bulletin.id=${bulletin.id} → ${data.docs.length} actos (totalDocs=${data.totalDocs})`);
@@ -77,7 +96,7 @@ export default function BulletinEntriesLoader({
     if (bulletin.id) {
       loadEntries();
     }
-  }, [bulletin]);
+  }, [bulletin, user]);
 
   if (loading) {
     return (
@@ -104,6 +123,12 @@ export default function BulletinEntriesLoader({
         <p className="text-muted-foreground font-medium uppercase text-sm">
           No hay actos registrados para este boletín.
         </p>
+        {debugInfo && debugInfo.borradores > 0 && !user && (
+          <p className="text-amber-600 text-sm mt-2">
+            ⚠️ Hay {debugInfo.borradores} acto(s) en borrador. 
+            <a href="/login" className="underline">Iniciá sesión</a> para verlos.
+          </p>
+        )}
       </div>
     );
   }
@@ -119,8 +144,8 @@ export default function BulletinEntriesLoader({
 
   const sorted = [...entries].sort((a, b) => priority(b) - priority(a));
   const featured = sorted.filter((a) => priority(a) >= 2); // destacado + alta + relevante
-  const notable = sorted.filter((a) => priority(a) === 1); // tiene título/resumen pero no relevante
-  const minor = sorted.filter((a) => priority(a) === 0);   // sin contenido periodístico
+  const notable = user ? sorted.filter((a) => priority(a) === 1) : []; // título/resumen: solo con login
+  const minor = user ? sorted.filter((a) => priority(a) === 0) : [];   // sin contenido: solo con login
 
   const hasJournalistContent =
     featured.length > 0 ||
@@ -248,6 +273,14 @@ export default function BulletinEntriesLoader({
             Versión Periodística
           </h2>
         </div>
+
+        {/* Banner informativo si hay actos en borrador */}
+        {debugInfo && debugInfo.borradores > 0 && !user && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+            <span className="font-medium">⚠️ Hay {debugInfo.borradores} acto(s) en borrador.</span>{" "}
+            <a href="/login" className="underline font-medium">Iniciá sesión</a> para verlos y publicarlos.
+          </div>
+        )}
 
         {/* Featured / Relevant acts — full cards */}
         {featured.length > 0 && (

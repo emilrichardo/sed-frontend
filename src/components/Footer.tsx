@@ -25,25 +25,11 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-4">
               <a
-                href="#"
+                href="https://www.instagram.com/santiagoendatos"
                 className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-all"
                 aria-label="Instagram"
               >
                 <Instagram className="h-4 w-4" />
-              </a>
-              <a
-                href="#"
-                className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-all"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-4 w-4" />
-              </a>
-              <a
-                href="#"
-                className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-all"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="h-4 w-4" />
               </a>
             </div>
           </div>

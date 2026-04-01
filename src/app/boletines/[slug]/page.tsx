@@ -1,5 +1,10 @@
-import React from "react";
 import { getBulletin, Boletin, resolvePdfUrl } from "@/lib/api";
+import { getAllBulletinSlugs } from "@/lib/static-params";
+
+export async function generateStaticParams() {
+  const slugs = await getAllBulletinSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 import Link from "next/link";
 import { Archive } from "lucide-react";
 import BulletinActions from "@/components/BulletinActions";

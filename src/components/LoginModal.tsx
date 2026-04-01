@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   Dialog,
@@ -14,10 +14,19 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const devEmail = process.env.NEXT_PUBLIC_DEV_LOGIN_EMAIL || "";
+  const devPassword = process.env.NEXT_PUBLIC_DEV_LOGIN_PASSWORD || "";
+  const [email, setEmail] = useState(devEmail);
+  const [password, setPassword] = useState(devPassword);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isLoginModalOpen && devEmail && devPassword) {
+      setEmail(devEmail);
+      setPassword(devPassword);
+    }
+  }, [isLoginModalOpen, devEmail, devPassword]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +75,7 @@ export function LoginModal() {
             continuar sin perder tu trabajo.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+        <form id="login-modal-form" onSubmit={handleSubmit} className="grid gap-4 py-4">
           {error && (
             <div className="text-sm text-red-500 font-medium bg-red-50 p-2 rounded border border-red-200">
               {error}
@@ -104,6 +113,23 @@ export function LoginModal() {
             />
           </div>
           <div className="flex justify-end gap-2 mt-4">
+            {devEmail && devPassword && (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={loading}
+                onClick={() => {
+                  setEmail(devEmail);
+                  setPassword(devPassword);
+                  setTimeout(() => {
+                    const form = document.querySelector("#login-modal-form");
+                    form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+                  }, 0);
+                }}
+              >
+                Dev Login
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={closeLoginModal}>
               Cancelar
             </Button>

@@ -1,6 +1,9 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   try {
     const formData = await req.formData();
     const file = formData.get("file");

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
+export const dynamic = "force-static";
+
 /**
  * Vercel Cron Job — se ejecuta cada 6 horas automáticamente.
  * Vercel inyecta CRON_SECRET en el header Authorization para verificar
@@ -10,6 +12,8 @@ import { revalidatePath } from "next/cache";
  *   CRON_SECRET=<string aleatorio seguro>
  */
 export async function GET(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return NextResponse.json({ ok: false }, { status: 501 });
   const authHeader = req.headers.get("authorization");
 
   if (

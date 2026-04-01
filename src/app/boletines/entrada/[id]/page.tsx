@@ -1,4 +1,10 @@
 import { getActoAdministrativo, ActoAdministrativo } from "@/lib/api";
+import { getAllActoIds } from "@/lib/static-params";
+
+export async function generateStaticParams() {
+  const ids = await getAllActoIds();
+  return ids.map((id) => ({ id }));
+}
 import Link from "next/link";
 import { ChevronLeft, Calendar, Building2, FileTextIcon } from "lucide-react";
 

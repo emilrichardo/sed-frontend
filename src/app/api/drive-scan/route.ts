@@ -1,3 +1,4 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -5,6 +6,8 @@ import { supabaseAdmin } from "@/lib/supabase";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   try {
     const { accessToken: manualToken, folderId } = await req.json();
 

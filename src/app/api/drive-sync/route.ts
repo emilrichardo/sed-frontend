@@ -1,3 +1,4 @@
+export const dynamic = "force-static";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
@@ -12,6 +13,8 @@ const require = createRequire(import.meta.url);
 const PDFParser = require("pdf2json");
 
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   try {
     // Manual token is now optional
     const { accessToken: manualToken, folderId } = await req.json();

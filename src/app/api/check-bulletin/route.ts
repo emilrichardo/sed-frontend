@@ -1,6 +1,9 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return NextResponse.json({ docs: [], totalDocs: 0 });
   try {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");

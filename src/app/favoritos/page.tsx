@@ -6,6 +6,7 @@ import { Bookmark, BookmarkX, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { ResponsivePublicationCard } from "@/components/PublicationCard";
 import type { ReportItem } from "@/lib/api";
+import { API_URL } from "@/lib/api";
 
 const FAVORITES_KEY = "sed_favorites";
 
@@ -31,7 +32,7 @@ export default function FavoritosPage() {
     const params = favIds
       .map((id, i) => `where[id][in][${i}]=${id}`)
       .join("&");
-    fetch(`/api-proxy/publicaciones?${params}&limit=${favIds.length}&depth=2`)
+    fetch(`${API_URL}/publicaciones?${params}&limit=${favIds.length}&depth=2`)
       .then((r) => r.json())
       .then((data) => setItems(data.docs || []))
       .catch(() => setItems([]))

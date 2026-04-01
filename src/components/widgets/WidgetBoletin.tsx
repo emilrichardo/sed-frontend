@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookOpen, ArrowUpRight, Newspaper } from "lucide-react";
+import { API_URL } from "@/lib/api";
 
 interface Boletin {
   id: string;
@@ -380,14 +381,14 @@ export default function WidgetBoletin({ variant = "sm" }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api-proxy/boletines?limit=1&sort=-fecha_publicacion&depth=0")
+    fetch(`${API_URL}/boletines?limit=1&sort=-fecha_publicacion&depth=0`)
       .then((r) => r.json())
       .then(async (data) => {
         const b: Boletin | null = data.docs?.[0] ?? null;
         setBoletin(b);
         if (b && variant !== "xs" && variant !== "sm") {
           fetch(
-            `/api-proxy/actos-administrativos?where[boletin][equals]=${b.id}&where[titulo_periodistico][exists]=true&limit=30&depth=0`,
+            `${API_URL}/actos-administrativos?where[boletin][equals]=${b.id}&where[titulo_periodistico][exists]=true&limit=30&depth=0`,
           )
             .then((r) => r.json())
             .then((actosData) => {

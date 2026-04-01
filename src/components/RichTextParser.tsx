@@ -14,14 +14,14 @@ export const getTextFromNodes = (nodes: any): string => {
   return "";
 };
 
-export const RichTextParser = ({ content }: { content: any }) => {
+export const RichTextParser = ({ content, publicationId }: { content: any; publicationId?: string | number }) => {
   if (!content) return null;
 
   if (Array.isArray(content)) {
     return (
       <>
         {content.map((node: any, i: number) => (
-          <RichTextParser key={i} content={node} />
+          <RichTextParser key={i} content={node} publicationId={publicationId} />
         ))}
       </>
     );
@@ -263,7 +263,7 @@ export const RichTextParser = ({ content }: { content: any }) => {
       ) {
         return (
           <AnimatedBlock className="my-10">
-            <TableBlock fields={content.fields} />
+            <TableBlock fields={content.fields} publicationId={publicationId} />
           </AnimatedBlock>
         );
       }

@@ -1,6 +1,9 @@
+export const dynamic = "force-static";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   try {
     const { text } = await req.json();
 

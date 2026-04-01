@@ -7,12 +7,15 @@ import { SourcesSection } from "@/components/SourcesSection";
 import { hasRealContent } from "@/utils/publicacion";
 import { PublicationActions } from "@/components/PublicationActions";
 import { PublicationTextToSpeech } from "@/components/PublicationTextToSpeech";
+import { DownloadMdButton } from "@/components/DownloadMdButton";
 
 interface NewsDetailProps {
   initialData: NewsItem;
   hideSources?: boolean;
   isEmbedded?: boolean;
   childrenItems?: Array<{ titulo: string; contenido: any }>;
+  /** Pre-generated Markdown string for download/copy. Pass from server component. */
+  mdContent?: string;
 }
 
 export const NewsDetail: React.FC<NewsDetailProps> = ({
@@ -20,8 +23,8 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
   hideSources = false,
   isEmbedded = false,
   childrenItems = [],
+  mdContent,
 }) => {
-  console.log(initialData);
   const hasContent = hasRealContent(initialData.contenido, initialData.layout);
 
   return (
@@ -113,7 +116,11 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
               );
             })()}
 
-            <EditContentButton collection="publicaciones" id={initialData.id} />
+            <EditContentButton
+              collection="publicaciones"
+              id={initialData.id}
+              adminUrl={process.env.PAYLOAD_API_URL}
+            />
           </div>
         )}
 
@@ -136,10 +143,18 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
               title={initialData.titulo}
               childrenItems={childrenItems}
             />
-            <PublicationActions
-              title={initialData.titulo}
-              publicationId={initialData.id}
-            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <PublicationActions
+                title={initialData.titulo}
+                publicationId={initialData.id}
+              />
+              {mdContent && (
+                <DownloadMdButton
+                  markdown={mdContent}
+                  filename={initialData.slug}
+                />
+              )}
+            </div>
           </div>
         )}
       </header>
@@ -147,7 +162,7 @@ export const NewsDetail: React.FC<NewsDetailProps> = ({
       {hasContent && (
         <div className="prose prose-neutral max-w-none font-sans mt-4">
           {initialData.contenido?.root?.children ? (
-            <RichTextParser content={initialData.contenido.root.children} />
+            <RichTextParser content={initialData.contenido.root.children} publicationId={initialData.id} />
           ) : (
             <BlockRenderer blocks={initialData.layout || []} />
           )}

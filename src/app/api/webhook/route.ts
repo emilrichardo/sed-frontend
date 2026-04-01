@@ -1,3 +1,4 @@
+export const dynamic = "force-static";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
@@ -27,6 +28,8 @@ import { revalidatePath } from "next/cache";
  *   WEBHOOK_SECRET=<mismo valor que en Payload>
  */
 export async function POST(req: NextRequest) {
+  if (process.env.NEXT_STATIC_EXPORT === "true")
+    return Response.json({ error: "Not available" }, { status: 501 });
   const secret = req.headers.get("x-webhook-secret");
 
   if (!secret || secret !== process.env.WEBHOOK_SECRET) {
