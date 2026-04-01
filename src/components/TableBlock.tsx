@@ -36,7 +36,7 @@ import {
   Play,
   Bot,
   Copy,
-  Maximize2,
+
 } from "lucide-react";
 import { ChartRenderer } from "./ChartRenderer";
 import { CustomVizBlock } from "./CustomVizBlock";
@@ -1417,15 +1417,6 @@ ${currentMarkup}
                       </div>
                     )}
 
-                    {/* Expand button for custom viz */}
-                    <button
-                      onClick={() => setIsCustomVizExpanded(true)}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg border border-border bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all opacity-0 group-hover:opacity-100 z-20 shadow-sm"
-                      title="Ver en pantalla completa"
-                    >
-                      <Maximize2 className="h-3.5 w-3.5" />
-                    </button>
-
                     <CustomVizBlock
                       custom_markup={markupDraft || fields.custom_markup || ""}
                       data={{ columns, rows: filteredRows }}
@@ -1600,59 +1591,6 @@ ${currentMarkup}
               </div>
             )}
         </>
-      )}
-
-      {/* Expanded Custom Viz Modal */}
-      {isCustomVizExpanded && selectedChartType === "custom_viz" && (
-        <div
-          className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex flex-col animate-in fade-in duration-200"
-          onClick={() => setIsCustomVizExpanded(false)}
-        >
-          <div
-            className="relative flex flex-col bg-background w-full h-full md:m-6 md:rounded-xl md:h-[calc(100vh-3rem)] md:w-[calc(100vw-3rem)] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border shrink-0 bg-background">
-              <span className="text-sm font-medium text-muted-foreground font-mono uppercase tracking-widest">
-                Visualización personalizada
-              </span>
-              <button
-                onClick={() => setIsCustomVizExpanded(false)}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                aria-label="Cerrar"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Content — full size, scrollable */}
-            <div className="flex-1 overflow-auto p-4 md:p-6">
-              <CustomVizBlock
-                custom_markup={markupDraft || fields.custom_markup || ""}
-                data={{ columns, rows: filteredRows }}
-              />
-              
-              {/* Notas y fuentes en el modal expandido */}
-              {(notas || fuente) && (
-                <div className="mt-6 pt-4 border-t border-border/50 text-sm space-y-2">
-                  {notas && (
-                    <div className="text-muted-foreground italic">
-                      <span className="font-semibold text-foreground/70 not-italic mr-1.5">Notas:</span>
-                      {typeof notas === "string" ? notas : getTextFromNodes(notas)}
-                    </div>
-                  )}
-                  {fuente && (
-                    <div className="text-muted-foreground">
-                      <span className="font-semibold text-foreground/70 mr-1.5">Fuente:</span>
-                      {typeof fuente === "string" ? fuente : getTextFromNodes(fuente)}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
