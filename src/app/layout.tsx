@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     template: "%s | Santiago en Datos",
   },
   description:
-    "Datos abiertos, visualizaciones y análisis sobre Santiago de Chile.",
+    "Datos abiertos, visualizaciones y análisis sobre Santiago del Estero.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     siteName: "Santiago en Datos",
@@ -148,7 +148,7 @@ export default function RootLayout({
             src="https://www.googletagmanager.com/ns.html?id=GTM-MQ7VXLGF"
             height="0"
             width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
+            style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
         <AuthProvider>
