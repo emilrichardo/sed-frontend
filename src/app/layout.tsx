@@ -83,7 +83,38 @@ const tiemposHeadline = localFont({
   ],
   variable: "--font-tiempos-headline",
 });
-// ... (metadata)
+import type { Metadata } from "next";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+  "https://santiagoendatos.com";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Santiago en Datos",
+    template: "%s | Santiago en Datos",
+  },
+  description:
+    "Datos abiertos, visualizaciones y análisis sobre Santiago de Chile.",
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    siteName: "Santiago en Datos",
+    type: "website",
+    locale: "es_CL",
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@santiagoendatos",
+  },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/icon.svg",
+  },
+};
 
 import { LayoutContent } from "@/components/LayoutContent";
 
