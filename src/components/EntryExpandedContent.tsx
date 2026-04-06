@@ -20,7 +20,7 @@ export default function EntryExpandedContent({
     }
     return entry.boletin || "";
   };
-  const shareUrl = `${window.location.origin}/boletines/${getBoletinSlug()}/${entry.identificador_de_acto}`;
+  const shareUrl = `${window.location.origin}/boletines/${getBoletinSlug()}/${encodeURIComponent(entry.identificador_de_acto)}`;
 
   const handleShare = () => {
     if (navigator.share) {
@@ -180,7 +180,7 @@ export default function EntryExpandedContent({
             Compartir
           </button>
           <Link
-            href={`/boletines/${getBoletinSlug()}/${entry.identificador_de_acto}`}
+            href={`/boletines/${getBoletinSlug()}/${encodeURIComponent(entry.identificador_de_acto)}`}
             className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
           >
             Ver página dedicada

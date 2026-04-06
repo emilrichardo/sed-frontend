@@ -42,6 +42,9 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
   const [isEditingResumen, setIsEditingResumen] = useState(false);
   const [resumenValue, setResumenValue] = useState(entry.resumen || "");
   const [isSavingResumen, setIsSavingResumen] = useState(false);
+  const [isEditingNota, setIsEditingNota] = useState(false);
+  const [notaValue, setNotaValue] = useState(entry.nota_periodistica || "");
+  const [isSavingNota, setIsSavingNota] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
 
@@ -123,6 +126,23 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
   const cancelEditResumen = () => {
     setResumenValue(entry.resumen || "");
     setIsEditingResumen(false);
+  };
+
+  const saveNota = async () => {
+    setIsSavingNota(true);
+    try {
+      await updateActoAdministrativo(entry.id, { nota_periodistica: notaValue.trim() });
+      setIsEditingNota(false);
+    } catch (error) {
+      console.error("Failed to update nota_periodistica:", error);
+    } finally {
+      setIsSavingNota(false);
+    }
+  };
+
+  const cancelEditNota = () => {
+    setNotaValue(entry.nota_periodistica || "");
+    setIsEditingNota(false);
   };
 
   return (
@@ -344,17 +364,56 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
           </section>
 
           {/* Journalistic Note */}
-          {entry.nota_periodistica && (
+          {(entry.nota_periodistica || isEditing) && (
             <section className="bg-muted p-6">
               <h3 className="text-lg font-bold flex items-center gap-2 text-foreground mb-4 uppercase tracking-tight border-b pb-2">
                 <PenTool className="h-5 w-5" />
                 Análisis Periodístico
+                {isEditing && !isEditingNota && (
+                  <button
+                    onClick={() => setIsEditingNota(true)}
+                    className="ml-auto p-1.5 rounded hover:bg-muted border border-dashed border-muted-foreground/40"
+                    title="Editar análisis periodístico"
+                  >
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
               </h3>
-              <div className="prose prose-neutral dark:prose-invert max-w-none font-sans leading-relaxed text-sm">
-                <div className="whitespace-pre-wrap">
-                  {entry.nota_periodistica}
+              {isEditing && isEditingNota ? (
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    className="w-full text-sm bg-background border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed font-sans"
+                    rows={8}
+                    value={notaValue}
+                    onChange={(e) => setNotaValue(e.target.value)}
+                    placeholder="Ingresá el análisis periodístico..."
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveNota}
+                      disabled={isSavingNota}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded hover:opacity-90 disabled:opacity-50"
+                    >
+                      <Check className="h-3 w-3" />
+                      {isSavingNota ? "Guardando..." : "Guardar"}
+                    </button>
+                    <button
+                      onClick={cancelEditNota}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-foreground text-xs font-bold rounded hover:bg-muted/80"
+                    >
+                      <X className="h-3 w-3" />
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : notaValue ? (
+                <div className="prose prose-neutral dark:prose-invert max-w-none font-sans leading-relaxed text-sm">
+                  <div className="whitespace-pre-wrap">{notaValue}</div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground/50 italic">Sin análisis — clic en el lápiz para agregar</p>
+              )}
             </section>
           )}
 

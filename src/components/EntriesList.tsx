@@ -531,7 +531,7 @@ export default function EntriesList({ filters }: EntriesListProps) {
                         )}
                         <td className="px-4 py-3 text-right">
                           <Link
-                            href={`/boletines/${typeof entry.boletin === "object" && entry.boletin ? entry.boletin.slug || entry.boletin.id : entry.boletin}/${entry.identificador_de_acto}`}
+                            href={`/boletines/${typeof entry.boletin === "object" && entry.boletin ? entry.boletin.slug || entry.boletin.id : entry.boletin}/${encodeURIComponent(entry.identificador_de_acto)}`}
                             className="text-primary hover:underline font-medium inline-flex items-center gap-1"
                           >
                             Ver Detalle

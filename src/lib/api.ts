@@ -1274,6 +1274,24 @@ export async function updateActoAdministrativo(
   return res.json();
 }
 
+export async function updateBoletin(
+  id: string,
+  data: Partial<Boletin>,
+): Promise<{ doc: Boletin; message: string }> {
+  const url = `/api/cms?path=/boletines/${encodeURIComponent(id)}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const errorMessage = errorData.error || errorData.message || `Error ${res.status}: ${res.statusText}`;
+    throw new Error(errorMessage);
+  }
+  return res.json();
+}
+
 export async function createTaxonomy(
   collection: string,
   data: { nombre: string },
