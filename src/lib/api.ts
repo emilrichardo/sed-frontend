@@ -950,6 +950,8 @@ export async function getActosAdministrativos(
     where?: Record<string, unknown>;
     depth?: number;
     authToken?: string;
+    /** When true, skip the status=publicado filter so admins can see drafts */
+    showDrafts?: boolean;
   } = {},
 ): Promise<PayloadResponse<ActoAdministrativo>> {
   const {
@@ -959,14 +961,15 @@ export async function getActosAdministrativos(
     where,
     depth = 1,
     authToken,
+    showDrafts = false,
   } = params;
   let queryString = `?page=${page}&limit=${limit}&sort=${sort}&depth=${depth}&draft=false`;
 
   // Collect all where conditions as and[n] blocks
   const andClauses: string[] = [];
 
-  // Si no hay token de autenticación, filtrar solo actos publicados
-  if (!authToken) {
+  // Solo mostrar actos publicados si no hay token ni permiso explícito de borradores
+  if (!authToken && !showDrafts) {
     andClauses.push(`where[and][0][status][equals]=publicado`);
   }
 

@@ -39,14 +39,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
   // Listen for unauthorized events from apiFetch
+  // Only react if the user had an active session (real expiry), not for anonymous 401s
   useEffect(() => {
     const handleUnauthorized = () => {
-      console.warn("Unauthorized event received. Clearing session.");
-      setUser(null);
-      setIsEditing(false);
-      setIsLoginModalOpen(true);
-      // Clear the HttpOnly cookie via BFF
-      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      setUser((currentUser) => {
+        if (!currentUser) return currentUser; // No active session, ignore
+        console.warn("Unauthorized event received. Clearing session.");
+        setIsEditing(false);
+        setIsLoginModalOpen(true);
+        fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+        return null;
+      });
     };
     window.addEventListener("auth:unauthorized", handleUnauthorized);
     return () => {

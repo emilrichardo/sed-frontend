@@ -75,29 +75,12 @@ export default function BulletinEntriesLoader({
       setLoading(true);
       setError(null);
       try {
-        // Obtener token de autenticación si el usuario está logueado
-        let authToken: string | undefined;
-        if (user) {
-          try {
-            const meRes = await fetch("/api/auth/me");
-            if (meRes.ok) {
-              authToken = "authenticated";
-            }
-          } catch {
-            // Ignorar error
-          }
-        }
-        
-        console.log(`[BulletinEntriesLoader] Boletín ${bulletin.id} - authToken: ${authToken ? 'presente' : 'no presente'}`);
-        
         const data = await getActosAdministrativos({
           where: { boletin: bulletin.id },
           limit: 100,
           sort: "-createdAt",
-          authToken,
+          showDrafts: !!user,
         });
-
-        console.log(`[BulletinEntriesLoader] bulletin.id=${bulletin.id} → ${data.docs.length} actos (totalDocs=${data.totalDocs})`);
 
         const sortedDocs = data.docs.sort((a, b) => {
           if (a.destacado === b.destacado) return 0;
@@ -107,6 +90,7 @@ export default function BulletinEntriesLoader({
         setEntries(sortedDocs);
 
         if (
+          user &&
           sortedDocs.length > 0 &&
           (bulletin.cant_actos === 0 ||
             bulletin.cant_actos !== sortedDocs.length)
