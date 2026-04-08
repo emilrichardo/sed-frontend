@@ -272,6 +272,17 @@ export default function BulletinEntriesLoader({
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Left: Journalistic acts */}
       <div className="w-full lg:flex-1 space-y-6">
+        {/* Aviso procesamiento IA */}
+        <div className="flex items-start gap-3 bg-blue-950/30 border border-blue-800/40 rounded-lg px-4 py-3.5">
+          <span className="shrink-0 text-xl mt-0.5">🤖</span>
+          <div>
+            <p className="text-sm font-semibold text-blue-300 mb-0.5">Procesado con inteligencia artificial</p>
+            <p className="text-sm text-blue-200/70 leading-relaxed">
+              Las versiones periodísticas de los actos administrativos son generadas de manera automática con IA. El contenido puede contener errores o inexactitudes.
+            </p>
+          </div>
+        </div>
+
         {/* Título del boletín */}
         {(tituloValue || isEditing) && (
           isEditing && isEditingTitulo ? (
