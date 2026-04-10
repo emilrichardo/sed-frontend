@@ -3,9 +3,9 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Boletin, deleteBulletin } from "@/lib/api";
+import { Boletin, deleteBulletin, Procesamiento } from "@/lib/api";
 import { Trash2 } from "lucide-react";
-import { ProcessingButton } from "./ProcessingButton";
+import { BulletinProcessingButton } from "./BulletinProcessingButton";
 
 export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
   const { user } = useAuth();
@@ -38,8 +38,12 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
     const reversed = [...bulletin.procesamiento_asociado].reverse();
     for (const p of reversed) {
       if (typeof p === "object" && p !== null && "agente" in p) {
-        const agentId = typeof p.agente === "object" ? p.agente?.id : p.agente;
-        if (String(agentId) === "5") return p.id;
+        const proc = p as Procesamiento;
+        const agentId =
+          typeof proc.agente === "object" && proc.agente !== null
+            ? (proc.agente as { id?: string | number }).id
+            : proc.agente;
+        if (String(agentId) === "5") return proc.id;
       }
     }
     return null;
@@ -47,15 +51,10 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
 
   return (
     <div className="flex flex-wrap gap-2 mt-4">
-      <ProcessingButton
-        relationTo="boletines"
-        relatedId={bulletin.id}
+      <BulletinProcessingButton
+        bulletin={bulletin}
         existingProcessingId={getExistingProcessingId()}
-        requiredAgentId="5"
-        hasExistingResults={
-          bulletin.status_procesamiento === "basic" ||
-          bulletin.status_procesamiento === "ai_enhanced"
-        }
+        requiredBoletinAgentId="5"
         className="bg-zinc-800 text-white hover:bg-zinc-700"
       />
       <button
