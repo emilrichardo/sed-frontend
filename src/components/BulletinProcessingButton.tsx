@@ -266,6 +266,8 @@ export function BulletinProcessingButton({
     setErrorMessage(null);
     setActosStatus("idle");
 
+    const hasBoletinAgent = agents.length > 0 && !!selectedBoletinAgentId;
+
     const boletinAgentId = selectedBoletinAgentId
       ? /^\d+$/.test(selectedBoletinAgentId)
         ? parseInt(selectedBoletinAgentId, 10)
@@ -278,21 +280,23 @@ export function BulletinProcessingButton({
         : bulletinId;
 
     try {
-      // 1. Create boletin procesamiento
-      const boletinPayload: Partial<Procesamiento> = {
-        nombre: `Procesamiento boletín Nº ${bulletin.numero}`,
-        status: "en_cola",
-        ...(boletinAgentId ? { agente: boletinAgentId } : {}),
-        documento_relacionado: {
-          relationTo: "boletines",
-          value: numericBulletinId,
-        },
-      };
+      // 1. Create boletin procesamiento (only if a boletin agent is available)
+      if (hasBoletinAgent) {
+        const boletinPayload: Partial<Procesamiento> = {
+          nombre: `Procesamiento boletín Nº ${bulletin.numero}`,
+          status: "en_cola",
+          ...(boletinAgentId ? { agente: boletinAgentId } : {}),
+          documento_relacionado: {
+            relationTo: "boletines",
+            value: numericBulletinId,
+          },
+        };
 
-      const { doc } = await createProcesamiento(boletinPayload);
-      setProcId(doc.id);
-      setStatus("queued");
-      onStatusChange?.("en_cola");
+        const { doc } = await createProcesamiento(boletinPayload);
+        setProcId(doc.id);
+        setStatus("queued");
+        onStatusChange?.("en_cola");
+      }
 
       // 2. Optionally process actos
       if (processActos && selectedActosAgentId) {
@@ -333,6 +337,12 @@ export function BulletinProcessingButton({
           console.error("Error creating actos processings:", err);
           setActosStatus("error");
         }
+      }
+
+      // If no boletin processing was created (actos-only mode), return to idle
+      if (!hasBoletinAgent) {
+        setStatus("idle");
+        onStatusChange?.("sin_procesar");
       }
     } catch (err) {
       console.error("Failed to create processing:", err);
@@ -611,8 +621,9 @@ export function BulletinProcessingButton({
                 size="sm"
                 onClick={handleStart}
                 disabled={
-                  !selectedBoletinAgentId ||
-                  agents.length === 0 ||
+                  // Need at least boletin agent OR actos selected with agent
+                  (!selectedBoletinAgentId && agents.length > 0) ||
+                  (agents.length === 0 && (!processActos || !selectedActosAgentId)) ||
                   (processActos && !selectedActosAgentId)
                 }
               >
