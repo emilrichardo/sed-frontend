@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import {
   getActosAdministrativos,
   ActoAdministrativo,
-  updateBulletin,
   updateBoletin,
   Boletin,
 } from "@/lib/api";
@@ -95,7 +94,9 @@ export default function BulletinEntriesLoader({
           (bulletin.cant_actos === 0 ||
             bulletin.cant_actos !== sortedDocs.length)
         ) {
-          updateBulletin(String(bulletin.id), {
+          // Use updateBoletin (BFF /api/cms route) instead of updateBulletin (apiFetch)
+          // to avoid cross-origin auth issues that would dispatch auth:unauthorized
+          updateBoletin(String(bulletin.id), {
             cant_actos: sortedDocs.length,
           }).catch(() => {});
         }

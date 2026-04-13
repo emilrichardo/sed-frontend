@@ -65,8 +65,11 @@ async function apiFetch(
   const url = endpoint.startsWith("http") ? endpoint : `${API_URL}${endpoint}`;
   const res = await fetch(url, { ...options, headers });
 
-  // Handle Auth Errors (401/403) on the client — dispatch event so AuthContext can react
-  if ((res.status === 401 || res.status === 403) && isClient) {
+  // Handle Auth Errors (401/403) on the client — dispatch event so AuthContext can react.
+  // Only dispatch for GET requests: write operations (PATCH/POST/DELETE) may fail
+  // silently due to cross-origin cookie limitations and should not force a logout.
+  const method = (options.method || "GET").toUpperCase();
+  if ((res.status === 401 || res.status === 403) && isClient && method === "GET") {
     window.dispatchEvent(new Event("auth:unauthorized"));
   }
 
