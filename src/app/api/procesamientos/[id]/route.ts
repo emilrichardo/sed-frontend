@@ -4,24 +4,25 @@ import { NextRequest, NextResponse } from "next/server";
 const BASE_URL = (process.env.PAYLOAD_API_URL || "http://localhost:3000").replace(/\/+$/, "");
 
 function getAuthHeader(req: NextRequest): string {
-  // Prefer explicit Authorization header (e.g. server-to-server calls)
   const header = req.headers.get("Authorization");
   if (header) return header;
-  // Fall back to the HttpOnly cookie set by /api/auth/login
   const cookie = req.cookies.get("payload-token")?.value;
   if (cookie) return `JWT ${cookie}`;
-  // Last resort: service account token from env (admin operations)
   if (process.env.PAYLOAD_USER_TOKEN) return `JWT ${process.env.PAYLOAD_USER_TOKEN}`;
   return "";
 }
 
-export async function POST(req: NextRequest) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const auth = getAuthHeader(req);
 
-    const res = await fetch(`${BASE_URL}/api/procesamientos`, {
-      method: "POST",
+    const res = await fetch(`${BASE_URL}/api/procesamientos/${id}`, {
+      method: "PATCH",
       headers: {
         Authorization: auth,
         "Content-Type": "application/json",
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       const errorText = await res.text();
       console.error(`Upstream API failed: ${res.status} ${res.statusText}`, errorText);
       return NextResponse.json(
-        { error: "Creation failed", details: errorText },
+        { error: "Update failed", details: errorText },
         { status: res.status },
       );
     }
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error in /api/procesamientos POST:", error);
-    return NextResponse.json({ error: "Failed to create procesamiento" }, { status: 500 });
+    console.error("Error in /api/procesamientos/[id] PATCH:", error);
+    return NextResponse.json({ error: "Failed to update procesamiento" }, { status: 500 });
   }
 }

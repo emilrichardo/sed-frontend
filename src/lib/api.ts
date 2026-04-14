@@ -1610,10 +1610,15 @@ export async function updateProcesamiento(
   id: string,
   data: Partial<Procesamiento>,
 ): Promise<{ doc: Procesamiento; message: string }> {
-  const res = await apiFetch(`/procesamientos/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
+  // On the client, call the BFF route so the HttpOnly cookie is forwarded to Payload.
+  const isClient = typeof window !== "undefined";
+  const res = isClient
+    ? await fetch(`/api/procesamientos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+    : await apiFetch(`/procesamientos/${id}`, { method: "PATCH", body: JSON.stringify(data) });
 
   if (!res.ok) {
     console.error(
@@ -1630,14 +1635,16 @@ export async function createProcesamiento(
   data: Partial<Procesamiento>,
   authToken?: string,
 ): Promise<{ doc: Procesamiento; message: string }> {
-  const res = await apiFetch(
-    "/procesamientos",
-    {
-      method: "POST",
-      body: JSON.stringify(data),
-    },
-    authToken,
-  );
+  // On the client, call the BFF route so the HttpOnly cookie is forwarded to Payload.
+  // On the server, fall through to apiFetch which calls Payload directly.
+  const isClient = typeof window !== "undefined";
+  const res = isClient
+    ? await fetch("/api/procesamientos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+    : await apiFetch("/procesamientos", { method: "POST", body: JSON.stringify(data) }, authToken);
 
   if (!res.ok) {
     console.error(
