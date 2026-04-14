@@ -314,23 +314,27 @@ export function BulletinProcessingButton({
           });
 
           const actos = actosRes.docs || [];
-          await Promise.all(
-            actos.map((acto) => {
-              const actoId =
-                typeof acto.id === "string" && /^\d+$/.test(acto.id)
-                  ? parseInt(acto.id, 10)
-                  : acto.id;
-              return createProcesamiento({
-                nombre: `Procesamiento acto ${acto.identificador_de_acto || actoId}`,
-                status: "en_cola",
-                agente: actosAgentId,
-                documento_relacionado: {
-                  relationTo: "actos-administrativos",
-                  value: actoId,
-                },
-              });
-            }),
-          );
+          const CONCURRENCY = 5;
+          for (let i = 0; i < actos.length; i += CONCURRENCY) {
+            const batch = actos.slice(i, i + CONCURRENCY);
+            await Promise.all(
+              batch.map((acto) => {
+                const actoId =
+                  typeof acto.id === "string" && /^\d+$/.test(acto.id)
+                    ? parseInt(acto.id, 10)
+                    : acto.id;
+                return createProcesamiento({
+                  nombre: `Procesamiento acto ${acto.identificador_de_acto || actoId}`,
+                  status: "en_cola",
+                  agente: actosAgentId,
+                  documento_relacionado: {
+                    relationTo: "actos-administrativos",
+                    value: actoId,
+                  },
+                });
+              }),
+            );
+          }
 
           setActosStatus("done");
         } catch (err) {
