@@ -15,11 +15,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://www.googletagmanager.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      `connect-src 'self' https://api.open-meteo.com https://dolarapi.com https://sb.santiagoendatos.com${payloadPublicUrl ? ` ${payloadPublicUrl}` : ""}`,
+      `connect-src 'self' https://api.open-meteo.com https://dolarapi.com https://sb.santiagoendatos.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net${payloadPublicUrl ? ` ${payloadPublicUrl}` : ""}`,
       "frame-src 'self' blob: https: http://127.0.0.1:54321",
       "worker-src 'self' blob: https://unpkg.com",
     ].join("; "),
