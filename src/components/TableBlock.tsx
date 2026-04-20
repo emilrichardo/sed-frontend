@@ -608,7 +608,7 @@ export const TableBlock = ({
   const { compatibleIds, recommendedId } = useMemo(
     () => getChartCompatibilityInfo(columns, filteredRows),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(columns), JSON.stringify(filteredRows)],
+    [columns, filteredRows.length],
   );
 
   // Map legacy chart type aliases to unified choropleth_map
@@ -722,7 +722,36 @@ export const TableBlock = ({
       direction = "desc";
     }
     setSortConfig({ key, direction });
+    setTablePage(0);
   };
+
+  // Pagination for table view
+  const TABLE_PAGE_SIZE = 100;
+  const [tablePage, setTablePage] = useState(0);
+  const totalTablePages = Math.ceil(sortedRows.length / TABLE_PAGE_SIZE);
+  const paginatedRows = useMemo(
+    () => sortedRows.slice(tablePage * TABLE_PAGE_SIZE, (tablePage + 1) * TABLE_PAGE_SIZE),
+    [sortedRows, tablePage],
+  );
+
+  // Pre-compute heatmap column values to avoid O(N²) cell rendering
+  const heatmapColValues = useMemo(() => {
+    if (!useHeatmap) return {};
+    const result: Record<string, { min: number; max: number }> = {};
+    for (const col of columns) {
+      if (!isNumericColumn(col.id, filteredRows)) continue;
+      const vals = filteredRows
+        .map((r: any) => {
+          const v = r.cells
+            ? r.cells.find((c: { columnId: string }) => c.columnId === col.id)?.value
+            : r[col.id];
+          return parseFloat(String(v).replace(/[^0-9.-]/g, ""));
+        })
+        .filter((v: number) => !isNaN(v));
+      result[col.id] = { min: Math.min(...vals), max: Math.max(...vals) };
+    }
+    return result;
+  }, [useHeatmap, columns, filteredRows]);
 
   // State for selected metric (numeric column)
   const [selectedMetric, setSelectedMetric] = useState<string | null>(
@@ -1494,7 +1523,7 @@ ${currentMarkup}
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {sortedRows?.map((row: any, i: number) => (
+                  {paginatedRows?.map((row: any, i: number) => (
                     <tr
                       key={i}
                       className="hover:bg-muted/50 transition-colors group"
@@ -1510,30 +1539,14 @@ ${currentMarkup}
                           cellValue = row[col.id];
                         }
 
-                        // Heatmap logic
+                        // Heatmap logic (pre-computed min/max)
                         let style = {};
-                        if (
-                          useHeatmap &&
-                          isNumericColumn(col.id, filteredRows)
-                        ) {
+                        const heatRange = heatmapColValues[col.id];
+                        if (useHeatmap && heatRange) {
                           const num = parseFloat(
                             String(cellValue).replace(/[^0-9.-]/g, ""),
                           );
-                          const colValues = filteredRows
-                            .map((r: any) => {
-                              const v = r.cells
-                                ? r.cells.find(
-                                    (c: { columnId: string; value: any }) =>
-                                      c.columnId === col.id,
-                                  )?.value
-                                : r[col.id];
-                              return parseFloat(
-                                String(v).replace(/[^0-9.-]/g, ""),
-                              );
-                            })
-                            .filter((v: number) => !isNaN(v));
-                          const min = Math.min(...colValues);
-                          const max = Math.max(...colValues);
+                          const { min, max } = heatRange;
                           const ratio =
                             max - min === 0 ? 0.5 : (num - min) / (max - min);
                           style = {
@@ -1558,6 +1571,46 @@ ${currentMarkup}
                   ))}
                 </tbody>
               </table>
+              {totalTablePages > 1 && (
+                <div className="flex items-center justify-between px-4 py-2 border-t border-border/20 text-xs text-muted-foreground">
+                  <span>
+                    {tablePage * TABLE_PAGE_SIZE + 1}–{Math.min((tablePage + 1) * TABLE_PAGE_SIZE, sortedRows.length)} de {sortedRows.length} filas
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setTablePage(0)}
+                      disabled={tablePage === 0}
+                      className="px-2 py-1 rounded hover:bg-muted/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      «
+                    </button>
+                    <button
+                      onClick={() => setTablePage((p) => Math.max(0, p - 1))}
+                      disabled={tablePage === 0}
+                      className="px-2 py-1 rounded hover:bg-muted/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      ‹
+                    </button>
+                    <span className="px-2">
+                      {tablePage + 1} / {totalTablePages}
+                    </span>
+                    <button
+                      onClick={() => setTablePage((p) => Math.min(totalTablePages - 1, p + 1))}
+                      disabled={tablePage === totalTablePages - 1}
+                      className="px-2 py-1 rounded hover:bg-muted/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      ›
+                    </button>
+                    <button
+                      onClick={() => setTablePage(totalTablePages - 1)}
+                      disabled={tablePage === totalTablePages - 1}
+                      className="px-2 py-1 rounded hover:bg-muted/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      »
+                    </button>
+                  </div>
+                </div>
+              )}
               </>
             )}
           </div>
