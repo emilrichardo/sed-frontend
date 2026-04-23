@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import {
   getActosAdministrativos,
   ActoAdministrativo,
@@ -11,6 +12,16 @@ import { Loader2, AlertCircle, Newspaper, Pencil, Check, X } from "lucide-react"
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+
+const BulletinPdfPreview = dynamic(() => import("./BulletinPdfPreview"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center rounded-lg border bg-muted/10 h-[75vh] text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+      <span className="text-sm">Cargando PDF...</span>
+    </div>
+  ),
+});
 
 interface BulletinEntriesLoaderProps {
   bulletin: Boletin;
@@ -173,16 +184,7 @@ export default function BulletinEntriesLoader({
 
   // When no journalistic content but there is a PDF: show PDF centered full-width
   if (!hasJournalistContent && pdfUrl) {
-    return (
-      <div className="rounded-lg border overflow-hidden shadow-sm">
-        <iframe
-          src={pdfUrl}
-          title={`Boletín Oficial Nº ${bulletin.numero}`}
-          className="w-full"
-          style={{ height: "85vh" }}
-        />
-      </div>
-    );
+    return <BulletinPdfPreview pdfUrl={pdfUrl} heightVh={85} />;
   }
 
   const opacidadBadge = (act: ActoAdministrativo) => {
@@ -400,17 +402,10 @@ export default function BulletinEntriesLoader({
         )}
       </div>
 
-      {/* Right: PDF iframe */}
+      {/* Right: PDF preview (react-pdf — works on mobile) */}
       {pdfUrl && (
         <aside className="w-full lg:w-[42%] lg:sticky lg:top-4">
-          <div className="rounded-lg border overflow-hidden shadow-sm">
-            <iframe
-              src={pdfUrl}
-              title={`Boletín Oficial Nº ${bulletin.numero}`}
-              className="w-full"
-              style={{ height: "75vh" }}
-            />
-          </div>
+          <BulletinPdfPreview pdfUrl={pdfUrl} heightVh={75} />
         </aside>
       )}
     </div>
