@@ -42,8 +42,8 @@ export function HomeWidgetGroup() {
         {/* Finanzas Provinciales */}
         <WidgetFiscal data={{ titulo: "Finanzas Provinciales" }} variant="md" />
 
-        {/* Publicación enero 2026 */}
-        <WidgetPublicacion slug="enero-2026" />
+        {/* Publicaciones fijas (rota entre las últimas 3, máx. 2 meses) */}
+        <WidgetPublicacion />
       </div>
     </section>
   );

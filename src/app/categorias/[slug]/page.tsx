@@ -12,8 +12,6 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getAllCategorySlugs } from "@/lib/static-params";
 
-const isRootCategory = (children: Category[]) => children.length > 0;
-
 export const revalidate = 300;
 export async function generateStaticParams() {
   const slugs = await getAllCategorySlugs();
@@ -53,11 +51,7 @@ export default async function CategoryPage({ params }: PageProps) {
       }
     : { href: "/publicaciones", label: "Publicaciones" };
 
-  // Solo fetch publicaciones en subcategorías (sin hijos)
-  const publicaciones =
-    !isRootCategory(children)
-      ? await getPublicacionesByCategoriaIds([category.id])
-      : null;
+  const publicaciones = await getPublicacionesByCategoriaIds([category.id]);
 
   return (
     <>
@@ -133,11 +127,11 @@ export default async function CategoryPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Publicaciones — solo en subcategorías */}
-        {publicaciones && (
+        {/* Últimas publicaciones — debajo de las subcategorías */}
+        {publicaciones && publicaciones.docs.length > 0 && (
           <section>
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-5">
-              Publicaciones
+              Últimas publicaciones
               {publicaciones.totalDocs > 0 && (
                 <span className="ml-2 text-foreground">
                   {publicaciones.totalDocs}

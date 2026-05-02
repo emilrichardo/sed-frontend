@@ -36,6 +36,32 @@ export default async function Home() {
 
   const latestBulletin = bulletins.docs[0];
 
+  // Featured slider source: up to 3 most recent pinned informes, max 2 months old
+  const TWO_MONTHS_MS = 1000 * 60 * 60 * 24 * 60;
+  // eslint-disable-next-line react-hooks/purity
+  const pinnedCutoff = Date.now() - TWO_MONTHS_MS;
+  const informes = reports.docs.filter((pub) => {
+    const tp = pub.tipo_publicacion;
+    return typeof tp === "object" && tp !== null && "slug" in tp
+      ? tp.slug === "informes"
+      : String(tp) === "informes";
+  });
+  const pinnedRecent = informes
+    .filter((pub) => {
+      if (!pub.fijado) return false;
+      const dateStr = pub.publishedDate || pub.createdAt;
+      if (!dateStr) return false;
+      return new Date(dateStr).getTime() >= pinnedCutoff;
+    })
+    .sort((a, b) => {
+      const da = new Date(a.publishedDate || a.createdAt || 0).getTime();
+      const db = new Date(b.publishedDate || b.createdAt || 0).getTime();
+      return db - da;
+    })
+    .slice(0, 3);
+  const pinnedIds = new Set(pinnedRecent.map((p) => p.id));
+  const restInformes = informes.filter((p) => !pinnedIds.has(p.id));
+
   // Build category tree for the shared CategoryMenu
   const roots = allCategories.filter((c: Category) => !c.parent);
   const childrenList = allCategories.filter((c: Category) => c.parent);
@@ -76,39 +102,40 @@ export default async function Home() {
       </div>
 
       {/* ── Informes Recientes ── (mobile only) */}
-      {(() => {
-        const informes = reports.docs.filter((pub) => {
-          const tp = pub.tipo_publicacion;
-          return typeof tp === "object" && tp !== null && "slug" in tp
-            ? tp.slug === "informes"
-            : String(tp) === "informes";
-        });
-        if (informes.length === 0) return null;
-        const [featured, ...rest] = informes;
-        return (
-          <section className="py-8 md:hidden">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl md:text-2xl font-bold font-heading">
-                Informes Recientes
-              </h2>
-              <Link
-                href="/publicaciones"
-                className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
-              >
-                Ver más <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+      {informes.length > 0 && (
+        <section className="py-8 md:hidden">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl md:text-2xl font-bold font-heading">
+              Informes Recientes
+            </h2>
+            <Link
+              href="/publicaciones"
+              className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+            >
+              Ver más <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
 
-            {/* Pinned latest publication */}
+          {/* Pinned slider: last 3 pinned within 2 months */}
+          {pinnedRecent.length > 0 && (
             <div className="mb-6">
-              <ResponsivePublicationCard item={featured} showParent={false} />
+              {pinnedRecent.length === 1 ? (
+                <ResponsivePublicationCard
+                  item={pinnedRecent[0]}
+                  showParent={false}
+                />
+              ) : (
+                <PublicationCarousel items={pinnedRecent} />
+              )}
             </div>
+          )}
 
-            {/* Rest in carousel */}
-            {rest.length > 0 && <PublicationCarousel items={rest} />}
-          </section>
-        );
-      })()}
+          {/* Rest in carousel */}
+          {restInformes.length > 0 && (
+            <PublicationCarousel items={restInformes} />
+          )}
+        </section>
+      )}
 
       {/* ── Mobile scroll transition → Publicaciones ── */}
       <MobileScrollTransition
