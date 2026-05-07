@@ -178,8 +178,8 @@ export default function BulletinHighlightsSlider({
                         typeof act.boletin === "object" &&
                         act.boletin &&
                         "slug" in act.boletin
-                          ? `/boletines/${(act.boletin as { slug: string }).slug}/${encodeURIComponent(act.identificador_de_acto)}`
-                          : `/boletines/${act.boletin}/${encodeURIComponent(act.identificador_de_acto)}`
+                          ? `/boletines/${(act.boletin as { slug: string }).slug}/${act.id}`
+                          : `/boletines/${act.boletin}/${act.id}`
                       }
                       className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group/btn"
                     >

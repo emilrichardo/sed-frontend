@@ -1025,18 +1025,33 @@ export async function getActosAdministrativos(
 export async function getActoByIdentifier(
   identifier: string,
   authToken?: string,
+  bulletinSlug?: string,
 ): Promise<ActoAdministrativo> {
   console.log(`getActoByIdentifier: searching for "${identifier}"`);
 
-  // Search by identificador_de_acto
-  const encodedId = encodeURIComponent(identifier);
-  let queryString = `?where[identificador_de_acto][equals]=${encodedId}&depth=2`;
-  
-  // Si no hay token de autenticación, filtrar solo actos publicados
-  if (!authToken) {
-    queryString += `&where[status][equals]=publicado`;
+  // Numeric route segments are act IDs. Resolve them directly to avoid
+  // ambiguous identifiers such as "EDICTO" that repeat across bulletins.
+  if (/^\d+$/.test(identifier)) {
+    return getActoAdministrativo(identifier, authToken);
   }
-  
+
+  const encodedId = encodeURIComponent(identifier);
+  const andClauses = [
+    `where[and][0][identificador_de_acto][equals]=${encodedId}`,
+  ];
+
+  if (!authToken) {
+    andClauses.push(`where[and][${andClauses.length}][status][equals]=publicado`);
+  }
+
+  if (bulletinSlug) {
+    andClauses.push(
+      `where[and][${andClauses.length}][boletin.slug][equals]=${encodeURIComponent(bulletinSlug)}`,
+    );
+  }
+
+  const queryString = `?${andClauses.join("&")}&depth=2&draft=false`;
+
   const res = await apiFetch(
     `/actos-administrativos${queryString}`,
     { next: { revalidate: 10 } },
@@ -1059,18 +1074,21 @@ export async function getActoByIdentifier(
     `getActoByIdentifier: no exact match for "${identifier}", trying fallback...`,
   );
 
-  // Fallback: Try by ID if identifier looks like an ID (numeric)
-  if (/^\d+$/.test(identifier)) {
-    return getActoAdministrativo(identifier, authToken);
-  }
-
   // Fallback 2: Try "like" search if it failed (sometimes encoding issues)
   // Only if identifier is long enough to be specific
   if (identifier.length > 5) {
-    let likeQueryString = `?where[identificador_de_acto][like]=${encodedId}&depth=2`;
+    const likeClauses = [
+      `where[and][0][identificador_de_acto][like]=${encodedId}`,
+    ];
     if (!authToken) {
-      likeQueryString += `&where[status][equals]=publicado`;
+      likeClauses.push(`where[and][${likeClauses.length}][status][equals]=publicado`);
     }
+    if (bulletinSlug) {
+      likeClauses.push(
+        `where[and][${likeClauses.length}][boletin.slug][equals]=${encodeURIComponent(bulletinSlug)}`,
+      );
+    }
+    const likeQueryString = `?${likeClauses.join("&")}&depth=2&draft=false`;
     const resLike = await apiFetch(
       `/actos-administrativos${likeQueryString}`,
       { next: { revalidate: 60 } },
@@ -1090,16 +1108,20 @@ export async function getActoAdministrativo(
   id: string,
   authToken?: string,
 ): Promise<ActoAdministrativo> {
-  let queryString = `?depth=2`;
+  let queryString = `?depth=2&draft=false`;
   
   // Si no hay token de autenticación, filtrar solo actos publicados
   if (!authToken) {
     queryString += `&where[status][equals]=publicado`;
   }
   
-  const res = await apiFetch(`/actos-administrativos/${id}${queryString}`, {
-    next: { revalidate: 60 },
-  });
+  const res = await apiFetch(
+    `/actos-administrativos/${id}${queryString}`,
+    {
+      next: { revalidate: 60 },
+    },
+    authToken,
+  );
   if (!res.ok) throw new Error("Failed to fetch acto administrativo");
   
   const acto = await res.json();

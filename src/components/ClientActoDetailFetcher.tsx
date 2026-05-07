@@ -23,17 +23,17 @@ export default function ClientActoDetailFetcher({
   useEffect(() => {
     async function load() {
       try {
-        const data = await getActoByIdentifier(identifier);
+        const data = await getActoByIdentifier(identifier, undefined, slug);
         setEntry(data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Client fetch error:", err);
-        setError(err.message || "Failed to load act");
+        setError(err instanceof Error ? err.message : "Failed to load act");
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [identifier]);
+  }, [identifier, slug]);
 
   if (loading) {
     return (
@@ -71,8 +71,8 @@ export default function ClientActoDetailFetcher({
     <ActDetailView
       entry={entry}
       backLink={
-        typeof entry.boletin === "object"
-          ? `/boletines/${entry.boletin.id}` // Ideally use slug if available
+        typeof entry.boletin === "object" && entry.boletin
+          ? `/boletines/${entry.boletin.slug || entry.boletin.id}`
           : "/boletines"
       }
     />

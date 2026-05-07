@@ -46,11 +46,8 @@ export async function getAllActoParams(): Promise<
         typeof boletin === "object" && "slug" in boletin
           ? (boletin as { slug: string }).slug
           : null;
-      if (bulletinSlug && acto.identificador_de_acto) {
-        const encoded = encodeURIComponent(acto.identificador_de_acto);
-        // Skip identifiers that would exceed filesystem path length limits
-        if (encoded.length > 200) return;
-        params.push({ slug: bulletinSlug, actoId: encoded });
+      if (bulletinSlug && acto.id) {
+        params.push({ slug: bulletinSlug, actoId: String(acto.id) });
       }
     });
     hasMore = data.page < data.totalPages;

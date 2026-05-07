@@ -1,6 +1,5 @@
 import { getActoByIdentifier, ActoAdministrativo } from "@/lib/api";
 import { getAllActoParams } from "@/lib/static-params";
-import { cookies } from "next/headers";
 
 export async function generateStaticParams() {
   return getAllActoParams();
@@ -18,13 +17,18 @@ export default async function ActoDetailPage({
   let entry: ActoAdministrativo | null = null;
   let serverError: string | null = null;
 
-  // Verificar si el usuario está autenticado (cookie payload-token)
-  const cookieStore = await cookies();
-  const authToken = cookieStore.get("payload-token")?.value;
-
   try {
-    entry = await getActoByIdentifier(decodeURIComponent(actoId), authToken);
+    entry = await getActoByIdentifier(decodeURIComponent(actoId), undefined, slug);
+    if (
+      entry &&
+      typeof entry.boletin === "object" &&
+      entry.boletin.slug &&
+      entry.boletin.slug !== slug
+    ) {
+      throw new Error(`Acto not found in bulletin: ${slug}`);
+    }
   } catch (err: unknown) {
+    entry = null;
     serverError = err instanceof Error ? err.message : "Error desconocido";
     console.error(`Server fetch failed for acto ${actoId}:`, serverError);
   }
@@ -35,7 +39,7 @@ export default async function ActoDetailPage({
         entry={entry}
         backLink={
           typeof entry.boletin === "object" && "slug" in entry.boletin
-            ? `/boletines/${(entry.boletin as any).slug}`
+            ? `/boletines/${entry.boletin.slug}`
             : `/boletines/${slug}`
         }
       />

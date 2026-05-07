@@ -43,7 +43,11 @@ export default function BulletinEntriesLoader({
   const [entries, setEntries] = useState<ActoAdministrativo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<{total: number, publicados: number, borradores: number} | null>(null);
+  const [debugInfo] = useState<{
+    total: number;
+    publicados: number;
+    borradores: number;
+  } | null>(null);
   const { user, isEditing } = useAuth();
 
   const [isEditingTitulo, setIsEditingTitulo] = useState(false);
@@ -204,7 +208,7 @@ export default function BulletinEntriesLoader({
       // Compact card for minor acts
       return (
         <Link
-          href={`/boletines/${slug}/${encodeURIComponent(act.identificador_de_acto)}`}
+          href={`/boletines/${slug}/${act.id}`}
           className="group flex items-start gap-3 py-3 border-b border-border/50 last:border-0 hover:bg-muted/20 px-2 rounded transition-colors"
         >
           <span className="text-[10px] font-mono text-muted-foreground/50 bg-muted/30 px-1.5 py-0.5 rounded mt-0.5 shrink-0">
@@ -218,7 +222,7 @@ export default function BulletinEntriesLoader({
     }
 
     return (
-      <Link href={`/boletines/${slug}/${encodeURIComponent(act.identificador_de_acto)}`} className="group block">
+      <Link href={`/boletines/${slug}/${act.id}`} className="group block">
         <article
           className={cn(
             "p-6 md:p-8 border rounded-lg bg-card shadow-sm transition-all hover:shadow-md",
