@@ -381,14 +381,17 @@ export default function WidgetBoletin({ variant = "sm" }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/boletines?limit=1&sort=-fecha_publicacion&depth=0`)
+    fetch(
+      `${API_URL}/boletines?limit=1&sort=-fecha_publicacion&depth=0&draft=false`,
+    )
       .then((r) => r.json())
       .then(async (data) => {
         const b: Boletin | null = data.docs?.[0] ?? null;
         setBoletin(b);
         if (b && variant !== "xs" && variant !== "sm") {
+          const bulletinId = encodeURIComponent(b.id);
           fetch(
-            `${API_URL}/actos-administrativos?where[boletin][equals]=${b.id}&where[titulo_periodistico][exists]=true&limit=30&depth=0`,
+            `${API_URL}/actos-administrativos?where[and][0][boletin][equals]=${bulletinId}&where[and][1][titulo_periodistico][exists]=true&where[and][2][status][equals]=publicado&limit=30&depth=0&draft=false`,
           )
             .then((r) => r.json())
             .then((actosData) => {
