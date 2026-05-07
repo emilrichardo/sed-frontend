@@ -65,7 +65,9 @@ function MonthBlock({
 
   const monthName = MONTH_NAMES[parseInt(month) - 1] || month;
   const total = records.find((r) => r.categoria === "total");
-  const categories = records.filter((r) => r.categoria !== "total");
+  const categories = records
+    .filter((r) => r.categoria !== "total")
+    .sort((a, b) => b.monto - a.monto);
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card">
