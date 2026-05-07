@@ -1,6 +1,6 @@
 /**
  * Helpers para generateStaticParams en modo NEXT_STATIC_EXPORT=true.
- * Solo se ejecutan en tiempo de build.
+ * En deploys con servidor, estas rutas se generan bajo demanda.
  */
 
 import {
@@ -11,7 +11,13 @@ import {
   getActosAdministrativos as getAllActos,
 } from "./api";
 
+const shouldPrebuildDynamicRoutes =
+  process.env.NEXT_STATIC_EXPORT === "true" ||
+  process.env.NEXT_PREBUILD_DYNAMIC_ROUTES === "true";
+
 export async function getAllBulletinSlugs(): Promise<string[]> {
+  if (!shouldPrebuildDynamicRoutes) return [];
+
   const slugs: string[] = [];
   let page = 1;
   let hasMore = true;
@@ -27,6 +33,8 @@ export async function getAllBulletinSlugs(): Promise<string[]> {
 export async function getAllActoParams(): Promise<
   { slug: string; actoId: string }[]
 > {
+  if (!shouldPrebuildDynamicRoutes) return [];
+
   const params: { slug: string; actoId: string }[] = [];
   let page = 1;
   let hasMore = true;
@@ -52,6 +60,8 @@ export async function getAllActoParams(): Promise<
 }
 
 export async function getAllActoIds(): Promise<string[]> {
+  if (!shouldPrebuildDynamicRoutes) return [];
+
   const ids: string[] = [];
   let page = 1;
   let hasMore = true;
@@ -65,11 +75,15 @@ export async function getAllActoIds(): Promise<string[]> {
 }
 
 export async function getAllCategorySlugs(): Promise<string[]> {
+  if (!shouldPrebuildDynamicRoutes) return [];
+
   const cats = await getCategories({ limit: 500 });
   return cats.map((c) => c.slug).filter(Boolean);
 }
 
 export async function getAllPublicationSlugs(): Promise<string[]> {
+  if (!shouldPrebuildDynamicRoutes) return [];
+
   const slugs: string[] = [];
   let page = 1;
   let hasMore = true;
