@@ -345,7 +345,13 @@ export function CategoryMenu({
 
         {/* Full-screen overlay when a category is selected from home page */}
         {overlayCategory && (
-          <div className="md:hidden fixed top-0 left-0 right-0 bottom-16 z-[55] bg-background flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div
+            className="md:hidden fixed top-0 left-0 right-0 z-[55] bg-background flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300"
+            style={{
+              bottom:
+                "calc(4rem + var(--mobile-browser-bottom-inset, 0px))",
+            }}
+          >
             {/* Overlay header */}
             <div className="flex items-center gap-2 px-4 border-b border-border shrink-0 h-14">
               <h2 className="flex-1 text-base font-heading font-bold truncate">
@@ -384,7 +390,12 @@ export function CategoryMenu({
   // ── MOBILE DRAWER mode (full-screen from bottom nav) ────────────────────────
 
   return (
-    <div className="md:hidden fixed top-0 left-0 right-0 bottom-16 z-[55] bg-background animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col">
+    <div
+      className="md:hidden fixed top-0 left-0 right-0 z-[55] bg-background animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col"
+      style={{
+        bottom: "calc(4rem + var(--mobile-browser-bottom-inset, 0px))",
+      }}
+    >
       {/* Header */}
       <div className="flex items-center gap-2 px-4 border-b border-border shrink-0 h-14">
         {selectedCategory ? (

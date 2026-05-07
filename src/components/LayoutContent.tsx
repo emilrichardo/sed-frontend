@@ -36,10 +36,13 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
       >
         {children}
       </main>
-      {/* Mobile spacer: bottom nav height (4rem) + iOS safe area inset */}
+      {/* Mobile spacer: bottom nav + safe areas / in-app browser toolbar */}
       <div
         className="md:hidden shrink-0"
-        style={{ height: "calc(4rem + env(safe-area-inset-bottom))" }}
+        style={{
+          height:
+            "calc(4rem + env(safe-area-inset-bottom) + var(--mobile-browser-bottom-inset, 0px))",
+        }}
         aria-hidden="true"
       />
       <Footer />

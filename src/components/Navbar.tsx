@@ -255,6 +255,42 @@ export function Navbar() {
       .catch(() => {});
   }, []);
 
+  // Instagram/Facebook in-app browsers can cover fixed bottom UI with their
+  // own toolbar. Lift the mobile nav above any visual viewport obstruction.
+  useEffect(() => {
+    const root = document.documentElement;
+    const ua = navigator.userAgent.toLowerCase();
+    const isInAppBrowser =
+      /instagram|fban|fbav|fb_iab|fbios|line|twitter|tiktok/.test(ua);
+
+    const updateBottomInset = () => {
+      const viewport = window.visualViewport;
+      const measuredInset = viewport
+        ? Math.max(
+            0,
+            Math.round(window.innerHeight - viewport.height - viewport.offsetTop),
+          )
+        : 0;
+      const fallbackInset = isInAppBrowser ? 52 : 0;
+      root.style.setProperty(
+        "--mobile-browser-bottom-inset",
+        `${Math.max(measuredInset, fallbackInset)}px`,
+      );
+    };
+
+    updateBottomInset();
+    window.addEventListener("resize", updateBottomInset);
+    window.visualViewport?.addEventListener("resize", updateBottomInset);
+    window.visualViewport?.addEventListener("scroll", updateBottomInset);
+
+    return () => {
+      window.removeEventListener("resize", updateBottomInset);
+      window.visualViewport?.removeEventListener("resize", updateBottomInset);
+      window.visualViewport?.removeEventListener("scroll", updateBottomInset);
+      root.style.setProperty("--mobile-browser-bottom-inset", "0px");
+    };
+  }, []);
+
   // Close user menu on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -710,7 +746,10 @@ export function Navbar() {
       {/* ── Mobile Bottom Navigation ── */}
       <div
         className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{
+          bottom: "var(--mobile-browser-bottom-inset, 0px)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
       >
         <div className="flex items-center justify-around h-16 px-1">
           {/* 1. Inicio */}

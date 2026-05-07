@@ -34,6 +34,7 @@
   --ring: #262624;
 
   --radius: 0.5rem; /* Rounded corners */
+  --mobile-browser-bottom-inset: 0px;
 
   /* Sidebar specific (if used) */
   --sidebar: oklch(0.98 0 0);
