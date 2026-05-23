@@ -36,6 +36,10 @@ function getPdfUrl(bulletin: Boletin): string | null {
   return media.url ?? null;
 }
 
+function isRedaccionBoletin(act: ActoAdministrativo): boolean {
+  return act.identificador_de_acto?.toUpperCase().startsWith("REDACCION-");
+}
+
 export default function BulletinEntriesLoader({
   bulletin,
   resolvedPdfUrl,
@@ -91,12 +95,14 @@ export default function BulletinEntriesLoader({
       try {
         const data = await getActosAdministrativos({
           where: { boletin: bulletin.id },
-          limit: 100,
+          limit: 300,
           sort: "-createdAt",
           showDrafts: !!user,
         });
 
-        const sortedDocs = data.docs.sort((a, b) => {
+        const redacciones = data.docs.filter(isRedaccionBoletin);
+        const visibleDocs = redacciones.length > 0 ? redacciones : data.docs;
+        const sortedDocs = visibleDocs.sort((a, b) => {
           if (a.destacado === b.destacado) return 0;
           return a.destacado ? -1 : 1;
         });
@@ -105,6 +111,7 @@ export default function BulletinEntriesLoader({
 
         if (
           user &&
+          redacciones.length === 0 &&
           sortedDocs.length > 0 &&
           (bulletin.cant_actos === 0 ||
             bulletin.cant_actos !== sortedDocs.length)
@@ -179,6 +186,7 @@ export default function BulletinEntriesLoader({
   const featured = sorted.filter((a) => priority(a) >= 2); // destacado + alta + relevante
   const notable = user ? sorted.filter((a) => priority(a) === 1) : []; // título/resumen: solo con login
   const minor = user ? sorted.filter((a) => priority(a) === 0) : [];   // sin contenido: solo con login
+  const showingRedacciones = sorted.some(isRedaccionBoletin);
 
   const hasJournalistContent =
     featured.length > 0 ||
@@ -279,13 +287,17 @@ export default function BulletinEntriesLoader({
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Left: Journalistic acts */}
       <div className="w-full lg:flex-1 space-y-6">
-        {/* Aviso procesamiento IA */}
+        {/* Aviso editorial */}
         <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 rounded-lg px-4 py-3.5">
-          <span className="shrink-0 text-xl mt-0.5">🤖</span>
+          <span className="shrink-0 text-xl mt-0.5">{showingRedacciones ? "📰" : "🤖"}</span>
           <div>
-            <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-0.5">Procesado con inteligencia artificial</p>
+            <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-0.5">
+              {showingRedacciones ? "Redacción periodística" : "Procesado con inteligencia artificial"}
+            </p>
             <p className="text-sm text-blue-700/80 dark:text-blue-200/70 leading-relaxed">
-              Las versiones periodísticas de los actos administrativos son generadas de manera automática con IA. El contenido puede contener errores o inexactitudes.
+              {showingRedacciones
+                ? "Estas publicaciones reemplazan la vista de actos administrativos individuales para este boletín."
+                : "Las versiones periodísticas de los actos administrativos son generadas de manera automática con IA. El contenido puede contener errores o inexactitudes."}
             </p>
           </div>
         </div>

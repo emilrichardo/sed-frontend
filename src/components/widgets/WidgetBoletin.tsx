@@ -30,6 +30,10 @@ function fmt(date: string, opts: Intl.DateTimeFormatOptions) {
   return new Date(date).toLocaleDateString("es-AR", opts);
 }
 
+function isRedaccionBoletin(act: { identificador_de_acto?: string }): boolean {
+  return act.identificador_de_acto?.toUpperCase().startsWith("REDACCION-") ?? false;
+}
+
 // ── News Slider ────────────────────────────────────────────────────────────────
 
 function NewsSlider({
@@ -391,11 +395,14 @@ export default function WidgetBoletin({ variant = "sm" }: Props) {
         if (b && variant !== "xs" && variant !== "sm") {
           const bulletinId = encodeURIComponent(b.id);
           fetch(
-            `${API_URL}/actos-administrativos?where[and][0][boletin][equals]=${bulletinId}&where[and][1][titulo_periodistico][exists]=true&where[and][2][status][equals]=publicado&limit=30&depth=0&draft=false`,
+            `${API_URL}/actos-administrativos?where[and][0][boletin][equals]=${bulletinId}&where[and][1][titulo_periodistico][exists]=true&where[and][2][status][equals]=publicado&limit=100&sort=-createdAt&depth=0&draft=false`,
           )
             .then((r) => r.json())
             .then((actosData) => {
-              const filtered: Noticia[] = (actosData.docs ?? [])
+              const docs = actosData.docs ?? [];
+              const redacciones = docs.filter(isRedaccionBoletin);
+              const source = redacciones.length > 0 ? redacciones : docs;
+              const filtered: Noticia[] = source
                 .filter(
                   (a: { titulo_periodistico?: string }) =>
                     a.titulo_periodistico,
