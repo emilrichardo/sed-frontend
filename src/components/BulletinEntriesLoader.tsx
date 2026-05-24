@@ -12,6 +12,7 @@ import { Loader2, AlertCircle, Newspaper, Pencil, Check, X } from "lucide-react"
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 const BulletinPdfPreview = dynamic(() => import("./BulletinPdfPreview"), {
   ssr: false,
@@ -187,6 +188,9 @@ export default function BulletinEntriesLoader({
   const notable = user ? sorted.filter((a) => priority(a) === 1) : []; // título/resumen: solo con login
   const minor = user ? sorted.filter((a) => priority(a) === 0) : [];   // sin contenido: solo con login
   const showingRedacciones = sorted.some(isRedaccionBoletin);
+  const redaccionEntries = showingRedacciones
+    ? sorted.filter(isRedaccionBoletin)
+    : [];
 
   const hasJournalistContent =
     featured.length > 0 ||
@@ -280,6 +284,76 @@ export default function BulletinEntriesLoader({
           </div>
         </article>
       </Link>
+    );
+  };
+
+  const RedaccionArticle = ({ act, index }: { act: ActoAdministrativo; index: number }) => {
+    let slug = "";
+    if (typeof act.boletin === "string") slug = act.boletin;
+    else if (act.boletin && typeof act.boletin === "object") slug = act.boletin.slug || String(act.boletin.id);
+
+    const content = act.nota_periodistica || act.cuerpo || act.resumen;
+    const title =
+      act.titulo_periodistico ||
+      act.titulo ||
+      `Publicación editorial ${index + 1}`;
+
+    return (
+      <article className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+        <header className="space-y-4 border-b bg-gradient-to-br from-card via-card to-muted/35 p-6 md:p-8">
+          <div className="flex flex-wrap items-center gap-2">
+            {act.destacado && (
+              <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase text-primary-foreground">
+                Destacado
+              </span>
+            )}
+            <span className="rounded-full border bg-background px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {act.seccion || "Redacción periodística"}
+            </span>
+            {act.paginas && (
+              <span className="rounded-full border bg-background px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Págs. {act.paginas}
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-2xl md:text-3xl font-heading font-bold leading-tight text-foreground">
+              {title}
+            </h2>
+            {act.resumen && (
+              <p className="text-base md:text-lg leading-8 text-muted-foreground">
+                {act.resumen}
+              </p>
+            )}
+          </div>
+        </header>
+
+        <div className="p-6 md:p-8">
+          {content ? (
+            <MarkdownContent
+              content={content}
+              className="text-base md:text-[1.03rem] [&_p:first-child]:mt-0"
+            />
+          ) : (
+            <p className="text-sm italic text-muted-foreground">
+              Esta publicación todavía no tiene cuerpo editorial cargado.
+            </p>
+          )}
+
+          {slug && (
+            <div className="mt-8 border-t pt-5">
+              <Link
+                href={`/boletines/${slug}/${act.id}`}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline underline-offset-4"
+              >
+                Abrir publicación individual
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
+          )}
+        </div>
+      </article>
     );
   };
 
@@ -379,7 +453,7 @@ export default function BulletinEntriesLoader({
         <div className="flex items-center gap-2 pt-2">
           <Newspaper className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-2xl font-heading font-bold tracking-tight">
-            Versión Periodística
+            {showingRedacciones ? "Publicaciones del Boletín" : "Versión Periodística"}
           </h2>
         </div>
 
@@ -391,30 +465,40 @@ export default function BulletinEntriesLoader({
           </div>
         )}
 
-        {/* Featured / Relevant acts — full cards */}
-        {featured.length > 0 && (
-          <div className="grid grid-cols-1 gap-5">
-            {featured.map((act) => <ActCard key={act.id} act={act} prominent />)}
+        {showingRedacciones ? (
+          <div className="space-y-6">
+            {redaccionEntries.map((act, index) => (
+              <RedaccionArticle key={act.id} act={act} index={index} />
+            ))}
           </div>
-        )}
+        ) : (
+          <>
+            {/* Featured / Relevant acts — full cards */}
+            {featured.length > 0 && (
+              <div className="grid grid-cols-1 gap-5">
+                {featured.map((act) => <ActCard key={act.id} act={act} prominent />)}
+              </div>
+            )}
 
-        {/* Notable acts — full cards but smaller visual weight */}
-        {notable.length > 0 && (
-          <div className="grid grid-cols-1 gap-4">
-            {notable.map((act) => <ActCard key={act.id} act={act} prominent />)}
-          </div>
-        )}
+            {/* Notable acts — full cards but smaller visual weight */}
+            {notable.length > 0 && (
+              <div className="grid grid-cols-1 gap-4">
+                {notable.map((act) => <ActCard key={act.id} act={act} prominent />)}
+              </div>
+            )}
 
-        {/* Minor acts — compact list */}
-        {minor.length > 0 && (
-          <div className="mt-6">
-            <p className="text-xs text-muted-foreground/50 uppercase tracking-widest font-semibold mb-2 px-2">
-              Otros actos ({minor.length})
-            </p>
-            <div className="border rounded-lg divide-y divide-border/30 bg-muted/5">
-              {minor.map((act) => <ActCard key={act.id} act={act} prominent={false} />)}
-            </div>
-          </div>
+            {/* Minor acts — compact list */}
+            {minor.length > 0 && (
+              <div className="mt-6">
+                <p className="text-xs text-muted-foreground/50 uppercase tracking-widest font-semibold mb-2 px-2">
+                  Otros actos ({minor.length})
+                </p>
+                <div className="border rounded-lg divide-y divide-border/30 bg-muted/5">
+                  {minor.map((act) => <ActCard key={act.id} act={act} prominent={false} />)}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

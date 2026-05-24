@@ -6,7 +6,6 @@ import {
   Building2,
   Star,
   PenTool,
-  Info,
   Eye,
   EyeOff,
   Pencil,
@@ -18,6 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ProcessingButton } from "@/components/ProcessingButton";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 interface ActDetailViewProps {
   entry: ActoAdministrativo;
@@ -404,9 +404,10 @@ export function ActDetailView({ entry, backLink }: ActDetailViewProps) {
                   </div>
                 </div>
               ) : notaValue ? (
-                <div className="prose prose-neutral dark:prose-invert max-w-none font-sans leading-relaxed text-sm">
-                  <div className="whitespace-pre-wrap">{notaValue}</div>
-                </div>
+                <MarkdownContent
+                  content={notaValue}
+                  className="text-sm md:text-base [&_p:first-child]:mt-0"
+                />
               ) : (
                 <p className="text-sm text-muted-foreground/50 italic">Sin análisis — clic en el lápiz para agregar</p>
               )}

@@ -7,6 +7,7 @@ export async function generateStaticParams() {
 }
 import Link from "next/link";
 import { ChevronLeft, Calendar, Building2, FileTextIcon } from "lucide-react";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 export default async function EntryDetailPage({
   params,
@@ -125,13 +126,16 @@ export default async function EntryDetailPage({
             Cuerpo / Texto Completo
           </h2>
           <div className="prose prose-sm md:prose-base max-w-none bg-card p-6 md:p-8 border rounded-lg shadow-sm">
-            <div className="whitespace-pre-wrap font-serif leading-relaxed">
-              {entry.cuerpo || (
-                <span className="text-muted-foreground italic font-sans">
-                  Sin contenido de texto completo.
-                </span>
-              )}
-            </div>
+            {entry.cuerpo ? (
+              <MarkdownContent
+                content={entry.cuerpo}
+                className="font-serif [&_p:first-child]:mt-0"
+              />
+            ) : (
+              <span className="text-muted-foreground italic font-sans">
+                Sin contenido de texto completo.
+              </span>
+            )}
           </div>
         </section>
       </article>
