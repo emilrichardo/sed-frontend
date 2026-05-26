@@ -41,6 +41,37 @@ function isRedaccionBoletin(act: ActoAdministrativo): boolean {
   return act.identificador_de_acto?.toUpperCase().startsWith("REDACCION-");
 }
 
+function stripRedaccionIntro(content: string): string {
+  const lines = content.trim().split(/\r?\n/);
+  let index = 0;
+
+  while (lines[index]?.trim() === "") index += 1;
+
+  // La tarjeta ya muestra el título y la bajada; evitamos repetirlos dentro del cuerpo.
+  if (/^#{1,3}\s+/.test(lines[index]?.trim() || "")) {
+    index += 1;
+  }
+
+  while (lines[index]?.trim() === "") index += 1;
+
+  if (/^\*[^*].*\*$/.test(lines[index]?.trim() || "")) {
+    index += 1;
+  }
+
+  while (lines[index]?.trim() === "") index += 1;
+
+  if (/^\*\*¿?qué pasó hoy\??\*\*/i.test(lines[index]?.trim() || "")) {
+    index += 1;
+    while (index < lines.length && lines[index]?.trim() !== "") {
+      index += 1;
+    }
+  }
+
+  while (lines[index]?.trim() === "") index += 1;
+
+  return lines.slice(index).join("\n").trim() || content.trim();
+}
+
 export default function BulletinEntriesLoader({
   bulletin,
   resolvedPdfUrl,
@@ -293,6 +324,7 @@ export default function BulletinEntriesLoader({
     else if (act.boletin && typeof act.boletin === "object") slug = act.boletin.slug || String(act.boletin.id);
 
     const content = act.nota_periodistica || act.cuerpo || act.resumen;
+    const articleBody = content ? stripRedaccionIntro(content) : null;
     const title =
       act.titulo_periodistico ||
       act.titulo ||
@@ -330,9 +362,9 @@ export default function BulletinEntriesLoader({
         </header>
 
         <div className="p-6 md:p-8">
-          {content ? (
+          {articleBody ? (
             <MarkdownContent
-              content={content}
+              content={articleBody}
               className="text-base md:text-[1.03rem] [&_p:first-child]:mt-0"
             />
           ) : (
