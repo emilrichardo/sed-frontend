@@ -243,11 +243,7 @@ export default function BulletinEntriesLoader({
   const minor = user ? sorted.filter((a) => priority(a) === 0) : [];   // sin contenido: solo con login
   const showingRedacciones = sorted.some(isRedaccionBoletin);
   const redaccionEntries = showingRedacciones
-    ? sorted.filter(
-        (act) =>
-          isRedaccionBoletin(act) &&
-          !duplicatesBulletinHeader(act, tituloValue, resumenValue),
-      )
+    ? sorted.filter(isRedaccionBoletin)
     : [];
 
   const hasJournalistContent =
@@ -352,6 +348,7 @@ export default function BulletinEntriesLoader({
 
     const content = act.nota_periodistica || act.cuerpo || act.resumen;
     const articleBody = content ? stripRedaccionIntro(content) : null;
+    const hideRepeatedIntro = duplicatesBulletinHeader(act, tituloValue, resumenValue);
     const title =
       act.titulo_periodistico ||
       act.titulo ||
@@ -359,7 +356,12 @@ export default function BulletinEntriesLoader({
 
     return (
       <article className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-        <header className="space-y-4 border-b bg-gradient-to-br from-card via-card to-muted/35 p-6 md:p-8">
+        <header
+          className={cn(
+            "space-y-4 bg-gradient-to-br from-card via-card to-muted/35 p-6 md:p-8",
+            !hideRepeatedIntro && "border-b",
+          )}
+        >
           <div className="flex flex-wrap items-center gap-2">
             {act.destacado && (
               <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase text-primary-foreground">
@@ -376,16 +378,18 @@ export default function BulletinEntriesLoader({
             )}
           </div>
 
-          <div className="space-y-3">
-            <h2 className="text-2xl md:text-3xl font-heading font-bold leading-tight text-foreground">
-              {title}
-            </h2>
-            {act.resumen && (
-              <p className="text-base md:text-lg leading-8 text-muted-foreground">
-                {act.resumen}
-              </p>
-            )}
-          </div>
+          {!hideRepeatedIntro && (
+            <div className="space-y-3">
+              <h2 className="text-2xl md:text-3xl font-heading font-bold leading-tight text-foreground">
+                {title}
+              </h2>
+              {act.resumen && (
+                <p className="text-base md:text-lg leading-8 text-muted-foreground">
+                  {act.resumen}
+                </p>
+              )}
+            </div>
+          )}
         </header>
 
         <div className="p-6 md:p-8">
@@ -527,13 +531,11 @@ export default function BulletinEntriesLoader({
         )}
 
         {showingRedacciones ? (
-          redaccionEntries.length > 0 && (
           <div className="space-y-6">
             {redaccionEntries.map((act, index) => (
               <RedaccionArticle key={act.id} act={act} index={index} />
             ))}
           </div>
-          )
         ) : (
           <>
             {/* Featured / Relevant acts — full cards */}
