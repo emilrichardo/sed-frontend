@@ -41,6 +41,29 @@ function isRedaccionBoletin(act: ActoAdministrativo): boolean {
   return act.identificador_de_acto?.toUpperCase().startsWith("REDACCION-");
 }
 
+function normalizeEditorialText(value?: string | null): string {
+  return (value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getActTitle(act: ActoAdministrativo): string {
+  return act.titulo_periodistico || act.titulo || act.identificador_de_acto || "";
+}
+
+function duplicatesBulletinHeader(
+  act: ActoAdministrativo,
+  title: string,
+  summary: string,
+): boolean {
+  const headerTitle = normalizeEditorialText(title);
+  if (!headerTitle || normalizeEditorialText(getActTitle(act)) !== headerTitle) {
+    return false;
+  }
+
+  const headerSummary = normalizeEditorialText(summary);
+  const actSummary = normalizeEditorialText(act.resumen);
+  return !headerSummary || !actSummary || headerSummary === actSummary;
+}
+
 function stripRedaccionIntro(content: string): string {
   const lines = content.trim().split(/\r?\n/);
   let index = 0;
@@ -220,7 +243,11 @@ export default function BulletinEntriesLoader({
   const minor = user ? sorted.filter((a) => priority(a) === 0) : [];   // sin contenido: solo con login
   const showingRedacciones = sorted.some(isRedaccionBoletin);
   const redaccionEntries = showingRedacciones
-    ? sorted.filter(isRedaccionBoletin)
+    ? sorted.filter(
+        (act) =>
+          isRedaccionBoletin(act) &&
+          !duplicatesBulletinHeader(act, tituloValue, resumenValue),
+      )
     : [];
 
   const hasJournalistContent =
@@ -482,12 +509,14 @@ export default function BulletinEntriesLoader({
           )
         )}
 
-        <div className="flex items-center gap-2 pt-2">
-          <Newspaper className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-2xl font-heading font-bold tracking-tight">
-            {showingRedacciones ? "Publicaciones del Boletín" : "Versión Periodística"}
-          </h2>
-        </div>
+        {(!showingRedacciones || redaccionEntries.length > 0) && (
+          <div className="flex items-center gap-2 pt-2">
+            <Newspaper className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-2xl font-heading font-bold tracking-tight">
+              {showingRedacciones ? "Publicaciones del Boletín" : "Versión Periodística"}
+            </h2>
+          </div>
+        )}
 
         {/* Banner informativo si hay actos en borrador */}
         {debugInfo && debugInfo.borradores > 0 && !user && (
@@ -498,11 +527,13 @@ export default function BulletinEntriesLoader({
         )}
 
         {showingRedacciones ? (
+          redaccionEntries.length > 0 && (
           <div className="space-y-6">
             {redaccionEntries.map((act, index) => (
               <RedaccionArticle key={act.id} act={act} index={index} />
             ))}
           </div>
+          )
         ) : (
           <>
             {/* Featured / Relevant acts — full cards */}
