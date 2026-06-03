@@ -245,8 +245,12 @@ export default function BulletinEntriesLoader({
   const redaccionEntries = showingRedacciones
     ? sorted.filter(isRedaccionBoletin)
     : [];
+  const primaryRedaccion = redaccionEntries[0] || null;
+  const displayTitle = primaryRedaccion ? getActTitle(primaryRedaccion) : tituloValue;
+  const displaySummary = primaryRedaccion ? primaryRedaccion.resumen || "" : resumenValue;
 
   const hasJournalistContent =
+    redaccionEntries.length > 0 ||
     featured.length > 0 ||
     notable.length > 0 ||
     !!bulletin.titulo_periodistico ||
@@ -348,7 +352,7 @@ export default function BulletinEntriesLoader({
 
     const content = act.nota_periodistica || act.cuerpo || act.resumen;
     const articleBody = content ? stripRedaccionIntro(content) : null;
-    const hideRepeatedIntro = duplicatesBulletinHeader(act, tituloValue, resumenValue);
+    const hideRepeatedIntro = duplicatesBulletinHeader(act, displayTitle, displaySummary);
     const title =
       act.titulo_periodistico ||
       act.titulo ||
@@ -440,7 +444,7 @@ export default function BulletinEntriesLoader({
         </div>
 
         {/* Título del boletín */}
-        {(tituloValue || isEditing) && (
+        {(displayTitle || (isEditing && !primaryRedaccion)) && (
           isEditing && isEditingTitulo ? (
             <div className="flex flex-col gap-2">
               <textarea
@@ -462,12 +466,12 @@ export default function BulletinEntriesLoader({
             </div>
           ) : (
             <div className="flex items-start gap-2">
-              {tituloValue ? (
-                <h1 className="text-3xl md:text-4xl font-heading font-bold leading-tight flex-1">{tituloValue}</h1>
+              {displayTitle ? (
+                <h1 className="text-3xl md:text-4xl font-heading font-bold leading-tight flex-1">{displayTitle}</h1>
               ) : (
                 <p className="text-base text-muted-foreground/50 italic flex-1">Sin título — clic en el lápiz para agregar</p>
               )}
-              {isEditing && (
+              {isEditing && !primaryRedaccion && (
                 <button onClick={() => setIsEditingTitulo(true)} className="mt-1 p-1.5 rounded hover:bg-muted border border-dashed border-muted-foreground/40 shrink-0" title="Editar título">
                   <Pencil className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -477,7 +481,7 @@ export default function BulletinEntriesLoader({
         )}
 
         {/* Resumen del boletín */}
-        {(resumenValue || isEditing) && (
+        {(displaySummary || (isEditing && !primaryRedaccion)) && (
           isEditing && isEditingResumen ? (
             <div className="flex flex-col gap-2">
               <textarea
@@ -499,12 +503,12 @@ export default function BulletinEntriesLoader({
             </div>
           ) : (
             <div className="flex items-start gap-2">
-              {resumenValue ? (
-                <p className="text-base text-muted-foreground leading-relaxed flex-1">{resumenValue}</p>
+              {displaySummary ? (
+                <p className="text-base text-muted-foreground leading-relaxed flex-1">{displaySummary}</p>
               ) : (
                 <p className="text-base text-muted-foreground/50 italic flex-1">Sin resumen — clic en el lápiz para agregar</p>
               )}
-              {isEditing && (
+              {isEditing && !primaryRedaccion && (
                 <button onClick={() => setIsEditingResumen(true)} className="mt-1 p-1.5 rounded hover:bg-muted border border-dashed border-muted-foreground/40 shrink-0" title="Editar resumen">
                   <Pencil className="h-4 w-4 text-muted-foreground" />
                 </button>
