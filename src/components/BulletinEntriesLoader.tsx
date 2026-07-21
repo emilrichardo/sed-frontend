@@ -156,7 +156,10 @@ export default function BulletinEntriesLoader({
         });
 
         const redacciones = data.docs.filter(isRedaccionBoletin);
-        const visibleDocs = redacciones.length > 0 ? redacciones : data.docs;
+        // La web pública solo publica redacciones aprobadas por el flujo
+        // editorial. Los actos de IA quedan disponibles para revisión cuando
+        // hay sesión, pero nunca reemplazan al PDF para visitantes.
+        const visibleDocs = redacciones.length > 0 ? redacciones : user ? data.docs : [];
         const sortedDocs = visibleDocs.sort((a, b) => {
           if (a.destacado === b.destacado) return 0;
           return a.destacado ? -1 : 1;
@@ -251,10 +254,11 @@ export default function BulletinEntriesLoader({
 
   const hasJournalistContent =
     redaccionEntries.length > 0 ||
-    featured.length > 0 ||
-    notable.length > 0 ||
-    !!bulletin.titulo_periodistico ||
-    !!bulletin.resumen;
+    (!!user &&
+      (featured.length > 0 ||
+        notable.length > 0 ||
+        !!bulletin.titulo_periodistico ||
+        !!bulletin.resumen));
 
   // When no journalistic content but there is a PDF: show PDF centered full-width
   if (!hasJournalistContent && pdfUrl) {
