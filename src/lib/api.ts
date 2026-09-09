@@ -819,6 +819,58 @@ export async function getReportItem(slug: string): Promise<ReportItem | null> {
 
 // --- Official Bulletin API Functions ---
 
+/**
+ * Normaliza el valor de un campo de relación de Payload, que según el
+ * `depth` de la query puede venir como ID crudo (string o number) o como el
+ * documento ya populado ({ id, ... }).
+ */
+function relationId(
+  value: string | number | { id: string | number } | null | undefined,
+): string | number | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === "object") return value.id;
+  return value;
+}
+
+/**
+ * El título/resumen periodístico "real" de un boletín no siempre vive en el
+ * documento Boletin: normalmente lo trae el acto-administrativo de redacción
+ * (identificador_de_acto "REDACCION-*") relacionado por `boletin`
+ * (ver isRedaccionBoletin en BulletinEntriesLoader.tsx). Para que el buscador
+ * del archivo encuentre boletines por ese contenido generado, primero
+ * resolvemos qué boletines tienen una redacción que matchea el término.
+ */
+async function findBoletinIdsByRedaccionContent(term: string): Promise<string[]> {
+  try {
+    const encoded = encodeURIComponent(term);
+    const queryString =
+      `?limit=50&depth=0&draft=false` +
+      `&where[and][0][identificador_de_acto][like]=${encodeURIComponent("REDACCION-")}` +
+      `&where[and][1][status][equals]=publicado` +
+      `&where[or][0][titulo_periodistico][like]=${encoded}` +
+      `&where[or][1][resumen][like]=${encoded}`;
+
+    const res = await apiFetch(`/actos-administrativos${queryString}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const data: PayloadResponse<ActoAdministrativo> = await res.json();
+
+    return Array.from(
+      new Set(
+        data.docs
+          .filter((a) => a.identificador_de_acto?.toUpperCase().startsWith("REDACCION-"))
+          .map((a) => relationId(a.boletin))
+          .filter((id): id is string | number => !!id)
+          .map(String),
+      ),
+    );
+  } catch (error) {
+    console.error("[findBoletinIdsByRedaccionContent] Error:", error);
+    return [];
+  }
+}
+
 export async function getBulletins(
   params: {
     page?: number;
@@ -831,12 +883,37 @@ export async function getBulletins(
   let url = `${API_URL}/boletines?page=${page}&limit=${limit}&sort=${sort}&depth=2&draft=false`;
 
   if (where) {
+    const searchTerm = where.search ? String(where.search) : "";
+    const redaccionBoletinIds = searchTerm
+      ? await findBoletinIdsByRedaccionContent(searchTerm)
+      : [];
+
     Object.entries(where).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
         if (key === "fecha_desde") {
           url += `&where[fecha_publicacion][greater_than_equal]=${value}`;
         } else if (key === "fecha_hasta") {
           url += `&where[fecha_publicacion][less_than_equal]=${value}`;
+        } else if (key === "search") {
+          // Busca tanto por número de boletín como por el contenido generado:
+          // título/resumen periodístico y texto crudo del boletín, más los
+          // boletines cuya redacción periodística (colección aparte) matchea.
+          const term = String(value);
+          let i = 0;
+          if (!isNaN(Number(term))) {
+            url += `&where[or][${i}][numero][equals]=${encodeURIComponent(term)}`;
+            i++;
+          }
+          url += `&where[or][${i}][titulo_periodistico][like]=${encodeURIComponent(term)}`;
+          i++;
+          url += `&where[or][${i}][resumen][like]=${encodeURIComponent(term)}`;
+          i++;
+          url += `&where[or][${i}][raw_text][like]=${encodeURIComponent(term)}`;
+          i++;
+          redaccionBoletinIds.forEach((id) => {
+            url += `&where[or][${i}][id][equals]=${encodeURIComponent(id)}`;
+            i++;
+          });
         } else if (key !== "search") {
           url += `&where[${key}][equals]=${value}`;
         }
@@ -1020,6 +1097,56 @@ export async function getActosAdministrativos(
     throw new Error(`Failed to fetch actos administrativos: ${res.statusText}`);
   }
   return res.json();
+}
+
+export interface RedaccionResumen {
+  titulo_periodistico?: string;
+  resumen?: string;
+}
+
+/**
+ * La "redacción periodística" de un boletín no vive en el documento Boletin
+ * sino en un acto-administrativo con identificador_de_acto "REDACCION-*"
+ * relacionado por `boletin` (ver isRedaccionBoletin en BulletinEntriesLoader).
+ * Trae, en un solo request, el título/resumen periodístico publicado para
+ * cada boletín del lote — usado para mostrarlo en el listado del archivo.
+ */
+export async function getRedaccionesForBoletines(
+  boletinIds: (string | number)[],
+): Promise<Record<string, RedaccionResumen>> {
+  const uniqueIds = Array.from(new Set(boletinIds.map(String))).filter(Boolean);
+  if (uniqueIds.length === 0) return {};
+
+  const queryString =
+    `?limit=200&depth=0&draft=false&sort=-destacado` +
+    `&where[and][0][boletin][in]=${encodeURIComponent(uniqueIds.join(","))}` +
+    `&where[and][1][identificador_de_acto][like]=${encodeURIComponent("REDACCION-")}` +
+    `&where[and][2][status][equals]=publicado`;
+
+  try {
+    const res = await apiFetch(`/actos-administrativos${queryString}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return {};
+    const data: PayloadResponse<ActoAdministrativo> = await res.json();
+
+    const map: Record<string, RedaccionResumen> = {};
+    for (const act of data.docs) {
+      if (!act.identificador_de_acto?.toUpperCase().startsWith("REDACCION-")) {
+        continue;
+      }
+      const boletinId = relationId(act.boletin);
+      if (!boletinId || map[String(boletinId)]) continue; // primera = destacada
+      map[String(boletinId)] = {
+        titulo_periodistico: act.titulo_periodistico || act.titulo,
+        resumen: act.resumen,
+      };
+    }
+    return map;
+  } catch (error) {
+    console.error("[getRedaccionesForBoletines] Error:", error);
+    return {};
+  }
 }
 
 export async function getActoByIdentifier(

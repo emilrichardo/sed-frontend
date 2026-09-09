@@ -60,7 +60,7 @@ export default function BulletinFilters({
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Número, referencia..."
+            placeholder="Número, título, resumen..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 p-2 h-10 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 ring-primary/20 font-sans"

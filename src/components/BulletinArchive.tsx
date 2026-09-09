@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import {
   Boletin,
   getBulletins,
+  getRedaccionesForBoletines,
+  RedaccionResumen,
   PayloadResponse,
   Procesamiento,
   getAgents,
@@ -44,6 +46,9 @@ export default function BulletinArchive({
 }: BulletinArchiveProps) {
   const [bulletins, setBulletins] = useState<PayloadResponse<Boletin> | null>(
     null,
+  );
+  const [redacciones, setRedacciones] = useState<Record<string, RedaccionResumen>>(
+    {},
   );
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "list">("table");
@@ -140,19 +145,13 @@ export default function BulletinArchive({
       await deleteBulletin(id);
       // Refresh list
       setLoading(true);
-      const queryFilters = { ...filters };
-      const search = queryFilters.search as string;
-      delete queryFilters.search;
-
       const data = await getBulletins({
         page,
         limit: 10,
-        where: {
-          ...queryFilters,
-          ...(search ? { numero: search } : {}),
-        },
+        where: filters,
       });
       setBulletins(data);
+      setRedacciones(await getRedaccionesForBoletines(data.docs.map((b) => b.id)));
     } catch (error) {
       console.error("Error deleting bulletin:", error);
       alert("Error eliminando el boletín.");
@@ -165,19 +164,13 @@ export default function BulletinArchive({
     async function loadBulletins() {
       setLoading(true);
       try {
-        const queryFilters = { ...filters };
-        const search = queryFilters.search as string;
-        delete queryFilters.search;
-
         const data = await getBulletins({
           page,
           limit: 10,
-          where: {
-            ...queryFilters,
-            ...(search ? { numero: search } : {}),
-          },
+          where: filters,
         });
         setBulletins(data);
+        setRedacciones(await getRedaccionesForBoletines(data.docs.map((b) => b.id)));
       } catch (error) {
         console.error("Error loading bulletins:", error);
       } finally {
@@ -205,6 +198,17 @@ export default function BulletinArchive({
       newSelected.add(id);
     }
     setSelectedIds(newSelected);
+  };
+
+  // La redacción periodística (colección de actos-administrativos) prevalece
+  // sobre los campos titulo_periodistico/resumen del propio Boletin, igual
+  // que en la página de detalle (BulletinEntriesLoader).
+  const getTituloResumen = (b: Boletin) => {
+    const redaccion = redacciones[String(b.id)];
+    return {
+      titulo: redaccion?.titulo_periodistico || b.titulo_periodistico || "",
+      resumen: redaccion?.resumen || b.resumen || "",
+    };
   };
 
   const formatDate = (dateString: string) => {
@@ -376,6 +380,7 @@ export default function BulletinArchive({
                         </th>
                       )}
                       <th className="px-4 py-3">Número</th>
+                      <th className="px-4 py-3">Título / Resumen</th>
                       <th className="px-4 py-3">Fecha</th>
                       <th className="px-4 py-3">Año Edición</th>
                       <th className="px-4 py-3">Páginas</th>
@@ -416,6 +421,7 @@ export default function BulletinArchive({
                         currentStatus === "cancelado";
 
                       const isExplicitlyCompleted = (b.cant_actos || 0) > 0;
+                      const { titulo, resumen } = getTituloResumen(b);
 
                       return (
                         <tr
@@ -448,6 +454,25 @@ export default function BulletinArchive({
                             </td>
                           )}
                           <td className="px-4 py-3 font-medium">{b.numero}</td>
+                          <td className="px-4 py-3 max-w-xs">
+                            {titulo ? (
+                              <div className="space-y-1">
+                                <p className="font-medium text-sm line-clamp-1">
+                                  {titulo}
+                                </p>
+                                {resumen && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {resumen}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground italic">
+                                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                                Sin redacción periodística
+                              </span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             {formatDate(b.fecha_publicacion)}
                           </td>
@@ -534,6 +559,7 @@ export default function BulletinArchive({
                     currentStatus === "error" || currentStatus === "cancelado";
 
                   const isExplicitlyCompleted = (b.cant_actos || 0) > 0;
+                  const { titulo, resumen } = getTituloResumen(b);
 
                   return (
                     <div
@@ -571,6 +597,24 @@ export default function BulletinArchive({
                           />
                         )}
                       </div>
+
+                      {titulo ? (
+                        <div className="space-y-1">
+                          <p className="font-medium text-sm line-clamp-2">
+                            {titulo}
+                          </p>
+                          {resumen && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {resumen}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground italic">
+                          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                          Sin redacción periodística
+                        </span>
+                      )}
 
                       <div className="flex gap-4 text-sm text-muted-foreground border-y border-dashed border-gray-300 py-2">
                         <div className="flex flex-col">
@@ -646,7 +690,9 @@ export default function BulletinArchive({
             </>
           ) : (
             <div className="grid gap-4">
-              {bulletins?.docs.map((b) => (
+              {bulletins?.docs.map((b) => {
+                const { titulo, resumen } = getTituloResumen(b);
+                return (
                 <Link
                   key={b.id}
                   href={`/boletines/${b.slug}`}
@@ -665,11 +711,29 @@ export default function BulletinArchive({
                       {b.año_edicion}
                     </span>
                   </div>
+                  {titulo ? (
+                    <div className="mt-3 space-y-1">
+                      <p className="font-medium text-sm">
+                        {titulo}
+                      </p>
+                      {resumen && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {resumen}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground italic">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                      Sin redacción periodística
+                    </span>
+                  )}
                   <div className="mt-4 flex gap-4 text-sm text-muted-foreground">
                     <span>{b.cantidad_paginas} páginas</span>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
 
