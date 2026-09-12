@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookOpen, ArrowUpRight, Newspaper } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import { WhatsAppIcon, WHATSAPP_CHANNEL_URL } from "@/components/WhatsAppIcon";
 
 interface Boletin {
   id: string;
@@ -188,59 +189,76 @@ function VariantSM({ b }: { b: Boletin }) {
 function VariantMD({ b, noticias }: { b: Boletin; noticias: Noticia[] }) {
   const hasNews = noticias.length > 0;
   return (
-    <Link
-      href={`/boletines/${b.slug}`}
-      className="group bg-card border border-border rounded-xl overflow-hidden hover:bg-muted/50 transition-colors"
-    >
-      <div className="px-4 py-3 flex items-center justify-between border-b border-border/50">
-        <div className="flex items-center gap-2 min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold shrink-0">
-            Boletín de hoy
-          </p>
-          {hasNews && (
-            <>
-              <span className="text-muted-foreground/40 shrink-0">·</span>
-              <p className="text-xs font-bold font-mono tabular-nums text-muted-foreground shrink-0">
-                Nº {b.numero}
-              </p>
-            </>
-          )}
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <Link
+        href={`/boletines/${b.slug}`}
+        className="group block hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+      >
+        <div className="px-4 py-3 flex items-center justify-between border-b border-border/50">
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold shrink-0">
+              Boletín de hoy
+            </p>
+            {hasNews && (
+              <>
+                <span className="text-muted-foreground/40 shrink-0">·</span>
+                <p className="text-xs font-bold font-mono tabular-nums text-muted-foreground shrink-0">
+                  Nº {b.numero}
+                </p>
+              </>
+            )}
+          </div>
+          <Newspaper className="h-4 w-4 text-muted-foreground/40 shrink-0" />
         </div>
-        <Newspaper className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-      </div>
 
-      {hasNews ? (
-        <NewsSlider noticias={noticias} prominent />
-      ) : (
-        <div className="px-4 py-4">
-          <p className="text-2xl font-bold font-mono tabular-nums">
-            Nº {b.numero}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {fmt(b.fecha_publicacion, {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-        </div>
-      )}
+        {hasNews ? (
+          <NewsSlider noticias={noticias} prominent />
+        ) : (
+          <div className="px-4 py-4">
+            <p className="text-2xl font-bold font-mono tabular-nums">
+              Nº {b.numero}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {fmt(b.fecha_publicacion, {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+        )}
 
-      <div className="px-4 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <BookOpen className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {b.cantidad_paginas} páginas
-          </span>
+        <div className="px-4 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <BookOpen className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {b.cantidad_paginas} páginas
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold font-mono rounded-full border border-primary">
+              {b.año_edicion}
+            </span>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold font-mono rounded-full border border-primary">
-            {b.año_edicion}
+      </Link>
+      <a
+        href={WHATSAPP_CHANNEL_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 border-t border-border/50 px-4 py-3 text-sm hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+      >
+        <WhatsAppIcon className="h-5 w-5 shrink-0 text-primary" />
+        <span className="min-w-0">
+          <span className="block font-semibold">Seguí nuestro canal de WhatsApp</span>
+          <span className="block text-xs text-muted-foreground">
+            Donde recibirás el boletín diariamente.
           </span>
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-        </div>
-      </div>
-    </Link>
+        </span>
+        <ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+      </a>
+    </div>
   );
 }
 

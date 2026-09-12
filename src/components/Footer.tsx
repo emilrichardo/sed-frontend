@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Instagram, Twitter, Linkedin, Mail, MapPin } from "lucide-react";
+import { Instagram, Mail, MapPin } from "lucide-react";
+import { WhatsAppIcon, WHATSAPP_CHANNEL_URL } from "@/components/WhatsAppIcon";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -30,6 +31,15 @@ export function Footer() {
                 aria-label="Instagram"
               >
                 <Instagram className="h-4 w-4" />
+              </a>
+              <a
+                href={WHATSAPP_CHANNEL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Canal de WhatsApp"
+              >
+                <WhatsAppIcon className="h-4 w-4" />
               </a>
             </div>
           </div>
@@ -96,8 +106,26 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Mobile: only copyright */}
+      {/* Mobile: social links and copyright */}
       <div className="md:hidden px-4 py-4 text-center">
+        <div className="mb-3 flex items-center justify-center gap-4">
+          <a
+            href="https://www.instagram.com/santiagoendatos"
+            className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-all"
+            aria-label="Instagram"
+          >
+            <Instagram className="h-4 w-4" />
+          </a>
+          <a
+            href={WHATSAPP_CHANNEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Canal de WhatsApp"
+          >
+            <WhatsAppIcon className="h-4 w-4" />
+          </a>
+        </div>
         <p className="text-xs text-muted-foreground">
           © {currentYear} Santiago en Datos. Todos los derechos reservados.
         </p>
