@@ -172,6 +172,11 @@ const RESIZE_SCRIPT = `<script>
       setTimeout(function() { notifyHeight(true); }, 500);
       setTimeout(function() { notifyHeight(true); }, 1000);
     });
+
+    // Recheck when the iframe viewport changes, including device rotation.
+    window.addEventListener('resize', function() {
+      notifyHeight(false);
+    });
     
     // Cleanup en unload
     window.addEventListener('beforeunload', function() {
