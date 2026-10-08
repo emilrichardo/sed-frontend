@@ -223,7 +223,12 @@ const getDataKey = (columns: any[], headerNameOrId?: string) => {
   return col ? col.id : null;
 };
 
-const prepareData = (rows: any[], columns: any[], xKey?: string) => {
+const prepareData = (
+  rows: any[],
+  columns: any[],
+  xKey?: string,
+  respectColumnTypes = false,
+) => {
   return rows.map((row) => {
     const newRow: any = {};
     columns.forEach((col) => {
@@ -234,9 +239,9 @@ const prepareData = (rows: any[], columns: any[], xKey?: string) => {
         val = row[col.id];
       }
 
-      // No convertir a número la columna del eje X (categorías)
+      // Tables preserve text columns; charts preserve their category axis.
       const isXColumn = col.id === xKey || col.header === xKey;
-      if (isXColumn) {
+      if (respectColumnTypes ? col.type !== "number" : isXColumn) {
         newRow[col.id] = val;
         if (col.header) {
           newRow[col.header] = val;
@@ -245,7 +250,9 @@ const prepareData = (rows: any[], columns: any[], xKey?: string) => {
       }
 
       let numVal = NaN;
-      if (val) {
+      if (typeof val === "number") {
+        numVal = val;
+      } else if (val) {
         const strVal = val.toString().trim();
         let cleanStr = strVal.replace(/[^0-9.,-]/g, "");
         cleanStr = cleanStr.replace(/\./g, "");
@@ -299,7 +306,7 @@ const AdvancedTableChart = ({
         },
         cell: ({ getValue }: any) => {
           const val = getValue();
-          return typeof val === "number"
+          return col.type === "number" && typeof val === "number"
             ? val.toLocaleString("es-AR")
             : String(val ?? "");
         },
@@ -1039,8 +1046,9 @@ export const ChartRenderer = ({
   data: any[];
   columns: any[];
 }) => {
+  const [chartWidth, setChartWidth] = useState<number | null>(null);
   const xKey = getDataKey(columns, config?.eje_principal) || columns[0]?.id;
-  const chartData = prepareData(rawData, columns, xKey);
+  const chartData = prepareData(rawData, columns, xKey, type === "advanced_table");
 
   let colors = getColors(config?.colores);
   if (
@@ -1155,26 +1163,41 @@ export const ChartRenderer = ({
 
       case "column_chart": {
         const manyCategories = chartData.length > 8;
+        const horizontal = chartWidth !== null && chartWidth < 640;
         return (
-          <ResponsiveContainer width="100%" height={manyCategories ? 460 : 400}>
+          <ResponsiveContainer
+            width="100%"
+            height={horizontal ? Math.max(chartData.length * 48 + 80, 320) : manyCategories ? 460 : 400}
+            onResize={(width) => setChartWidth(width)}
+          >
             <BarChart
               {...commonProps}
+              layout={horizontal ? "vertical" : "horizontal"}
               margin={{
                 top: 20,
-                right: 30,
-                left: 20,
-                bottom: manyCategories ? 80 : 20,
+                right: horizontal ? 10 : 30,
+                left: horizontal ? 0 : 20,
+                bottom: horizontal ? 5 : manyCategories ? 80 : 20,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey={xKey}
-                tick={{ fontSize: manyCategories ? 10 : 12 }}
-                angle={manyCategories ? -40 : 0}
-                textAnchor={manyCategories ? "end" : "middle"}
-                interval={0}
-              />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" vertical={horizontal} horizontal={!horizontal} />
+              {horizontal ? (
+                <>
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis dataKey={xKey} type="category" width={140} tick={{ fontSize: 11 }} interval={0} />
+                </>
+              ) : (
+                <>
+                  <XAxis
+                    dataKey={xKey}
+                    tick={{ fontSize: manyCategories ? 10 : 12 }}
+                    angle={manyCategories ? -40 : 0}
+                    textAnchor={manyCategories ? "end" : "middle"}
+                    interval={0}
+                  />
+                  <YAxis />
+                </>
+              )}
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               {hasMultipleYKeys ? (
@@ -1183,7 +1206,7 @@ export const ChartRenderer = ({
                     key={yk}
                     dataKey={yk}
                     name={getColumnHeader(yk)}
-                    radius={[4, 4, 0, 0]}
+                    radius={horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
                     fill={
                       normalizeName(getColumnHeader(yk)).includes(
                         "santiago del estero",
@@ -1198,7 +1221,7 @@ export const ChartRenderer = ({
                 <Bar
                   dataKey={yKey}
                   name={yLabel}
-                  radius={[4, 4, 0, 0]}
+                  radius={horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
                   fill={getItemColor(yLabel, 0, colors)}
                   barSize={20}
                 >
@@ -1215,7 +1238,7 @@ export const ChartRenderer = ({
                 <Bar
                   dataKey={secondaryKey}
                   name={getColumnHeader(secondaryKey)}
-                  radius={[4, 4, 0, 0]}
+                  radius={horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
                   fill={getItemColor(getColumnHeader(secondaryKey), 1, colors)}
                   barSize={20}
                 />

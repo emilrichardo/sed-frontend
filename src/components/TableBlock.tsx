@@ -1497,6 +1497,7 @@ ${currentMarkup}
                   </button>
                 </div>
               )}
+              <div className="w-full overflow-x-auto">
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-muted/50 border-b">
@@ -1505,7 +1506,7 @@ ${currentMarkup}
                         <th
                           key={col.id || i}
                           onClick={() => requestSort(col.id)}
-                          className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-nowrap text-xs sm:text-sm cursor-pointer hover:bg-muted/80 transition-colors group"
+                          className="px-4 py-3 text-left font-medium text-muted-foreground whitespace-normal sm:whitespace-nowrap text-xs sm:text-sm cursor-pointer hover:bg-muted/80 transition-colors group"
                         >
                           <div className="flex items-center justify-between">
                             {col.header}
@@ -1559,7 +1560,7 @@ ${currentMarkup}
                         return (
                           <td
                             key={col.id || j}
-                            className={`px-4 py-2 sm:py-3 border-r last:border-0 border-border/20 text-xs sm:text-sm whitespace-nowrap max-w-[200px] sm:max-w-[400px] truncate`}
+                            className="px-4 py-2 sm:py-3 border-r last:border-0 border-border/20 text-xs sm:text-sm whitespace-normal sm:whitespace-nowrap break-words"
                             style={style}
                             title={String(cellValue)}
                           >
@@ -1571,6 +1572,7 @@ ${currentMarkup}
                   ))}
                 </tbody>
               </table>
+              </div>
               {totalTablePages > 1 && (
                 <div className="flex items-center justify-between px-4 py-2 border-t border-border/20 text-xs text-muted-foreground">
                   <span>

@@ -27,17 +27,18 @@ export const RichTextParser = ({ content, publicationId }: { content: any; publi
     );
   }
 
-  if (content.text) {
+  if (typeof content.text === "string") {
+    const format = typeof content.format === "number" ? content.format : 0;
     let text = <>{content.text}</>;
-    if (content.bold) text = <strong>{text}</strong>;
-    if (content.italic) text = <em>{text}</em>;
-    if (content.code)
+    if (content.bold || (format & 1)) text = <strong>{text}</strong>;
+    if (content.italic || (format & 2)) text = <em>{text}</em>;
+    if (content.code || (format & 16))
       text = (
         <code className="bg-muted px-1 py-0.5 rounded text-sm">{text}</code>
       );
-    if (content.strikethrough)
+    if (content.strikethrough || (format & 4))
       text = <span className="line-through">{text}</span>;
-    if (content.underline) text = <span className="underline">{text}</span>;
+    if (content.underline || (format & 8)) text = <u>{text}</u>;
     return text;
   }
 
@@ -150,17 +151,19 @@ export const RichTextParser = ({ content, publicationId }: { content: any; publi
           <RichTextParser content={content.children} />
         </li>
       );
-    case "link":
+    case "link": {
+      const newTab = content.fields?.newTab ?? content.newTab;
       return (
         <a
-          href={content.url}
-          target={content.newTab ? "_blank" : undefined}
-          rel={content.newTab ? "noopener noreferrer" : undefined}
+          href={content.fields?.url ?? content.url}
+          target={newTab ? "_blank" : undefined}
+          rel={newTab ? "noopener noreferrer" : undefined}
           className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary transition-all hover:text-primary/80"
         >
           <RichTextParser content={content.children} />
         </a>
       );
+    }
     case "upload":
       // Check if value exists and is an object (populated)
       if (!content.value || typeof content.value !== "object") return null;

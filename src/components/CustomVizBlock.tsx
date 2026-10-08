@@ -84,8 +84,8 @@ const RESIZE_SCRIPT = `<script>
       // Tomar el máximo de todas las mediciones
       var finalHeight = Math.max(heightFromChildren, heightFromScroll, heightFromOffset, 200);
       
-      // Limitar entre 100px y 1500px
-      return Math.min(1500, Math.max(100, finalHeight));
+      // Long visualizations must fit without an internal scrollbar.
+      return Math.max(100, finalHeight);
     }
     
     function notifyHeight(force) {
@@ -155,9 +155,6 @@ const RESIZE_SCRIPT = `<script>
         // Detener después de 10 segundos o cuando sea estable por suficiente tiempo
         if (elapsed > 10000 || (elapsed > 3000 && isStable)) {
           clearInterval(checkInterval);
-          if (observer) {
-            observer.disconnect();
-          }
         }
       }, 300);
     }
@@ -225,11 +222,13 @@ export function CustomVizBlock({ custom_markup, data }: Props) {
     let lastUpdateTime = Date.now();
     
     const handler = (e: MessageEvent) => {
+      if (e.source !== iframeRef.current?.contentWindow) return;
       if (
         e.data?.type === "custom-viz-height" &&
-        typeof e.data.height === "number"
+        typeof e.data.height === "number" &&
+        Number.isFinite(e.data.height)
       ) {
-        const newHeight = Math.min(1500, Math.max(100, e.data.height));
+        const newHeight = Math.max(100, e.data.height);
         const now = Date.now();
         
         // Si es la primera vez, aplicar inmediatamente
