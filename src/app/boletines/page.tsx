@@ -2,7 +2,7 @@ import React from "react";
 import BulletinArchiveContainer from "@/components/BulletinArchiveContainer";
 import { PageHeader } from "@/components/PageHeader";
 import { FileText, Star } from "lucide-react";
-import { getBulletins } from "@/lib/api";
+import { getBulletins, getBulletinImage } from "@/lib/api";
 import Link from "next/link";
 
 export const metadata = {
@@ -15,6 +15,7 @@ export default async function BoletinPage() {
   // Fetch the most recent bulletin to feature at the top
   const latestResult = await getBulletins({ limit: 1 });
   const todayBulletin = latestResult.docs[0] ?? null;
+  const image = todayBulletin ? getBulletinImage(todayBulletin) : null;
 
   const isToday = todayBulletin
     ? new Date(todayBulletin.fecha_publicacion).toDateString() ===
@@ -42,6 +43,10 @@ export default async function BoletinPage() {
             href={`/boletines/${todayBulletin.slug}`}
             className="block p-5 md:p-6 border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all group rounded-lg shadow-sm hover:shadow-md"
           >
+            {image?.url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={image.url} alt={image.alt || `Boletín ${todayBulletin.numero}`} className="mb-4 aspect-video max-h-80 w-full rounded-md object-cover" />
+            )}
             <div className="flex justify-between items-start mb-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">

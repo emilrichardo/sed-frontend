@@ -1,4 +1,4 @@
-import { getBulletin, Boletin, resolvePdfUrl } from "@/lib/api";
+import { getBulletin, Boletin, resolvePdfUrl, getBulletinImage } from "@/lib/api";
 import { getAllBulletinSlugs } from "@/lib/static-params";
 
 export async function generateStaticParams() {
@@ -50,6 +50,7 @@ export default async function BulletinDetailPage({
   }
 
   const pdfUrl = getBulletinPdfUrl(bulletin);
+  const image = getBulletinImage(bulletin);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-AR", {
@@ -92,13 +93,13 @@ export default async function BulletinDetailPage({
 
         <BulletinActions bulletin={bulletin} />
 
-        {bulletin.imagen_destacada?.url && (
+        {image?.url && (
           <div className="mt-6 rounded-lg overflow-hidden relative aspect-video shadow-sm border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={bulletin.imagen_destacada.url}
+              src={image.url}
               alt={
-                bulletin.imagen_destacada.alt || `Boletín ${bulletin.numero}`
+                image.alt || `Boletín ${bulletin.numero}`
               }
               className="w-full h-full object-cover"
             />

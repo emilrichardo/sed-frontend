@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Boletin, deleteBulletin, Procesamiento } from "@/lib/api";
 import { Trash2 } from "lucide-react";
 import { BulletinProcessingButton } from "./BulletinProcessingButton";
+import BulletinImageEditor from "./BulletinImageEditor";
 
 export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
   const { user } = useAuth();
@@ -50,20 +51,23 @@ export default function BulletinActions({ bulletin }: { bulletin: Boletin }) {
   };
 
   return (
-    <div className="flex flex-wrap gap-2 mt-4">
-      <BulletinProcessingButton
-        bulletin={bulletin}
-        existingProcessingId={getExistingProcessingId()}
-        requiredBoletinAgentId="5"
-        className="bg-zinc-800 text-white hover:bg-zinc-700"
-      />
-      <button
-        onClick={handleDelete}
-        className="flex items-center gap-2 px-4 py-2 border border-destructive/50 text-destructive bg-background hover:bg-destructive/10 rounded-md text-sm font-medium transition-colors"
-      >
-        <Trash2 className="w-4 h-4" />
-        Eliminar
-      </button>
+    <div className="space-y-3 mt-4">
+      <BulletinImageEditor bulletin={bulletin} />
+      <div className="flex flex-wrap gap-2">
+        <BulletinProcessingButton
+          bulletin={bulletin}
+          existingProcessingId={getExistingProcessingId()}
+          requiredBoletinAgentId="5"
+          className="bg-zinc-800 text-white hover:bg-zinc-700"
+        />
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-2 px-4 py-2 border border-destructive/50 text-destructive bg-background hover:bg-destructive/10 rounded-md text-sm font-medium transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Eliminar
+        </button>
+      </div>
     </div>
   );
 }

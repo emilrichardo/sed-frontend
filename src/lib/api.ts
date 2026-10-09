@@ -501,7 +501,7 @@ export interface Boletin {
   titulo_periodistico?: string;
   resumen?: string;
   procesamiento_asociado?: (string | Procesamiento)[] | null;
-  imagen_destacada?: {
+  imagen_destacada?: number | string | null | {
     id: number | string;
     url: string;
     alt?: string;
@@ -511,6 +511,12 @@ export interface Boletin {
   };
   createdAt: string;
   updatedAt: string;
+}
+
+export function getBulletinImage(bulletin: Boletin) {
+  return bulletin.imagen_destacada && typeof bulletin.imagen_destacada === "object"
+    ? bulletin.imagen_destacada
+    : null;
 }
 
 export interface ActoAdministrativo {
@@ -970,7 +976,7 @@ export async function getBulletin(
   try {
     const res = await apiFetch(
       `/boletines?where[slug][equals]=${idStr}&draft=false&depth=2`,
-      { next: { revalidate: 3600 } },
+      { next: { revalidate: 60 } },
       authToken,
     );
     if (res.ok) {
@@ -989,7 +995,7 @@ export async function getBulletin(
     try {
       const res = await apiFetch(
         `/boletines?where[numero][equals]=${idStr}&sort=-createdAt&draft=false&depth=2`,
-        { next: { revalidate: 3600 } },
+        { next: { revalidate: 60 } },
         authToken,
       );
       if (res.ok) {
@@ -1008,7 +1014,7 @@ export async function getBulletin(
   try {
     const res = await apiFetch(
       `/boletines/${idStr}?draft=false&depth=2`,
-      { next: { revalidate: 3600 } },
+      { next: { revalidate: 60 } },
       authToken,
     );
     if (res.ok) {
