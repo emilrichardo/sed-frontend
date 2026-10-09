@@ -7,6 +7,7 @@ import {
   ActoAdministrativo,
   updateBoletin,
   Boletin,
+  getBulletinImage,
 } from "@/lib/api";
 import { Loader2, AlertCircle, Newspaper, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
@@ -142,6 +143,7 @@ export default function BulletinEntriesLoader({
   };
   // Prefer server-resolved URL (has PDF_HOST_OVERRIDE applied); fall back to client-computed
   const pdfUrl = resolvedPdfUrl ?? getPdfUrl(bulletin);
+  const image = getBulletinImage(bulletin);
 
   useEffect(() => {
     async function loadEntries() {
@@ -482,6 +484,17 @@ export default function BulletinEntriesLoader({
               )}
             </div>
           )
+        )}
+
+        {image?.url && (
+          <div className="rounded-lg overflow-hidden relative aspect-video shadow-sm border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={image.url}
+              alt={image.alt || `Boletín ${bulletin.numero}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
         )}
 
         {/* Resumen del boletín */}
